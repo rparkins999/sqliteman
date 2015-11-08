@@ -90,6 +90,7 @@ ENDIF (APPLE)
 			${ICU_INC_PATH}
 			/usr/include/
 			/usr/include/unicode/
+			/usr/include/x86_64-linux-gnu/unicode/
 	)
 	FIND_LIBRARY(ICU_LIBRARY
 		NAMES icudata
