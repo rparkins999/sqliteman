@@ -1,4 +1,6 @@
 /*
+** 2019-10-23
+**
 ** The author disclaims copyright to this source code.  In place of
 ** a legal notice, here is a blessing:
 **
@@ -6,277 +8,227 @@
 **    May you find forgiveness for yourself and forgive others.
 **    May you share freely, never taking more than you give.
 **
-*************************************************************************
+******************************************************************************
 **
-** This SQLite extension implements functions for creating RFC 4122 compliant
-** UUIDs.
+** This SQLite extension implements functions that handling RFC-4122 UUIDs
+** Three SQL functions are implemented:
 **
+**     uuid()        - generate a version 4 UUID as a string
+**     uuid_str(X)   - convert a UUID X into a well-formed UUID string
+**     uuid_blob(X)  - convert a UUID X into a 16-byte blob
+**
+** The output from uuid() and uuid_str(X) are always well-formed RFC-4122
+** UUID strings in this format:
+**
+**        xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx
+**
+** All of the 'x', 'M', and 'N' values are lower-case hexadecimal digits.
+** The M digit indicates the "version".  For uuid()-generated UUIDs, the
+** version is always "4" (a random UUID).  The upper three bits of N digit
+** are the "variant".  This library only supports variant 1 (indicated
+** by values of N between '8' and 'b') as those are overwhelming the most
+** common.  Other variants are for legacy compatibility only.
+**
+** The output of uuid_blob(X) is always a 16-byte blob.  The UUID input
+** string is converted in network byte order (big-endian) in accordance
+** with RFC-4122 specifications for variant-1 UUIDs.  Note that network
+** byte order is *always* used, even if the input self-identifies as a
+** variant-2 UUID.
+**
+** The input X to the uuid_str() and uuid_blob() functions can be either
+** a string or a BLOB.  If it is a BLOB it must be exactly 16 bytes in
+** length or else a NULL is returned.  If the input is a string it must
+** consist of 32 hexadecimal digits, upper or lower case, optionally
+** surrounded by {...} and with optional "-" characters interposed in the
+** middle.  The flexibility of input is inspired by the PostgreSQL
+** implementation of UUID functions that accept in all of the following
+** formats:
+**
+**     A0EEBC99-9C0B-4EF8-BB6D-6BB9BD380A11
+**     {a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11}
+**     a0eebc999c0b4ef8bb6d6bb9bd380a11
+**     a0ee-bc99-9c0b-4ef8-bb6d-6bb9-bd38-0a11
+**     {a0eebc99-9c0b4ef8-bb6d6bb9-bd380a11}
+**
+** If any of the above inputs are passed into uuid_str(), the output will
+** always be in the canonical RFC-4122 format:
+**
+**     a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+**
+** If the X input string has too few or too many digits or contains
+** stray characters other than {, }, or -, then NULL is returned.
 */
-#include <sqlite3ext.h>
+#include "sqlite3ext.h"
 SQLITE_EXTENSION_INIT1
 #include <assert.h>
-#include <uuid/uuid.h>
 #include <string.h>
+#include <ctype.h>
 
-//#ifdef USE_OPENSSL
-#include <openssl/md5.h>
-#include <openssl/sha.h>
-//#endif
-
-#ifdef USE_COMMONCRYPTO
-#define COMMON_DIGEST_FOR_OPENSSL
-#include <CommonCrypto/CommonDigest.h>
+#if !defined(SQLITE_ASCII) && !defined(SQLITE_EBCDIC)
+# define SQLITE_ASCII 1
 #endif
 
-#ifdef USE_DEFAULT_ENTRY_POINT
-#define ENTRY_POINT sqlite3_extension_init
-#else
-#define ENTRY_POINT sqlite3_uuid_init
+#define SQLITE_INNOCUOUS        0x000200000
+/*
+** Translate a single byte of Hex into an integer.
+** This routine only works if h really is a valid hexadecimal
+** character:  0..9a..fA..F
+*/
+static unsigned char sqlite3UuidHexToInt(int h){
+  assert( (h>='0' && h<='9') ||  (h>='a' && h<='f') ||  (h>='A' && h<='F') );
+#ifdef SQLITE_ASCII
+  h += 9*(1&(h>>6));
 #endif
-
-#define SET_VARIANT(uu)           (uu[8] = (uu[8] & 0xbf) | 0x80)
-#define SET_VERSION(uu, version)  (uu[6] = (uu[6] & 0x0f) | (version << 4))
-
-#define UUID_LENGTH  36
-
-typedef char _uuid_string_t[37];
-
-static const _uuid_string_t NAMESPACE_DNS = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
-static const _uuid_string_t NAMESPACE_OID = "6ba7b812-9dad-11d1-80b4-00c04fd430c8";
-static const _uuid_string_t NAMESPACE_URL = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
-static const _uuid_string_t NAMESPACE_X500 = "6ba7b814-9dad-11d1-80b4-00c04fd430c8";
-static const _uuid_string_t NIL_UUID = "00000000-0000-0000-0000-000000000000";
-
-/*
-** Implementation of uuid1() function.
-*/
-static void uuid1(
-  sqlite3_context *context,
-  int argc,
-  sqlite3_value **argv
-){
-  assert(argc==0);
-  uuid_t uuid;
-  uuid_generate_time(uuid);
-  _uuid_string_t uuid_str;
-  uuid_unparse_lower(uuid, uuid_str);
-  sqlite3_result_text(context, uuid_str, UUID_LENGTH, SQLITE_TRANSIENT);
+#ifdef SQLITE_EBCDIC
+  h += 9*(1&~(h>>4));
+#endif
+  return (unsigned char)(h & 0xf);
 }
 
 /*
-** Implementation of the uuid3() function.
+** Convert a 16-byte BLOB into a well-formed RFC-4122 UUID.  The output
+** buffer zStr should be at least 37 bytes in length.   The output will
+** be zero-terminated.
 */
-static void uuid3(
-  sqlite3_context *context,
-  int argc,
-  sqlite3_value **argv
+static void sqlite3UuidBlobToStr(
+  const unsigned char *aBlob,  /* Input blob */
+  unsigned char *zStr          /* Write the answer here */
 ){
-  assert(argc==2);
-  uuid_t namespace_uuid;
-  _uuid_string_t uuid_str;
-
-  const unsigned char *namespace = sqlite3_value_text(argv[0]);
-  const unsigned char *name      = sqlite3_value_text(argv[1]);
-
-  if(uuid_parse((const char *)namespace, namespace_uuid) == -1) {
-    sqlite3_result_error(context, "cannot parse namespace UUID", -1);
-    return;
+  static const char zDigits[] = "0123456789abcdef";
+  int i, k;
+  unsigned char x;
+  k = 0;
+  for(i=0, k=0x550; i<16; i++, k=k>>1){
+    if( k&1 ){
+      zStr[0] = '-';
+      zStr++;
+    }
+    x = aBlob[i];
+    zStr[0] = zDigits[x>>4];
+    zStr[1] = zDigits[x&0xf];
+    zStr += 2;
   }
-
-  uuid_t uu;
-
-  MD5_CTX mdctx;
-  unsigned char md_value[MD5_DIGEST_LENGTH];
-  MD5_Init(&mdctx);
-  MD5_Update(&mdctx, namespace_uuid, sizeof(uuid_t));
-  MD5_Update(&mdctx, name, strlen((const char *)name));
-  MD5_Final(md_value, &mdctx);
-
-  SET_VARIANT(md_value);
-  SET_VERSION(md_value, 3);
-
-  memcpy(uu, md_value, sizeof(uuid_t));
-
-  uuid_unparse_lower(uu, uuid_str);
-  sqlite3_result_text(context, uuid_str, UUID_LENGTH, SQLITE_TRANSIENT);
+  *zStr = 0;
 }
 
 /*
-** Implementation of the uuid4() function.
+** Attempt to parse a zero-terminated input string zStr into a binary
+** UUID.  Return 0 on success, or non-zero if the input string is not
+** parsable.
 */
-static void uuid4(
-  sqlite3_context *context,
-  int argc,
-  sqlite3_value **argv
+static int sqlite3UuidStrToBlob(
+  const unsigned char *zStr,   /* Input string */
+  unsigned char *aBlob         /* Write results here */
 ){
-  assert(argc==0);
-  uuid_t uuid;
-  uuid_generate_random(uuid);
-  _uuid_string_t uuid_str;
-  uuid_unparse_lower(uuid, uuid_str);
-  sqlite3_result_text(context, uuid_str, UUID_LENGTH, SQLITE_TRANSIENT);
+  int i;
+  if( zStr[0]=='{' ) zStr++;
+  for(i=0; i<16; i++){
+    if( zStr[0]=='-' ) zStr++;
+    if( isxdigit(zStr[0]) && isxdigit(zStr[1]) ){
+      aBlob[i] = (sqlite3UuidHexToInt(zStr[0])<<4)
+                      + sqlite3UuidHexToInt(zStr[1]);
+      zStr += 2;
+    }else{
+      return 1;
+    }
+  }
+  if( zStr[0]=='}' ) zStr++;
+  return zStr[0]!=0;
 }
 
 /*
-** Implementation of the uuid5() function.
+** Render sqlite3_value pIn as a 16-byte UUID blob.  Return a pointer
+** to the blob, or NULL if the input is not well-formed.
 */
-static void uuid5(
-  sqlite3_context *context,
-  int argc,
-  sqlite3_value **argv
+static const unsigned char *sqlite3UuidInputToBlob(
+  sqlite3_value *pIn,     /* Input text */
+  unsigned char *pBuf     /* output buffer */
 ){
-  assert(argc==2);
-  uuid_t namespace_uuid;
-  _uuid_string_t uuid_str;
-
-  const unsigned char *namespace = sqlite3_value_text(argv[0]);
-  const unsigned char *name      = sqlite3_value_text(argv[1]);
-
-  if(uuid_parse((const char *)namespace, namespace_uuid) == -1) {
-    sqlite3_result_error(context, "cannot parse namespace UUID", -1);
-    return;
+  switch( sqlite3_value_type(pIn) ){
+    case SQLITE_TEXT: {
+      const unsigned char *z = sqlite3_value_text(pIn);
+      if( sqlite3UuidStrToBlob(z, pBuf) ) return 0;
+      return pBuf;
+    }
+    case SQLITE_BLOB: {
+      int n = sqlite3_value_bytes(pIn);
+      return n==16 ? sqlite3_value_blob(pIn) : 0;
+    }
+    default: {
+      return 0;
+    }
   }
-
-  uuid_t uu;
-
-  SHA_CTX mdctx;
-  unsigned char md_value[SHA_DIGEST_LENGTH];
-  SHA1_Init(&mdctx);
-  SHA1_Update(&mdctx, namespace_uuid, sizeof(uuid_t));
-  SHA1_Update(&mdctx, name, strlen((const char *)name));
-  SHA1_Final(md_value, &mdctx);
-
-  SET_VARIANT(md_value);
-  SET_VERSION(md_value, 5);
-
-  memcpy(uu, md_value, sizeof(uuid_t));
-
-  uuid_unparse_lower(uu, uuid_str);
-  sqlite3_result_text(context, uuid_str, UUID_LENGTH, SQLITE_TRANSIENT);
 }
 
-static void uuid_nil(
+/* Implementation of uuid() */
+static void sqlite3UuidFunc(
   sqlite3_context *context,
   int argc,
   sqlite3_value **argv
 ){
-  assert(argc==0);
-  sqlite3_result_text(context, NIL_UUID, UUID_LENGTH, SQLITE_STATIC);
+  unsigned char aBlob[16];
+  unsigned char zStr[37];
+  (void)argc;
+  (void)argv;
+  sqlite3_randomness(16, aBlob);
+  aBlob[6] = (aBlob[6]&0x0f) + 0x40;
+  aBlob[8] = (aBlob[8]&0x3f) + 0x80;
+  sqlite3UuidBlobToStr(aBlob, zStr);
+  sqlite3_result_text(context, (char*)zStr, 36, SQLITE_TRANSIENT);
 }
 
-static void uuid_ns_dns(
+/* Implementation of uuid_str() */
+static void sqlite3UuidStrFunc(
   sqlite3_context *context,
   int argc,
   sqlite3_value **argv
 ){
-  assert(argc==0);
-  sqlite3_result_text(context, NAMESPACE_DNS, UUID_LENGTH, SQLITE_STATIC);
+  unsigned char aBlob[16];
+  unsigned char zStr[37];
+  const unsigned char *pBlob;
+  (void)argc;
+  pBlob = sqlite3UuidInputToBlob(argv[0], aBlob);
+  if( pBlob==0 ) return;
+  sqlite3UuidBlobToStr(pBlob, zStr);
+  sqlite3_result_text(context, (char*)zStr, 36, SQLITE_TRANSIENT);
 }
 
-static void uuid_ns_oid(
+/* Implementation of uuid_blob() */
+static void sqlite3UuidBlobFunc(
   sqlite3_context *context,
   int argc,
   sqlite3_value **argv
 ){
-  assert(argc==0);
-  sqlite3_result_text(context, NAMESPACE_OID, UUID_LENGTH, SQLITE_STATIC);
-}
-
-static void uuid_ns_url(
-  sqlite3_context *context,
-  int argc,
-  sqlite3_value **argv
-){
-  assert(argc==0);
-  sqlite3_result_text(context, NAMESPACE_URL, UUID_LENGTH, SQLITE_STATIC);
-}
-
-static void uuid_ns_x500(
-  sqlite3_context *context,
-  int argc,
-  sqlite3_value **argv
-){
-  assert(argc==0);
-  sqlite3_result_text(context, NAMESPACE_X500, UUID_LENGTH, SQLITE_STATIC);
-}
-
-static void uuid_to_text(
-  sqlite3_context *context,
-  int argc,
-  sqlite3_value **argv
-){
-  assert(argc==1);
-  const void *uuid_bytes = sqlite3_value_blob(argv[0]);
-  if(sqlite3_value_bytes(argv[0]) != sizeof(uuid_t)) {
-    sqlite3_result_error(context, "UUID must be 16 bytes", -1);
-    return;
-  }
-  _uuid_string_t uuid_str;
-  uuid_unparse_lower(*(uuid_t *)uuid_bytes, uuid_str);
-  sqlite3_result_text(context, uuid_str, UUID_LENGTH, SQLITE_TRANSIENT);
-}
-
-static void uuid_to_blob(
-  sqlite3_context *context,
-  int argc,
-  sqlite3_value **argv
-){
-  assert(argc==1);
-  uuid_t uuid;
-  const unsigned char *uuid_str	= sqlite3_value_text(argv[0]);
-  if(uuid_parse((const char *)uuid_str, uuid) == -1) {
-    sqlite3_result_error(context, "cannot parse UUID", -1);
-    return;
-  }
-  sqlite3_result_blob(context, uuid, sizeof(uuid_t), SQLITE_TRANSIENT);
-}
-
-/*
-** Register UUID functions to database `db`.
-*/
-static int register_uuid_functions(sqlite3 *db) {
-  typedef struct UUIDScalar {
-    const char *name;
-    int argc;
-    int enc;
-    void (*func)(sqlite3_context*, int, sqlite3_value**);
-  } UUIDScalar;
-
-  UUIDScalar scalars[] = {
-    {"uuid1",          0, SQLITE_UTF8, uuid1},
-    {"uuid3",          2, SQLITE_UTF8, uuid3},
-    {"uuid4",          0, SQLITE_UTF8, uuid4},
-    {"uuid5",          2, SQLITE_UTF8, uuid5},
-    {"uuid_nil",       0, SQLITE_UTF8, uuid_nil},
-    {"uuid_ns_dns",    0, SQLITE_UTF8, uuid_ns_dns},
-    {"uuid_ns_oid",    0, SQLITE_UTF8, uuid_ns_oid},
-    {"uuid_ns_url",    0, SQLITE_UTF8, uuid_ns_url},
-    {"uuid_ns_x500",   0, SQLITE_UTF8, uuid_ns_x500},
-    {"uuid_to_text",   1, SQLITE_UTF8, uuid_to_text},
-    {"uuid_to_blob",   1, SQLITE_UTF8, uuid_to_blob},
-  };
-
-  int rc = SQLITE_OK;
-  int i, n;
-
-  n = (int)(sizeof(scalars)/sizeof(scalars[0]));
-
-  for (i = 0; rc == SQLITE_OK && i < n; i++) {
-    UUIDScalar *s = &scalars[i];
-    rc = sqlite3_create_function(db, s->name, s->argc, s->enc, 0, s->func, 0, 0);
-  }
-
-  return rc;
+  unsigned char aBlob[16];
+  const unsigned char *pBlob;
+  (void)argc;
+  pBlob = sqlite3UuidInputToBlob(argv[0], aBlob);
+  if( pBlob==0 ) return;
+  sqlite3_result_blob(context, pBlob, 16, SQLITE_TRANSIENT);
 }
 
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-int ENTRY_POINT(
+int sqlite3_uuid_init(
   sqlite3 *db,
   char **pzErrMsg,
   const sqlite3_api_routines *pApi
 ){
+  int rc = SQLITE_OK;
   SQLITE_EXTENSION_INIT2(pApi);
-  return register_uuid_functions(db);
+  (void)pzErrMsg;  /* Unused parameter */
+  rc = sqlite3_create_function(db, "uuid", 0, SQLITE_UTF8|SQLITE_INNOCUOUS, 0,
+                               sqlite3UuidFunc, 0, 0);
+  if( rc==SQLITE_OK ){
+    rc = sqlite3_create_function(db, "uuid_str", 1, 
+                       SQLITE_UTF8|SQLITE_INNOCUOUS|SQLITE_DETERMINISTIC,
+                       0, sqlite3UuidStrFunc, 0, 0);
+  }
+  if( rc==SQLITE_OK ){
+    rc = sqlite3_create_function(db, "uuid_blob", 1,
+                       SQLITE_UTF8|SQLITE_INNOCUOUS|SQLITE_DETERMINISTIC,
+                       0, sqlite3UuidBlobFunc, 0, 0);
+  }
+  return rc;
 }

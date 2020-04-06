@@ -1214,7 +1214,13 @@ SqlParser::SqlParser(QString input)
 				tokens.removeFirst();
 				continue;
 			case 22: // look for default value
-				if (s.compare("(") == 0)
+                if (tokens.at(0).type == tokenStringLiteral)
+                {
+					f.defaultisQuoted = true;
+					f.defaultValue = s;
+					state = 7; // look for column constraint or , or )
+                }
+				else if (s.compare("(") == 0)
 				{
 					f.defaultIsExpression = true;
 					f.defaultValue = "(";
@@ -1229,8 +1235,7 @@ SqlParser::SqlParser(QString input)
 				}
 				else
 				{
-					if (   (tokens.at(0).type == tokenStringLiteral)
-						|| (tokens.at(0).type == tokenQuotedIdentifier)
+					if (   (tokens.at(0).type == tokenQuotedIdentifier)
 						|| (tokens.at(0).type == tokenSquareIdentifier)
 						|| (tokens.at(0).type == tokenBackQuotedIdentifier))
 					{
