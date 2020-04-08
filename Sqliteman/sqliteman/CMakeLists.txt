@@ -360,7 +360,7 @@ ENDIF (WIN32)
 # Added by Richard Parkins to force recalculation of build time.
 # Currently only works with Linux
 IF (WIN32)
-ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/buildtime.h COMMAND echo static const char * buildtime = "Built %date% %time%"; >buildtime.h DEPENDS ${SQLITEMAN_SRC} ${SQLITEMAN_MOC_SRC} ${SQLITEMAN_UI_HDRS} ${SQLITEMAN_RC_RCS} COMMENT "Creating timestamp in buildtime.h")
+ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/buildtime.h COMMAND echo static const char * buildtime = "Built %date% %time%" ; >buildtime.h DEPENDS ${SQLITEMAN_SRC} ${SQLITEMAN_MOC_SRC} ${SQLITEMAN_UI_HDRS} ${SQLITEMAN_RC_RCS} COMMENT "Creating timestamp in buildtime.h")
 ELSE (WIN32)
 ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/buildtime.h COMMAND date '+static const char * buildtime = \"Built %c\"\;' > ${CMAKE_CURRENT_SOURCE_DIR}/buildtime.h DEPENDS ${SQLITEMAN_SRC} ${SQLITEMAN_MOC_SRC} ${SQLITEMAN_UI_HDRS} ${SQLITEMAN_RC_RCS} COMMENT "Creating timestamp in buildtime.h")
 ENDIF (WIN32)

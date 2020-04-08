@@ -14,7 +14,10 @@ column.png
 database_commit.png
 database.png
 database_rollback.png
+delete_multiple.png
 delete_table_row.png
+delete_multiple.png
+delete.png
 document-export.png
 document-new.png
 document-open.png
@@ -29,6 +32,8 @@ go-previous.png
 insert_table_row.png
 kate.png
 key.png
+move-down.png
+move-up.png
 preferences-desktop-display.png
 runexplain.png
 runscript.png
