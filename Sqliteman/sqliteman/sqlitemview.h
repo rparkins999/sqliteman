@@ -83,8 +83,6 @@ class SqlItemView : public QWidget, public Ui::SqlItemView
 		void toLast();
 		void insertNull();
 		void openMultiEditor();
-		//! \brief Set the navigation buttons state and "X of Y" label.
-		void updateButtons(int row);
 		/*! Handle app focus change. It chatches only m_mapper's
 		widgets. It emits indexChanged() for DataViewer. */
 		void aApp_focusChanged(QWidget* old, QWidget* now);
@@ -96,7 +94,8 @@ class SqlItemView : public QWidget, public Ui::SqlItemView
 
 	public slots:
 		void textChanged();
-
+		//! \brief Set the navigation buttons state and "X of Y" label.
+		void updateButtons(int row);
 };
 
 #endif

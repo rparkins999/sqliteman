@@ -245,7 +245,9 @@ void DataViewer::findNext()
 void DataViewer::findAll()
 {
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    int currentRow = ui.itemView->currentRow();
 	bool anyFound = false;
+    bool currentRowFound = false;
 	SqlTableModel * model = qobject_cast<SqlTableModel*>(ui.tableView->model());
 	if (model)
 	{
@@ -259,6 +261,10 @@ void DataViewer::findAll()
 				{
 					anyFound = true;
 					ui.tableView->showRow(row);
+                    if (row == currentRow)
+                    {
+                        currentRowFound =  true;
+                    }
 				}
 				else
 				{
@@ -276,6 +282,14 @@ void DataViewer::findAll()
 	{
 		showStatusText(false);
 		m_doneFindAll = true;
+        if ((ui.tabWidget->currentIndex() == 1) && !currentRowFound)
+        {
+            ui.tabWidget->setCurrentIndex(0);
+        }
+        else
+        {
+            ui.itemView->updateButtons(currentRow);
+        }
 	}
 	QApplication::restoreOverrideCursor();
 }
