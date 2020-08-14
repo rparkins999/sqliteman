@@ -329,9 +329,9 @@ bool DataExportDialog::exportSql()
 	{
 		QString createStatement = "CREATE TABLE "
 								  + Utils::q(m_tableName)
-								  + " ("
+								  + " (\""
 								  + columns
-								  + ")";
+								  + "\")";
 		if (m_table)
 		{
 			QString createSQL = QString("SELECT sql FROM ")
