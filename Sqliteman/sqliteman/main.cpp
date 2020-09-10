@@ -35,6 +35,7 @@ for which a new license (GPL+exception) is in place.
 #define ARG_HELP_SHORT "-h"
 #define ARG_LANG_SHORT "-l"
 #define ARG_AVAILLANG_SHORT "-la"
+#define ARG_SCRIPT "-s"
 #define endl QString("\n")
 
 
@@ -57,20 +58,23 @@ class ArgsParser
 		QString localeCode();
 		//! \brief No file is opened when the returned value is null
 		const QString & fileToOpen();
+		const QString & scriptToOpen();
 	private:
 		int argc;
 		char ** argv;
 		QString m_locale;
 		QMap<int,QString> m_localeList;
 		void langsAvailable();
-		QString m_file;
+		QString m_lastDB;
+		QString m_lastSqlFile;
 };
 
-/*! \brief Pre-fil available translations into QMap to cooperate
+/*! \brief Pre-fill available translations into QMap to cooperate
 with PreferencesDialog.
 */
 ArgsParser::ArgsParser(int c, char ** v)
-	: argc(c), argv(v), m_locale(""), m_file(QString())
+	: argc(c), argv(v), m_locale(""),
+	m_lastDB(QString()), m_lastSqlFile(QString())
 {
 	QDir d(TRANSLATION_DIR, "*.qm");
 	int i = 1; // 0 is for system default
@@ -113,13 +117,24 @@ QString ArgsParser::localeCode()
 
 const QString & ArgsParser::fileToOpen()
 {
-	if (m_file.isNull())
+	if (m_lastDB.isNull())
 	{
 		Preferences* p = Preferences::instance();
 		if (p->openLastDB() && QFileInfo(p->lastDB()).exists())
-			m_file = p->lastDB();
+			m_lastDB = p->lastDB();
 	}
-	return m_file;
+	return m_lastDB;
+}
+
+const QString & ArgsParser::scriptToOpen()
+{
+	if (m_lastSqlFile.isNull())
+	{
+		Preferences* p = Preferences::instance();
+		if (p->openLastSqlFile() && QFileInfo(p->lastSqlFile()).exists())
+			m_lastSqlFile = p->lastSqlFile();
+	}
+	return m_lastSqlFile;
 }
 
 bool ArgsParser::parseArgs()
@@ -134,6 +149,19 @@ bool ArgsParser::parseArgs()
 		if ((arg == ARG_LANG || arg == ARG_LANG_SHORT) && (++i < argc))
 		{
 			m_locale = argv[i];
+			continue;
+		}
+		else if ((arg == ARG_SCRIPT) && (++i < argc))
+		{
+			m_lastSqlFile = QFile::decodeName(argv[i]);
+			if (!QFileInfo(m_lastSqlFile).exists())
+			{
+				if (m_lastSqlFile.left(1) == "-" || m_lastSqlFile.left(2) == "--")
+					cout << QString("Invalid argument: ") << m_lastSqlFile << endl;
+				else
+					cout << QString("File ") << m_lastSqlFile << QString(" does not exist, aborting.") << endl;
+				return false;
+			}
 			continue;
 		}
 		else if (arg == ARG_VERSION || arg == ARG_VERSION_SHORT)
@@ -159,13 +187,13 @@ bool ArgsParser::parseArgs()
 		}
 		else
 		{
-			m_file = QFile::decodeName(argv[i]);
-			if (!QFileInfo(m_file).exists())
+			m_lastDB = QFile::decodeName(argv[i]);
+			if (!QFileInfo(m_lastDB).exists())
 			{
-				if (m_file.left(1) == "-" || m_file.left(2) == "--")
-					cout << QString("Invalid argument: ") << m_file << endl;
+				if (m_lastDB.left(1) == "-" || m_lastDB.left(2) == "--")
+					cout << QString("Invalid argument: ") << m_lastDB << endl;
 				else
-					cout << QString("File ") << m_file << QString(" does not exist, aborting.") << endl;
+					cout << QString("File ") << m_lastDB << QString(" does not exist, aborting.") << endl;
 				return false;
 			}
 			return true;
@@ -181,8 +209,7 @@ int main(int argc, char ** argv)
 	initCrashHandler();
 #endif
 	ArgsParser cli(argc, argv);
-	if (!cli.parseArgs())
-		return 0;
+	if (!cli.parseArgs()) { return 0; }
 
 	int style = Preferences::instance()->GUIstyle();
 	if (style != 0)
@@ -216,7 +243,8 @@ int main(int argc, char ** argv)
 
 	app.installTranslator(&translator);
 
-	LiteManWindow * wnd = new LiteManWindow(cli.fileToOpen());
+	LiteManWindow * wnd = new LiteManWindow(
+        cli.fileToOpen(), cli.scriptToOpen());
 	wnd->setLanguage(cli.localeCode());
 	wnd->show();
 

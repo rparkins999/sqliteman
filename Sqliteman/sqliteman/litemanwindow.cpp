@@ -60,23 +60,14 @@ for which a new license (GPL+exception) is in place.
 #include "driver/qsql_sqlite.h"
 #endif
 
-LiteManWindow::LiteManWindow(const QString & fileToOpen)
+LiteManWindow::LiteManWindow(
+    const QString & fileToOpen, const QString & scriptToOpen)
 	: QMainWindow(),
-	m_mainDbPath(""),
+	m_lastDB(""),
+	m_lastSqlFile(scriptToOpen),
 	m_appName("Sqliteman"),
-// 	m_sqliteBinAvailable(true),
 	helpBrowser(0)
 {
-	// test for sqlite3 binary
-/*	qDebug() << "Checking for " << SQLITE_BINARY << ":";
-	if (QProcess::execute(SQLITE_BINARY, QStringList() << "-version") != 0)
-	{
-		m_sqliteBinAvailable = false;
-		QMessageBox::warning(this, m_appName,
-							 tr("Sqlite3 executable '%1' is not found in your path. Some features will be disabled.")
-									 .arg(SQLITE_BINARY));
-		qDebug() << "Sqlite3 executable '%1' is not found in your path. Some features will be disabled.";
-	}*/
 #if QT_VERSION < 0x040300
 	if (Preferences::instance()->checkQtVersion())
 	{
@@ -500,9 +491,9 @@ void LiteManWindow::readSettings()
 	schemaBrowserAct->setChecked(settings.value("objectbrowser/show", true).toBool());
 	execSqlAct->setChecked(settings.value("sqleditor/show", true).toBool());
 
-	QString fn(settings.value("sqleditor/filename", QString()).toString());
-	if (!fn.isNull() && !fn.isEmpty() && Preferences::instance()->openLastSqlFile())
-	   sqlEditor->setFileName(fn);
+	if (!m_lastSqlFile.isEmpty()) {
+        sqlEditor->setFileName(m_lastSqlFile);
+    }
 
 	recentDocs = settings.value("recentDocs/files").toStringList();
 	rebuildRecentFileMenu();
@@ -518,13 +509,13 @@ void LiteManWindow::writeSettings()
 	settings.setValue("objectbrowser/show", schemaBrowser->isVisible());
 	settings.setValue("sqleditor/show", sqlEditor->isVisible());
 	settings.setValue("sqleditor/splitter", splitterSql->saveState());
-	settings.setValue("sqleditor/filename", sqlEditor->fileName());
 	settings.setValue("dataviewer/show", dataViewer->isVisible());
 	settings.setValue("dataviewer/splitter", dataViewer->saveSplitter());
 	settings.setValue("recentDocs/files", recentDocs);
 	// last open database
 	settings.setValue("lastDatabase",
 					  QSqlDatabase::database(SESSION_NAME).databaseName());
+	settings.setValue("lastSqlFile", sqlEditor->fileName());
 }
 
 void LiteManWindow::newDB()
@@ -663,7 +654,7 @@ void LiteManWindow::openDatabase(const QString & fileName)
 
 		QFileInfo fi(fileName);
 		QDir::setCurrent(fi.absolutePath());
-		m_mainDbPath = QDir::toNativeSeparators(QDir::currentPath() + "/" + fi.fileName());
+		m_lastDB = QDir::toNativeSeparators(QDir::currentPath() + "/" + fi.fileName());
 	
 		updateRecent(fileName);
 	

@@ -34,6 +34,7 @@ Preferences::Preferences(QObject *parent)
 	m_openLastSqlFile = s.value("prefs/openLastSqlFile", true).toBool();
 	m_readRows = s.value("prefs/readRowsComboBox", 0).toInt();
 	m_lastDB = s.value("lastDatabase", QString()).toString();
+	m_lastSqlFile = s.value("lastSqlFile", QString()).toString();
 	m_newInItemView = s.value("prefs/openNewInItemView", false).toBool();
 	m_GUItranslator = s.value("prefs/languageComboBox", 0).toInt();
 	m_GUIstyle = s.value("prefs/styleComboBox", 0).toInt();

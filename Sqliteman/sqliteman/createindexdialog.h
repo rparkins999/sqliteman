@@ -44,11 +44,12 @@ class CreateIndexDialog : public QDialog
 		void paintEvent(QPaintEvent * event);
 		void resizeEvent(QResizeEvent * event);
 
+
 		// We ought to be able use use parent() for this, but for some reason
 		// qobject_cast<LiteManWindow*>(parent()) doesn't work
 		LiteManWindow * creator;
 
-	private slots:
+private slots:
 		void tableColumns_itemChanged(QTableWidgetItem* item);
 		void indexNameEdit_textChanged(const QString & text);
 		/*! \brief Parse user's inputs and create a sql statement */

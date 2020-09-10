@@ -39,13 +39,14 @@ class LiteManWindow : public QMainWindow
 {
 		Q_OBJECT
 	public:
-		LiteManWindow(const QString & fileToOpen = 0);
+		LiteManWindow(
+            const QString & fileToOpen = 0, const QString & scriptToOpen = 0);
 		~LiteManWindow();
 
 		//! \brief Set the chosen language (used in the translator) to localize help too.
 		void setLanguage(QString l) { m_lang = l; };
 
-		QString mainDbPath() { return m_mainDbPath; };
+		QString mainDbPath() { return m_lastDB; };
 		bool checkForPending();
 		void buildPragmasTree();
 		void checkForCatalogue();
@@ -171,15 +172,13 @@ class LiteManWindow : public QMainWindow
 	private:
 		QStringList recentDocs;
 
-		QString m_mainDbPath;
+		QString m_lastDB;
+		QString m_lastSqlFile;
 		QString m_appName;
 		QString m_lang;
 		QTreeWidgetItem * m_activeItem;
 		QLabel * m_sqliteVersionLabel;
 		bool tableTreeTouched;
-
-		// \brief True if is sqlite3 binary available in the path
-// 		bool m_sqliteBinAvailable;
 
 		DataViewer * dataViewer;
 		QSplitter * splitter;
