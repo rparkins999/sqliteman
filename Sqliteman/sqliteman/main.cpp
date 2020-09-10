@@ -134,7 +134,7 @@ bool ArgsParser::parseArgs()
 		if ((arg == ARG_LANG || arg == ARG_LANG_SHORT) && (++i < argc))
 		{
 			m_locale = argv[i];
-			return true;
+			continue;
 		}
 		else if (arg == ARG_VERSION || arg == ARG_VERSION_SHORT)
 		{
