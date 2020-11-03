@@ -1009,7 +1009,6 @@ bool DataViewer::setTableModel(QAbstractItemModel * model, bool showButtons)
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 	ui.tableView->setModel(model); // references old model
 	ui.tableView->scrollToTop();
-	QApplication::restoreOverrideCursor();
 	freeResources(old); // avoid memory leak of model
 
 	connect(ui.tableView->selectionModel(),
@@ -1048,6 +1047,8 @@ bool DataViewer::setTableModel(QAbstractItemModel * model, bool showButtons)
 	updateButtons();
 	
 	rowCountChanged();
+
+    QApplication::restoreOverrideCursor();
 
 	return true;
 }
