@@ -173,7 +173,7 @@ bool FindDialog::isMatch(QSqlRecord * rec, int i)
 				return  dataString.contains(valString);
 
 			case 1:	// Doesn't contain
-				return !(data.toString().contains(valString));
+				return !(dataString.contains(valString));
 			
 			case 2:	// Starts with
 				return dataString.startsWith(valString);
