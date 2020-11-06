@@ -98,6 +98,7 @@ class LiteManWindow : public QMainWindow
 		void setActiveItem(QTreeWidgetItem * item);
 		void describeObject(QString type);
 		void updateContextMenu(QTreeWidgetItem * item);
+        QString getOSName();
 
 	protected:
 		/*! \brief This method handles closing of the main window by saving the window's state and accepting

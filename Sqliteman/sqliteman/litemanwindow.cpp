@@ -751,19 +751,46 @@ void LiteManWindow::openRecent()
 		open(action->data().toString());
 }
 
+QString LiteManWindow::getOSName()
+    {
+    QProcess p;
+    QString result;
+#if defined Q_OS_LINUX
+    p.setProcessChannelMode(QProcess::MergedChannels);
+    p.start("hostnamectl");
+    if (p.waitForStarted() && p.waitForFinished()) {
+        QString s1(p.readAllStandardOutput());
+        QString s2(s1);
+        s1.replace(QRegExp("^.*System: ([^\\n]*).*$"), "\\1");
+        s2.replace(QRegExp("^.*Kernel: ([^\\n]*).*$"), "\\1");
+        result.append(s1).append(" ").append(s2).append("<br/>");
+    }
+#elif defined Q_OS_WIN32
+    p.start("cmd.exe", QStringList() << "ver");
+    if (p.waitForStarted() && p.waitForFinished()) {
+        QString s1(p.readAllStandardOutput());
+        result.append(s1.trimmed()).append("<br/>");
+    }
+#else
+// I don't know what to do here....
+#endif
+    return result;
+}
+
 void LiteManWindow::about()
 {
 
 	dataViewer->removeErrorMessage();
-	QMessageBox::about(this, tr("About"),
-					   tr("Sqliteman - SQLite databases made easy\n\n")
-					   + tr("Version ")
-					   + SQLITEMAN_VERSION + "\n"
-					   + tr("Parts")
-					   + "(c) 2007 Petr Vanek\n"
-                       + tr("Parts")
-					   + "(c) 2015 Richard Parkins\n"
-					   + buildtime);
+    dataViewer->setStatusText(
+        tr("sqliteman Version ")
+        + SQLITEMAN_VERSION + " " + buildtime + "<br/>"
+        + m_sqliteVersionLabel->text() + "<br/>"
+        + "Qt " + tr("Version ") + qVersion() + "<br/>"
+        + getOSName()
+        + tr("Parts")
+        + "(c) 2007 Petr Vanek, "
+        + tr("Parts")
+        + "(c) 2020 Richard Parkins<br/>");
 }
 
 void LiteManWindow::aboutQt()
