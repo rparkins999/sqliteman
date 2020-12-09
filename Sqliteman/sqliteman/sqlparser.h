@@ -60,6 +60,8 @@ typedef struct
 {
 	QString name;
 	QString type;
+    QString referencedTable;
+    QStringList referencedKeys;
 	QString defaultValue;
 	bool defaultIsExpression;
 	bool defaultisQuoted;

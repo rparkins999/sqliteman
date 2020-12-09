@@ -401,6 +401,8 @@ void SqlParser::clearField(FieldInfo &f)
 {
 	f.name = QString();
 	f.type = QString();
+    f.referencedTable = QString();
+    f.referencedKeys = QStringList(); 
 	f.defaultValue = QString();
 	f.defaultIsExpression = false;
 	f.defaultisQuoted = false;
@@ -1291,7 +1293,7 @@ SqlParser::SqlParser(QString input)
 					|| (tokens.at(0).type == tokenBackQuotedIdentifier)
 					|| (tokens.at(0).type == tokenStringLiteral))
 				{
-					f.type = s;
+                    f.referencedTable = s;
 					state = 27; // look for clause or next
 				}
 				else { break; } // not a valid create statement
@@ -1373,6 +1375,7 @@ SqlParser::SqlParser(QString input)
 					|| (tokens.at(0).type == tokenBackQuotedIdentifier)
 					|| (tokens.at(0).type == tokenStringLiteral))
 				{
+                    f.referencedKeys.append(s);
 					state = 29; // look for next column name or )
 				}
 				else { break; } // not a valid create statement
