@@ -11,7 +11,9 @@ This is a QT bug.
 */
 #include <time.h>
 
+#include <QApplication>
 #include <QColor>
+#include <QCursor>
 #include <QSqlError>
 #include <QSqlField>
 #include <QSqlQuery>
@@ -620,12 +622,14 @@ void SqlQueryModel::setQuery ( const QSqlQuery & query )
 	info = record();
 	if (columnCount() > 0)
 	{
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 		while (   canFetchMore(QModelIndex())
 			   && (   (m_readRowsCount == 0)
 				   || (rowCount() < m_readRowsCount)))
 		{
 			fetchMore();
 		}
+        QApplication::restoreOverrideCursor();
 	}
 }
 
@@ -635,12 +639,14 @@ void SqlQueryModel::setQuery ( const QString & query, const QSqlDatabase & db)
 	info = record();
 	if (columnCount() > 0)
 	{
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 		while (   canFetchMore(QModelIndex())
 			   && (   (m_readRowsCount == 0)
 				   || (rowCount() < m_readRowsCount)))
 		{
 			fetchMore();
 		}
+        QApplication::restoreOverrideCursor();
 	}
 }
 
@@ -653,9 +659,11 @@ void SqlQueryModel::fetchAll()
 {
 	if (rowCount() > 0)
 	{
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 		while (canFetchMore(QModelIndex()))
 		{
 			fetchMore();
 		}
+        QApplication::restoreOverrideCursor();
 	}
 }
