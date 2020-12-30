@@ -500,6 +500,13 @@ void Utils::dump(FieldInfo f)
 	if (f.isPartOfPrimaryKey) { s.append(", PRIMARY KEY"); }
 	if (f.isAutoIncrement) { s.append(", AUTOINCREMENT"); }
 	if (f.isNotNull) { s.append(", NOT NULL"); }
+	if (!f.referencedTable.isEmpty()) {
+        s.append(", REFERENCES ");
+        s.append(f.referencedTable);
+        s.append("(");
+        s.append(f.referencedKeys.join(", "));
+        s.append(")");
+    }
 	dump(s);
 }
 void Utils::dump(QList<FieldInfo> fl)
