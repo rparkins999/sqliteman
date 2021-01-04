@@ -123,26 +123,25 @@ void SchemaBrowser::pragmaTable_currentCellChanged(int currentRow, int /*current
     {
         pragmaValue->setReadOnly(true);
         value_label->setText(QString("Value"));
+        setPragmaButton->setEnabled(false);
     }
     else
     {
         pragmaValue->setReadOnly(false);
         value_label->setText(QString("Value (")
             + pragmaTable->item(currentRow, 1)->toolTip() + ")");
+        setPragmaButton->setEnabled(true);
     }
 }
 
 void SchemaBrowser::setPragmaButton_clicked()
 {
-    if (value_label->text().compare("Value(editable)") == 0)
-    {
-        Database::execSql(QString("PRAGMA main.")
-                        + pragmaName->text()
-                        + " = "
-                        + pragmaValue->text()
-                        + ";");
-        buildPragmasTree();
-    }
+    Database::execSql(QString("PRAGMA main.")
+                    + pragmaName->text()
+                    + " = "
+                    + pragmaValue->text()
+                    + ";");
+    buildPragmasTree();
 }
 
 void SchemaBrowser::appendExtensions(const QStringList & list, bool switchToTab)
