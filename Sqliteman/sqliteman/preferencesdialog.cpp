@@ -108,10 +108,10 @@ void PrefsExtensionWidget::addExtensionButton_clicked()
 
 	QStringList l(m_ext->extensions());
 	// avoid duplications
-	foreach(QString newItem, files)
-	{
-		l.removeAll(newItem);
-		l.append(newItem);
+    QStringList::const_iterator i;
+    for (i = files.constBegin(); i != files.constEnd(); ++i) {
+		l.removeAll(*i);
+		l.append(*i);
 	}
 	m_ext->setExtensions(l);
 	tableView->resizeColumnsToContents();
@@ -199,8 +199,13 @@ PreferencesDialog::PreferencesDialog(QWidget * parent)
 	// avail langs
 	QDir d(TRANSLATION_DIR, "*.qm");
 	m_prefsLNF->languageComboBox->addItem(tr("From Locales"));
-	foreach (QString f, d.entryList())
-		m_prefsLNF->languageComboBox->addItem(f.remove("sqliteman_").remove(".qm"));
+    QStringList::const_iterator i;
+    QStringList l = d.entryList();
+    for (i = l.constBegin(); i != l.constEnd(); ++i) {
+        QString s = *i; // non-const copy
+		m_prefsLNF->languageComboBox->addItem(
+            s.remove("sqliteman_").remove(".qm"));
+    }
 	m_prefsLNF->languageComboBox->setCurrentIndex(prefs->GUItranslator());
 
 	// avail styles
@@ -230,8 +235,10 @@ PreferencesDialog::PreferencesDialog(QWidget * parent)
 
 	m_prefsSQL->fontComboBox->setCurrentFont(prefs->sqlFont());
 	m_prefsSQL->fontSizeSpin->setValue(prefs->sqlFontSize());
-	m_prefsSQL->useActiveHighlightCheckBox->setChecked(prefs->activeHighlighting());
-	m_prefsSQL->activeHighlightButton->setPalette(prefs->activeHighlightColor());
+	m_prefsSQL->useActiveHighlightCheckBox->setChecked(
+        prefs->activeHighlighting());
+	m_prefsSQL->activeHighlightButton->setPalette(
+        prefs->activeHighlightColor());
 	m_prefsSQL->useTextWidthMarkCheckBox->setChecked(prefs->textWidthMark());
 	m_prefsSQL->textWidthMarkSpinBox->setValue(prefs->textWidthMarkSize());
 	m_prefsSQL->useCompletionCheck->setChecked(prefs->codeCompletion());
@@ -245,7 +252,8 @@ PreferencesDialog::PreferencesDialog(QWidget * parent)
 	m_syCommentColor = prefs->syCommentColor();
 	resetEditorPreview();
 
-	m_prefsExtension->allowExtensionsBox->setChecked(prefs->allowExtensionLoading());
+	m_prefsExtension->allowExtensionsBox->setChecked(
+        prefs->allowExtensionLoading());
 	m_prefsExtension->setExtensions(prefs->extensionList());
 }
 

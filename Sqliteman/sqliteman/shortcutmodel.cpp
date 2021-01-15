@@ -57,10 +57,9 @@ bool ShortcutModel::setData(const QModelIndex & index, const QVariant & value, i
 	if (index.column() == 0)
 	{
 		// ensure it's unique. Message is handled in the ShortcutEditorDialog
-		QPair<QString,QString> p;
-		foreach (p, m_values)
-		{
-			if (p.first == newVal)
+		QList<QPair<QString,QString> >::const_iterator i;
+        for (i = m_values.constBegin(); i != m_values.constEnd(); ++i) {
+			if (i->first == newVal)
 			{
 				emit keysNotUnique(newVal);
 				return false;
@@ -126,10 +125,10 @@ void ShortcutModel::insertRow(QString key, QString value)
 void ShortcutModel::saveValues()
 {
 	QMap<QString,QVariant> ret;
-	QPair<QString,QString> p;
 
-	foreach (p, m_values)
-		ret[p.first] = p.second;
-
+    QList<QPair<QString,QString> >::const_iterator i;
+    for (i = m_values.constBegin(); i != m_values.constEnd(); ++i) {
+		ret[i->first] = i->second;
+    }
 	Preferences::instance()->setShortcuts(ret);
 }

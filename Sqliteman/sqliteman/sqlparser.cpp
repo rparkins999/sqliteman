@@ -2382,37 +2382,37 @@ QString SqlParser::toString()
 			s += m_tableName;
 			s += " (";
 			bool first = true;
-			foreach (FieldInfo f, m_fields)
-			{
+            QList<FieldInfo>::const_iterator i;
+            for (i = m_fields.constBegin(); i != m_fields.constEnd(); ++i) {
 				if (first)
 				{
 					first = false;
-					s += Utils::q(f.name);
+					s += Utils::q(i->name);
 				}
 				else
 				{
-					s += ", " + Utils::q(f.name);
+					s += ", " + Utils::q(i->name);
 				}
-				if (!f.type.isEmpty())
+				if (!i->type.isEmpty())
 				{
-					s += " " + Utils::q(f.type);
+					s += " " + Utils::q(i->type);
 				}
-				if (!f.defaultValue.isEmpty())
+				if (!i->defaultValue.isEmpty())
 				{
-					if (f.defaultisQuoted)
+					if (i->defaultisQuoted)
 					{
-						s += " DEFAULT " + Utils::q(f.defaultValue, "'");
+						s += " DEFAULT " + Utils::q(i->defaultValue, "'");
 					}
 					else
 					{
-						s += " DEFAULT " + f.defaultValue;
+						s += " DEFAULT " + i->defaultValue;
 					}
 				}
-				if (f.isNotNull) { s += " NOT NULL"; }
-				if (f.isAutoIncrement) { s += " PRIMARY KEY AUTOINCREMENT"; }
-				else if (f.isPartOfPrimaryKey)
+				if (i->isNotNull) { s += " NOT NULL"; }
+				if (i->isAutoIncrement) { s += " PRIMARY KEY AUTOINCREMENT"; }
+				else if (i->isPartOfPrimaryKey)
 				{
-					pk.append(Utils::q(f.name));
+					pk.append(Utils::q(i->name));
 				}
 			}
 			if (!pk.isEmpty()) { s += pk.join(", "); }
@@ -2426,11 +2426,11 @@ QString SqlParser::toString()
 			s += "INDEX " + Utils::q(m_indexName);
 			s += " ON " + Utils::q(m_tableName) + " (\n";
 			bool first = true;
-			foreach (Expression * expr, m_columns)
-			{
+            QList<Expression *>::const_iterator i;
+            for (i = m_columns.constBegin(); i != m_columns.constEnd(); ++i) {
 				if (first) { first = false; }
 				else { s += ",\n"; }
-				s += toString(expr);
+				s += toString(*i);
 			}
 			s += ")";
 			if (m_whereClause)
@@ -2559,9 +2559,9 @@ bool SqlParser::replace(QMap<QString,QString> map, QString newTableName)
 {
 	m_tableName = newTableName;
 	bool result = true;
-	foreach (Expression * expr, m_columns)
-	{
-		result &= replace(map, expr, false);
+    QList<Expression *>::const_iterator i;
+    for (i = m_columns.constBegin(); i != m_columns.constEnd(); ++i) {
+		result &= replace(map, *i, false);
 	}
 	return result & replace(map, m_whereClause, true);
 }

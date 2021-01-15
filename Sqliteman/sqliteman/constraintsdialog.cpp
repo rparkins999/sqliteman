@@ -37,15 +37,16 @@ ConstraintsDialog::ConstraintsDialog(const QString & tabName, const QString & sc
 	QStringList deletes;
 	QStringList nnCols;
 	QString stmt;
-	foreach (FieldInfo column, Database::tableFields(tabName, schema))
-	{
-		if (!column.isNotNull)
+    QList<FieldInfo> l = Database::tableFields(tabName, schema);
+    QList<FieldInfo>::const_iterator i;
+    for (i = l.constBegin(); i != l.constEnd(); ++i) {
+		if (!i->isNotNull)
 			continue;
-		nnCols << column.name;
+		nnCols << i->name;
 		stmt = QString("SELECT RAISE(ABORT, 'New ")
-			   + column.name
+			   + i->name
 			   + " value IS NULL') WHERE new."
-			   + Utils::q(column.name)
+			   + Utils::q(i->name)
 			   + " IS NULL;\n";
 		inserts << "-- NOT NULL check" << stmt;
 		updates << "-- NOT NULL check"<< stmt;

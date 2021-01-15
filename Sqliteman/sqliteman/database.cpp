@@ -514,23 +514,24 @@ QStringList Database::loadExtension(const QStringList & list)
 
 	QStringList retval;
 
-	foreach(QString f, list)
-	{
-		const char *zProc = 0;
+    QStringList::const_iterator i;
+    for (i = list.constBegin(); i != list.constEnd(); ++i) {
+        const char *zProc = 0;
 		char *zErrMsg = 0;
 		int rc;
 
-		rc = sqlite3_load_extension(handle, f.toUtf8().data(), zProc, &zErrMsg);
+		rc = sqlite3_load_extension(
+            handle, i->toUtf8().data(), zProc, &zErrMsg);
 		if (rc != SQLITE_OK)
 		{
 			exception(tr("Error loading extension\n")
-					  + f
+					  + *i
 					  + "\n"
 					  + QString::fromLocal8Bit(zErrMsg));
 			sqlite3_free(zErrMsg);
 		}
 		else
-			retval.append(f);
+			retval.append(*i);
 	}
 	return retval;
 }
@@ -545,17 +546,6 @@ QString Database::getMaster(const QString &schema)
 	{
 		return QString("%1.sqlite_master").arg(Utils::q(schema));
 	}
-}
-
-QString Database::getTempName(const QString & schema)
-{
-	QStringList existing = getObjects(QString(), schema).keys();
-	int i = 0;
-	while (existing.contains(QString("tmpname_%1").arg(i), Qt::CaseInsensitive))
-	{
-		++i;
-	}
-	return QString("tmpname_%1").arg(i);
 }
 
 bool Database::isAutoCommit()

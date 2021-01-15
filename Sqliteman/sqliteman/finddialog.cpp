@@ -117,7 +117,11 @@ void FindDialog::setup(QString schema, QString table)
 	setWindowTitle(QString("Find in table ") + schema + "." + table);
 	QStringList columns;
 	SqlParser * parser = Database::parseTable(table, schema);
-	foreach (FieldInfo i, parser->m_fields) { columns << i.name; }
+    QList<FieldInfo> fields = parser->m_fields;
+    QList<FieldInfo>::const_iterator i;
+	for (i = fields.constBegin(); i != fields.constEnd(); ++i) {
+        columns << i->name;
+    }
 	delete parser;
 	if (   (schema != m_schema)
 		|| (table != m_table)

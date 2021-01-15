@@ -63,17 +63,16 @@ void ShortcutEditorDialog::keysNotUnique(QString value)
 
 void ShortcutEditorDialog::acceptDialog()
 {
-	QPair<QString,QString> p;
-	foreach (p, model->values())
-	{
-		if (p.first.isEmpty())
+    QList<QPair<QString,QString> > values = model->values();
+    QList<QPair<QString,QString> >::const_iterator i;
+    for (i = values.constBegin(); i != values.constEnd(); ++i) {
+		if (i->first.isEmpty())
 		{
 			int b = QMessageBox::question(this, tr("Shortcut Error"),
 										  tr("Some of key values are empty. These items will be lost. Do you want to return to the shortcut editor to fix it?"),
 										  QMessageBox::Yes | QMessageBox::No,
 										  QMessageBox::Yes);
-			if (b == QMessageBox::Yes)
-				return;
+			if (b == QMessageBox::Yes) { return; } else { break; }
 		}
 	}
 	model->saveValues();
@@ -99,12 +98,12 @@ void ShortcutEditorDialog::exportButton_clicked()
 	xml.writeStartDocument();
 	xml.writeStartElement("sqliteman-shortcuts");
 
-	QPair<QString,QString> p;
-	foreach (p, model->values())
-	{
+    QList<QPair<QString,QString> > values = model->values();
+    QList<QPair<QString,QString> >::const_iterator i;
+    for (i = values.constBegin(); i != values.constEnd(); ++i) {
 		xml.writeStartElement("pair");
-		xml.writeAttribute("key", p.first);
-		xml.writeAttribute("value", p.second);
+		xml.writeAttribute("key", i->first);
+		xml.writeAttribute("value", i->second);
 		xml.writeEndElement();
 	}
 	xml.writeEndElement(); //"sqliteman-shortcuts"

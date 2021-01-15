@@ -50,20 +50,20 @@ void DataViewer::updateButtons()
 	SqlTableModel * table = qobject_cast<SqlTableModel *>(model);
 	QModelIndexList indexList = ui.tableView->selectedIndexes();
 	bool autoCommit = model ? Database::isAutoCommit() : true ;
-	foreach (const QModelIndex &index, indexList)
-	{
-		if (index.isValid())
+    QModelIndexList::const_iterator i;
+    for (i = indexList.constBegin(); i != indexList.constEnd(); ++i) {
+		if (i->isValid())
 		{
 			if (row == -1)
 			{
-				row = index.row();
+				row = i->row();
 				rowSelected = (row >= 0);
 				singleItem = rowSelected;
 			}
 			else
 			{
 				singleItem = false;
-				if (row != index.row())
+				if (row != i->row())
 				{
 					rowSelected = false;
 				}
@@ -143,9 +143,9 @@ void DataViewer::updateButtons()
 	// Sometimes the main toolbar doesn't get displayed. Inserting this line
 	// causes it to reappear. Removing the line again does nothing until I've
 	// rebuilt the program some indeterminate number of times, and then the
-	// main toolbar vanishes again. This is some strange Qt weirdness. End users
-	// of the compiled code can't insert the line, rebuild, and remove it again,
-	// so it's left in.
+	// main toolbar vanishes again. This is some strange Qt weirdness.
+	// End users of the compiled code can't insert the line, rebuild, and
+	// remove it again, so it's left in.
 	ui.mainToolBar->show();
 }
 
@@ -521,14 +521,15 @@ void DataViewer::copyHandler()
 {
 	removeErrorMessage();
 	QItemSelectionModel *selectionModel = ui.tableView->selectionModel();
-	QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
-	QModelIndex index;
 	// This looks very "pythonic" maybe there is better way to do...
 	QMap<int,QMap<int,QString> > snapshot;
 	QStringList out;
 
-	foreach (index, selectedIndexes)
-		snapshot[index.row()][index.column()] = index.data().toString();
+	QModelIndexList l = selectionModel->selectedIndexes();
+    QModelIndexList::const_iterator i;
+    for (i = l.constBegin(); i != l.constEnd(); ++i) {
+		snapshot[i->row()][i->column()] = i->data().toString();
+    }
 	
 	QMapIterator<int,QMap<int,QString> > it(snapshot);
 	while (it.hasNext())

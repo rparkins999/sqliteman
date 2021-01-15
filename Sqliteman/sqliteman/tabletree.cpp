@@ -38,10 +38,9 @@ void TableTree::buildTree()
 {
 	QStringList databases(Database::getDatabases().keys());
 	clear();
-
-	foreach(QString schema, databases)
-	{
-		buildDatabase(schema);
+    QStringList::const_iterator i;
+    for (i = databases.constBegin(); i != databases.constEnd(); ++i) {
+		buildDatabase(*i);
 	}
 }
 
@@ -101,11 +100,11 @@ void TableTree::buildTables(QTreeWidgetItem * tablesItem, const QString & schema
 	QStringList tables = Database::getObjects("table", schema).keys();
 	tablesItem->setText(0, trLabel(trTables).arg(tables.size()));
 	tablesItem->setText(1, schema);
-
-	foreach(QString table, tables)
-	{
-		QTreeWidgetItem * tableItem = new QTreeWidgetItem(tablesItem, TableType);
-		tableItem->setText(0, table);
+    QStringList::const_iterator i;
+    for (i = tables.constBegin(); i != tables.constEnd(); ++i) {
+		QTreeWidgetItem * tableItem =
+            new QTreeWidgetItem(tablesItem, TableType);
+		tableItem->setText(0, *i);
 		tableItem->setText(1, schema);
 		buildTableItem(tableItem, false);
 	}
@@ -194,13 +193,14 @@ void TableTree::buildViews(QTreeWidgetItem * viewsItem, const QString & schema)
 	QStringList views = Database::getObjects("view", schema).keys();
 	viewsItem->setText(0, trLabel(trViews).arg(views.size()));
 	viewsItem->setText(1, schema);
-	foreach(QString view, views)
-	{
+    QStringList::const_iterator i;
+    for (i = views.constBegin(); i != views.constEnd(); ++i) {
 		QTreeWidgetItem * viewItem = new QTreeWidgetItem(viewsItem, ViewType);
-		viewItem->setText(0, view);
+		viewItem->setText(0, *i);
 		viewItem->setText(1, schema);
-		QTreeWidgetItem *triggersItem = new QTreeWidgetItem(viewItem, TriggersItemType);
-		buildTriggers(triggersItem, schema, view);
+		QTreeWidgetItem *triggersItem =
+            new QTreeWidgetItem(viewItem, TriggersItemType);
+		buildTriggers(triggersItem, schema, *i);
 	}
 }
 
@@ -211,10 +211,10 @@ void TableTree::buildCatalogue(QTreeWidgetItem * systemItem, const QString & sch
 	QStringList values = Database::getSysObjects(schema).keys();
 	systemItem->setText(0, trLabel(trSys).arg(values.size()));
 	systemItem->setText(1, schema);
-	foreach(QString i, values)
-	{
+    QStringList::const_iterator i;
+    for (i = values.constBegin(); i != values.constEnd(); ++i) {
 		QTreeWidgetItem * sysItem = new QTreeWidgetItem(systemItem, SystemType);
-		sysItem->setText(0, i);
+		sysItem->setText(0, *i);
 		sysItem->setText(1, schema);
 	}
 }
@@ -223,9 +223,10 @@ void TableTree::buildCatalogue(QTreeWidgetItem * systemItem, const QString & sch
 void TableTree::deleteChildren(QTreeWidgetItem * item)
 {
 	QList<QTreeWidgetItem *> items = item->takeChildren();
-	foreach (QTreeWidgetItem *item, items)
-	{
-		delete item;
+    QList<QTreeWidgetItem *>::const_iterator i;
+    for (i = items.constBegin(); i != items.constEnd(); ++i) {
+        // *i is a const pointer, but not a pointer to const
+		delete *i;
 	}
 }
 
@@ -241,8 +242,10 @@ QList<QTreeWidgetItem*> TableTree::searchMask(const QString & trStr)
 
 void TableTree::buildViewTree(QString schema, QString name)
 {
-	foreach (QTreeWidgetItem* item, searchMask(trViews))
-	{
+    QList<QTreeWidgetItem*> l;
+    QList<QTreeWidgetItem*>::const_iterator i;
+    for (i = l.constBegin(); i != l.constEnd(); ++i) {
+        QTreeWidgetItem* item = *i;
 		if (item->text(1) == schema && item->type() == ViewsItemType)
 			buildViews(item, schema);
 	}

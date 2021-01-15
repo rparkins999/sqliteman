@@ -514,17 +514,19 @@ bool QSQLiteDriver::open(const QString & db, const QString &, const QString &, c
         return false;
     bool sharedCache = false;
     int openMode = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, timeOut=5000;
-    QStringList opts=QString(conOpts).remove(QLatin1Char(' ')).split(QLatin1Char(';'));
-    foreach(const QString &option, opts) {
-        if (option.startsWith(QLatin1String("QSQLITE_BUSY_TIMEOUT="))) {
+    QStringList opts =
+        QString(conOpts).remove(QLatin1Char(' ')).split(QLatin1Char(';'));
+    QStringList::const_iterator it;
+    for (it = opts.constBegin(); it != opts.constEnd(); ++it) {
+        if (it->startsWith(QLatin1String("QSQLITE_BUSY_TIMEOUT="))) {
             bool ok;
-            int nt = option.mid(21).toInt(&ok);
+            int nt = it->mid(21).toInt(&ok);
             if (ok)
                 timeOut = nt;
         }
-        if (option == QLatin1String("QSQLITE_OPEN_READONLY"))
+        if (*it == QLatin1String("QSQLITE_OPEN_READONLY"))
             openMode = SQLITE_OPEN_READONLY;
-        if (option == QLatin1String("QSQLITE_ENABLE_SHARED_CACHE"))
+        if (*it == QLatin1String("QSQLITE_ENABLE_SHARED_CACHE"))
             sharedCache = true;
     }
 

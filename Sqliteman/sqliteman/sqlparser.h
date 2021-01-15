@@ -42,8 +42,7 @@ enum exprType {
 	exprExpr // ( expression )
 };
 
-typedef struct
-{
+typedef struct Token {
 	QString name;
 	enum tokenType type;
 	bool isColName;
@@ -56,8 +55,7 @@ typedef struct Expression {
 	struct Expression * right;
 } Expression;
 
-typedef struct
-{
+typedef struct FieldInfo {
 	QString name;
 	QString type;
     QString referencedTable;

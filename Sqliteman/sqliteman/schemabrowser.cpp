@@ -147,11 +147,10 @@ void SchemaBrowser::setPragmaButton_clicked()
 void SchemaBrowser::appendExtensions(const QStringList & list, bool switchToTab)
 {
 	QStringList l(m_extensionModel->extensions());
-	QString s;
-	foreach (s, list)
-	{
-		l.removeAll(s);
-		l.append(s);
+    QStringList::const_iterator i;
+    for (i = list.constBegin(); i != list.constEnd(); ++i) {
+		l.removeAll(*i);
+		l.append(*i);
 	}
 	m_extensionModel->setExtensions(l);
 	extensionTableView->resizeColumnsToContents();

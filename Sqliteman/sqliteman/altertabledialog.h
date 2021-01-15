@@ -57,12 +57,19 @@ class AlterTableDialog : public TableEditorDialog
 		bool m_alteringActive; // true if altering currently active table
 		bool m_altered; // something changed other than the name
 		bool m_dropped; // a column has been dropped
+		int m_oldPragmaAlterTable; // really boolean but sqlite uses an int
+        int m_oldPragmaForeignKeys; // really boolean but sqlite uses an int
+
+        // This is the name that the table currently has inside doit().
+        // Some bad errors may lead to the table being left with a temporary
+        // name.
+        QString m_tableName;
 
 		/*! \brief Execute statement, handle errors,
 		and output message to the GUI.
 		\param statement a SQL statement as QString
-		\param message a text message to display in the log widget
-		\retval bool true on SQL succes
+		\param message a text message to display in the log widget: if it is null no message is displayed
+		\retval bool true on SQL success
 		*/
 		bool execSql(const QString & statement, const QString & message);
 
@@ -80,15 +87,23 @@ class AlterTableDialog : public TableEditorDialog
 		*/
 		bool renameTable(QString oldTableName, QString newTableName);
 
+        // Tries to rename oldTableName to a generated temporary name
+        // and returns the temporary name if it succeeds.
+        // If after several tries it fails, it returns null.
+        QString renameTemp (QString oldTableName);
+
 		bool checkColumn(int i, QString cname,
 						 QString ctype, QString cextra);
 		void resizeTable();
 		void swap(int i, int j);
 		void drop (int i);
+        void restorePragmas();
+        // does the internals of alterButton_clicked()
+        bool doit(QString newTableName);
 
 	private slots:
 		void cellClicked(int, int);
-		void alterButton_clicked();;
+		void alterButton_clicked();
 
 		//! \brief Setup the Alter button if there is something changed
 		void checkChanges();

@@ -36,7 +36,6 @@ class TableEditorDialog : public QDialog
 		virtual void addField(QString oldName, QString oldType,
 					  int x, QString oldDefault);
 
-		bool checkOk(QString newName);
 		QString schema();
 		QString createdName();
 
@@ -44,6 +43,7 @@ class TableEditorDialog : public QDialog
 		bool updated;
 
 	protected:
+		bool checkOk(QString newName);
 		virtual bool checkColumn(int i, QString cname,
 								 QString type, QString cextra) = 0;
 		QString getSQLfromDesign();

@@ -35,6 +35,7 @@ SET( SQLITEMAN_SRC
     main.cpp
     multieditdialog.cpp
     mylineedit.cpp
+    pd.cpp
     populatorcolumnwidget.cpp
     populatordialog.cpp
     preferences.cpp
@@ -104,6 +105,7 @@ SET( SQLITEMAN_MOC
     litemanwindow.h
     multieditdialog.h
     mylineedit.h
+    pd.h
     populatorcolumnwidget.h
     populatordialog.h
 #     populatorstructs.h

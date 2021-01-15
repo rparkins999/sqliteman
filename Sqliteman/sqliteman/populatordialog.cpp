@@ -124,10 +124,9 @@ qlonglong PopulatorDialog::tableRowCount()
 QString PopulatorDialog::sqlColumns()
 {
 	QStringList s;
-	foreach (Populator::PopColumn i, m_columnList)
-	{
-		if (i.action != Populator::T_IGNORE)
-			s.append(i.name);
+    QList<Populator::PopColumn>::const_iterator i;
+    for (i = m_columnList.constBegin(); i != m_columnList.constEnd(); ++i) {
+		if (i->action != Populator::T_IGNORE) { s.append(i->name); }
 	}
 	return Utils::q(s, "\"");
 }
@@ -142,27 +141,27 @@ void PopulatorDialog::populateButton_clicked()
 		m_columnList.append(qobject_cast<PopulatorColumnWidget*>(columnTable->cellWidget(i, 2))->column());
 
 	QList<QVariantList> values;
-	foreach (Populator::PopColumn i, m_columnList)
-	{
-		switch (i.action)
+    QList<Populator::PopColumn>::const_iterator it;
+    for (it = m_columnList.constBegin(); it != m_columnList.constEnd(); ++it) {
+		switch (it->action)
 		{
 			case Populator::T_AUTO:
-				values.append(autoValues(i));
+				values.append(autoValues(*it));
 				break;
 			case Populator::T_AUTO_FROM:
-				values.append(autoFromValues(i));
+				values.append(autoFromValues(*it));
 				break;
 			case Populator::T_NUMB:
-				values.append(numberValues(i));
+				values.append(numberValues(*it));
 				break;
 			case Populator::T_TEXT:
-				values.append(textValues(i));
+				values.append(textValues(*it));
 				break;
 			case Populator::T_PREF:
-				values.append(textPrefixedValues(i));
+				values.append(textPrefixedValues(*it));
 				break;
 			case Populator::T_STAT:
-				values.append(staticValues(i));
+				values.append(staticValues(*it));
 				break;
 			case Populator::T_DT_NOW:
 			case Populator::T_DT_NOW_UNIX:
@@ -170,7 +169,7 @@ void PopulatorDialog::populateButton_clicked()
 			case Populator::T_DT_RAND:
 			case Populator::T_DT_RAND_UNIX:
 			case Populator::T_DT_RAND_JULIAN:
-				values.append(dateValues(i));
+				values.append(dateValues(*it));
 				break;
 			case Populator::T_IGNORE:
 				break;

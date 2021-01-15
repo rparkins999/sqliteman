@@ -19,6 +19,9 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlError>
 #include <QTreeWidgetItem>
 
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "altertabledialog.h"
 #include "litemanwindow.h"
 #include "mylineedit.h"
@@ -84,18 +87,20 @@ void AlterTableDialog::resetClicked()
 
 	// obtain all indexed columns for DROP COLUMN checks
 	QMap<QString,QStringList> columnIndexMap;
-	foreach(QString index,
-		Database::getObjects("index", m_item->text(1)).values(m_item->text(0)))
-	{
-		foreach(QString indexColumn,
-			Database::indexFields(index, m_item->text(1)))
-		{
-			for (i = 0; i < n; i++)
+    QList<QString> objects =
+        Database::getObjects("index", m_item->text(1)).values(m_item->text(0));
+    QList<QString>::const_iterator it;
+    for (it = objects.constBegin(); it != objects.constEnd(); ++it) {
+        QStringList columns = Database::indexFields(*it, m_item->text(1));
+        QStringList::const_iterator j;
+        for (j = columns.constBegin(); j != columns.constEnd(); ++j) {
+            QString indexColumn = *j;
+			for (int k = 0; k < n; k++)
 			{
-				if (!(m_fields[i].name.compare(
+				if (!(m_fields[k].name.compare(
 					indexColumn, Qt::CaseInsensitive)))
 				{
-					m_isIndexed[i] = true;
+					m_isIndexed[k] = true;
 				}
 			}
 		}
@@ -159,20 +164,26 @@ AlterTableDialog::AlterTableDialog(LiteManWindow * parent,
 	resetClicked();
 }
 
+// on success, return true
+// on fail, print message if non-null, and return false
 bool AlterTableDialog::execSql(const QString & statement,
 							   const QString & message)
 {
 	QSqlQuery query(statement, QSqlDatabase::database(SESSION_NAME));
 	if (query.lastError().isValid())
 	{
-		QString errtext = message
-						  + ":<br/><span style=\" color:#ff0000;\">"
-						  + query.lastError().text()
-						  + "<br/></span>" + tr("using sql statement:")
-						  + "<br/><tt>" + statement;
-		resultAppend(errtext);
+        if (!message.isNull()) {
+            QString errtext = message
+                            + ":<br/><span style=\" color:#ff0000;\">"
+                            + query.lastError().text()
+                            + "<br/></span>" + tr("using sql statement:")
+                            + "<br/><tt>" + statement;
+            resultAppend(errtext);
+        }
+        query.clear();
 		return false;
 	}
+	query.clear();
 	return true;
 }
 
@@ -182,12 +193,16 @@ bool AlterTableDialog::doRollback(QString message)
 	if (result)
 	{
 		// rollback does not cancel the savepoint
-		if (execSql("RELEASE ALTER_TABLE;", QString("")))
+		if (execSql("RELEASE ALTER_TABLE;", NULL))
 		{
 			return true;
 		}
 	}
-	resultAppend(tr("Database may be left with a pending savepoint."));
+    QString errtext = message
+                        + ":<br/><span style=\" color:#ff0000;\">"
+                        + tr("Database may be left with a pending savepoint.")
+                        + "<br/></span>";
+    resultAppend(errtext);
 	return result;
 }
 
@@ -209,11 +224,13 @@ QStringList AlterTableDialog::originalSource(QString tableName)
 						  + "<br/></span>" + tr("using sql statement:")
 						  + "<br/><tt>" + ixsql;
 		resultAppend(errtext);
+        query.clear();
 		return QStringList();
 	}
 	QStringList ret;
 	while (query.next())
 		{ ret.append(query.value(0).toString()); }
+	query.clear();
 	return ret;
 }
 
@@ -244,23 +261,76 @@ QList<SqlParser *> AlterTableDialog::originalIndexes(QString tableName)
 			ret.append(new SqlParser(query.value(0).toString()));
 		}
 	}
+	query.clear();
 	return ret;
+}
+
+// This version should work correctly if multiple tasks are using it
+// simultaneously.
+QString AlterTableDialog::renameTemp(QString oldTableName) {
+    QSqlQuery query;
+    QString sql;
+    for (int i = 1; i < 20; ++i) {
+        QString name = QString("liteman%1tmp%2").arg(getpid()).arg(i);
+        sql = QString(
+            "ALTER TABLE %1.%2 RENAME TO %3 ;")
+            .arg(Utils::q(m_item->text(1)))
+            .arg(Utils::q(oldTableName))
+            .arg(Utils::q(name));
+        query = QSqlQuery(sql, QSqlDatabase::database(SESSION_NAME));
+        if (!(query.lastError().isValid())) {
+            query.clear();
+            return name;
+        }
+    }
+    QString errtext = tr("Cannot rename to temporary table after 20 tries")
+                    + ":<br/><span style=\" color:#ff0000;\">"
+                    + query.lastError().text()
+                    + "<br/></span>" + tr("using sql statement:")
+                    + "<br/><tt>" + sql;
+	resultAppend(errtext);
+    query.clear();
+    return NULL;
 }
 
 bool AlterTableDialog::renameTable(QString oldTableName, QString newTableName)
 {
+    if (oldTableName == newTableName) {
+        return true; // nothing to do
+    }
+    QString tmpName = oldTableName;
+
+    // sqlite won't rename a table if only the case of (some letters of) the
+    // name has changed, so we rename to a temporary table first.
+    if (newTableName.compare(oldTableName, Qt::CaseInsensitive) == 0) {
+        tmpName = renameTemp(m_item->text(0));
+        if (tmpName.isNull()) {
+            return false; // couldn't rename to a temporary
+        }
+    }
 	QString sql = QString("ALTER TABLE ")
 				  + Utils::q(m_item->text(1))
 				  + "."
-				  + Utils::q(oldTableName)
+				  + Utils::q(tmpName)
 				  + " RENAME TO "
 				  + Utils::q(newTableName)
 				  + ";";
-	QString message = tr("Cannot rename table ")
-					  + oldTableName
-					  + tr(" to ")
-					  + newTableName;
-	return execSql(sql, message);
+	if (!execSql(sql, tr("Cannot rename table"))) {
+        if (tmpName != oldTableName) {
+            // We renamed it to a temporary name, try to undo that
+            QString sql = QString("ALTER TABLE ")
+                        + Utils::q(m_item->text(1))
+                        + "."
+                        + Utils::q(tmpName)
+                        + " RENAME TO "
+                        + Utils::q(oldTableName)
+                        + ";";
+            execSql(sql, tr("Cannot rename table back to original name"));
+        }
+        return false;
+    } else {
+        return true;
+    }
 }
 
 bool AlterTableDialog::checkColumn(int i, QString cname,
@@ -513,15 +583,152 @@ void AlterTableDialog::cellClicked(int row, int column)
 	}
 }
 
+void AlterTableDialog::restorePragmas() {
+    if (m_oldPragmaForeignKeys != 0) {
+        execSql("PRAGMA foreign_keys = 1;", "");
+    }
+    if (m_oldPragmaAlterTable == 0) {
+        execSql("PRAGMA legacy_alter_table = 0;", "");
+    }
+}
+
+// This does the transaction inside alterButton_clicked()
+// so that cleanup happens in only one place.
+// returns true if we need to roll back
+bool AlterTableDialog::doit(QString newTableName) {
+	// Save indexes and triggers on the original table
+	QStringList originalSrc = originalSource(m_tableName);
+	QList<SqlParser *> originalIx(originalIndexes(m_tableName));
+
+    // If we aren't changing the table name, we need to do so
+    // because we can't create a new table with the same name.
+	if (newTableName == m_tableName)
+	{
+		// generate unique temporary tablename
+		QString tmpName = renameTemp(m_tableName);
+		if (tmpName.isNull())
+		{
+			return true;
+		}
+		m_tableName = tmpName;
+	}
+
+	// Here we have column changes to make.
+	// Create the new table
+	QString message(tr("Cannot create table ") + newTableName);
+	QString sql(getFullName() + " ( " + getSQLfromGUI());
+	if (!execSql(sql, message))
+	{
+		return true;
+	}
+
+	// insert old data
+	QMap<QString,QString> columnMap; // old => new
+	QString insert;
+	QString select;
+	bool first = true;
+	for (int i = 0; i < ui.columnTable->rowCount(); ++i)
+	{
+		int j = m_oldColumn[i];
+		if (j >= 0)
+		{
+			if (first)
+			{
+				first = false;
+				insert += (QString("INSERT OR ABORT INTO %1.%2 (")
+						   .arg(Utils::q(ui.databaseCombo->currentText()),
+								Utils::q(newTableName)));
+                select += " ) SELECT ";
+			}
+			else
+			{
+				insert += ", ";
+				select += ", ";
+			}
+			QLineEdit * nameItem =
+				qobject_cast<QLineEdit *>(ui.columnTable->cellWidget(i, 0));
+			insert += Utils::q(nameItem->text());
+	        select += Utils::q(m_fields[j].name);
+			columnMap.insert(m_fields[j].name, nameItem->text());
+		}
+	}
+	if (!insert.isEmpty())
+	{
+		select += " FROM "
+				  + Utils::q(m_item->text(1))
+				  + "."
+				  + Utils::q(m_tableName)
+				  + ";";
+		message = tr("Cannot insert data into ")
+				  + newTableName;
+		if (!execSql(insert + select, message))
+		{
+            sql = "DROP TABLE ";
+            sql += Utils::q(m_item->text(1))
+                + "."
+                + Utils::q(newTableName)
+                + ";";
+            message = tr("Cannot drop table ")
+                    + newTableName;
+            execSql(sql, message);
+            return true;
+		}
+	}
+
+	// drop old table
+	sql = "DROP TABLE ";
+	sql += Utils::q(m_item->text(1))
+		   + "."
+		   + Utils::q(m_tableName)
+		   + ";";
+	message = tr("Cannot drop table ")
+			  + m_tableName;
+
+    if (!execSql(sql, message)) {
+        return true;
+    }
+	m_tableName = newTableName;
+
+	// restoring original triggers
+	// FIXME fix up if columns dropped or renamed
+    QStringList::const_iterator it;
+    for (it = originalSrc.constBegin(); it != originalSrc.constEnd(); ++it) {
+		// continue after failure here
+		(void)execSql(*it, tr("Cannot recreate original trigger"));
+	}
+
+	// recreate indices
+	while (!originalIx.isEmpty())
+	{
+		SqlParser * parser = originalIx.takeFirst();
+		if (parser->replace(columnMap, ui.nameEdit->text()))
+		{
+			// continue after failure here
+			(void)execSql(parser->toString(),
+						  tr("Cannot recreate index ") + parser->m_indexName);
+		}
+		delete parser;
+	}
+
+	if (!execSql("RELEASE ALTER_TABLE;", tr("Cannot release savepoint")))
+	{
+		return true;
+	}
+	return false;
+}
+
+// User clicked on "Alter", go ahead and do it
 void AlterTableDialog::alterButton_clicked()
 {
+    // If we're altering the active table and there are unsaved changes,
+    // invite the user to save, discard, or abandon the alter table action.
 	if (m_alteringActive && !(creator && creator->checkForPending()))
 	{
 		return;
 	}
 
 	QString newTableName(ui.nameEdit->text());
-	QString oldTableName(m_item->text(0));
+	m_tableName = m_item->text(0);
 	if (m_dubious)
 	{
 		int ret = QMessageBox::question(this, "Sqliteman",
@@ -545,186 +752,87 @@ void AlterTableDialog::alterButton_clicked()
 		if (ret == QMessageBox::Cancel) { return; }
 	}
 	ui.resultEdit->setHtml("");
-	if (!execSql("SAVEPOINT ALTER_TABLE;", tr("Cannot create savepoint")))
+
+    m_oldPragmaAlterTable = Database::pragma("legacy_alter_table").toInt();
+    m_oldPragmaForeignKeys = Database::pragma("foreign_keys").toInt();
+    bool needPragmaChanges =   (m_oldPragmaAlterTable == 0)
+                               || (m_oldPragmaForeignKeys != 0);
+
+    // Changing pragmas doesn't work inside a transaction, so if we will
+    // need to do that, we can't do anything other than just renaming the table.
+	if (needPragmaChanges && m_altered && !(Database::isAutoCommit())) {
+        QString errtext = ":<br/><span style=\" color:#ff0000;\">"
+                        + tr("Cannot do this inside a transaction.")
+                        + "<br/></span>";
+        resultAppend(errtext);
+        return;
+    }
+
+    // If we are only renaming the table, we can do it now.
+    // If we are renaming the table and foreign key checking is enabled,
+    //     we need to rename it now (even though we will do so again) so that
+    //     foreign key references to this table from other tables are
+    //     correctly updated to the new name.
+    // If we are renaming the table and legacy_alter_table is not enabled,
+    //     we need to rename it now (even though we will do so again) so that
+    //     views, indexes, and triggers referring to this table are
+    //     correctly updated to the new name.
+    if (   newTableName.compare(m_tableName, Qt::CaseSensitive)
+        && (needPragmaChanges || !m_altered))
 	{
-		return;
-	}
-	if (newTableName.compare(oldTableName, Qt::CaseInsensitive) && !m_altered)
-	{
-		// only need to rename
-		if (!renameTable(oldTableName, newTableName))
+		if (!renameTable(m_tableName, newTableName))
 		{
-			doRollback(tr("Cannot roll back after error"));
 			return;
-		}
-		if (!execSql("RELEASE ALTER_TABLE;", tr("Cannot release savepoint")))
-		{
-			if (doRollback(tr("Cannot roll back either")))
-			{
-				return;
-			}
 		}
 		updated = true;
-		m_item->setText(0, newTableName);
+        m_tableName = newTableName;
+
+        // if there is nothing else to do, we're done.
+		if (!m_altered) {
+            m_item->setText(0, newTableName);
+            return;
+        }
+	}
+	
+    // Need to do this outside any transaction because saving and restoring
+    // pragmas doesn't generally work inside a transaction
+	if (!execSql("PRAGMA legacy_alter_table = 1;",
+        tr("Cannot set PRAGMA legacy_alter_table")))
+	{
+        // reverse the rename if we did it
+        renameTable(m_tableName, m_item->text(0));
+		return;
+	}
+    if (!execSql("PRAGMA foreign_keys = 0;",
+        tr("Cannot unset PRAGMA foreign_keys")))
+	{
+        if (m_oldPragmaAlterTable == 0) {
+            execSql("PRAGMA legacy_alter_table = 1;", NULL);
+        }
+        // reverse the rename if we did it
+        renameTable(m_tableName, m_item->text(0));
 		return;
 	}
 
-	if (newTableName.compare(oldTableName, Qt::CaseInsensitive) == 0)
+	if (!execSql("SAVEPOINT ALTER_TABLE;", tr("Cannot create savepoint")))
 	{
-		// generate unique temporary tablename
-		QString tmpName = Database::getTempName(m_item->text(1));
-		if (!renameTable(oldTableName, tmpName))
-		{
-			doRollback(tr("Cannot roll back after error"));
-			return;
-		}
-		oldTableName = tmpName;
-		if (!m_altered)
-		{
-			// only need to rename again (case changed)
-			if (!renameTable(oldTableName, newTableName))
-			{
-				if (!doRollback(tr("Cannot roll back after error")))
-				{
-					updated = true;
-					m_item->setText(0, oldTableName);
-				}
-				return;
-			}
-			if (!execSql("RELEASE ALTER_TABLE;",
-						 tr("Cannot release savepoint")))
-			{
-				if (doRollback(tr("Cannot roll back either")))
-				{
-					return;
-				}
-			}
-			updated = true;
-			m_item->setText(0, newTableName);
-			return;
-		}
+        restorePragmas();
+        // reverse the rename if we did it
+        renameTable(m_tableName, m_item->text(0));
+        return;
 	}
-
-	// Here newTableName differs from oldTableName in more than case,
-	// and we have column changes to make.
-	// Save indexes and triggers on the original table
-	QStringList originalSrc = originalSource(oldTableName);
-	QList<SqlParser *> originalIx(originalIndexes(oldTableName));
-
-	// Create the new table
-	QString message(tr("Cannot create table ") + newTableName);
-	QString sql(getFullName() + " ( " + getSQLfromGUI());
-	if (!execSql(sql, message))
-	{
-		if (!doRollback(tr("Cannot roll back after error")))
-		{
-			updated = true;
-			m_item->setText(0, oldTableName);
-		}
-		return;
-	}
-
-	// insert old data
-	QMap<QString,QString> columnMap; // old => new
-	QString insert;
-	QString select;
-	bool first = true;
-	for (int i = 0; i < ui.columnTable->rowCount(); ++i)
-	{
-		int j = m_oldColumn[i];
-		if (j >= 0)
-		{
-			if (first)
-			{
-				first = false;
-				insert += (QString("INSERT OR ABORT INTO %1.%2 (")
-						   .arg(Utils::q(ui.databaseCombo->currentText()),
-								Utils::q(ui.nameEdit->text())));
-
-		    select += " ) SELECT ";
-			}
-			else
-			{
-				insert += ", ";
-				select += ", ";
-			}
-			QLineEdit * nameItem =
-				qobject_cast<QLineEdit *>(ui.columnTable->cellWidget(i, 0));
-			insert += Utils::q(nameItem->text());
-	        select += Utils::q(m_fields[j].name);
-			columnMap.insert(m_fields[j].name, nameItem->text());
-		}
-	}
-	if (!insert.isEmpty())
-	{
-		select += " FROM "
-				  + Utils::q(m_item->text(1))
-				  + "."
-				  + Utils::q(oldTableName)
-				  + ";";
-		message = tr("Cannot insert data into ")
-				  + newTableName;
-		if (!execSql(insert + select, message))
-		{
-			if (!doRollback(tr("Cannot roll back after error")))
-			{
-				updated = true;
-				m_item->setText(0, oldTableName);
-			}
-			return;
-		}
-	}
-
-	// drop old table
-	sql = "DROP TABLE ";
-	sql += Utils::q(m_item->text(1))
-		   + "."
-		   + Utils::q(oldTableName)
-		   + ";";
-	message = tr("Cannot drop table ")
-			  + oldTableName;
-	if (!execSql(sql, message))
-	{
-		if (!doRollback(tr("Cannot roll back after error")))
-		{
-			updated = true;
-			m_item->setText(0, oldTableName);
-		}
-		return;
-	}
-
-	// restoring original triggers
-	// FIXME fix up if columns dropped or renamed
-	foreach (QString restoreSql, originalSrc)
-	{
-		// continue after failure here
-		(void)execSql(restoreSql, tr("Cannot recreate original trigger"));
-	}
-
-	// recreate indices
-	while (!originalIx.isEmpty())
-	{
-		SqlParser * parser = originalIx.takeFirst();
-		if (parser->replace(columnMap, ui.nameEdit->text()))
-		{
-			// continue after failure here
-			(void)execSql(parser->toString(),
-						  tr("Cannot recreate index ") + parser->m_indexName);
-		}
-		delete parser;
-	}
-
-	if (!execSql("RELEASE ALTER_TABLE;", tr("Cannot release savepoint")))
-	{
-		if (doRollback(tr("Cannot roll back either")))
-		{
-			return;
-		}
-	}
-	updated = true;
-	m_item->setText(0, newTableName);
-	resetClicked();
-	resultAppend(tr("Alter Table Done"));
+	bool failed = doit(newTableName);
+	if (failed) {
+		doRollback(tr("Cannot roll back after error"));
+    }
+    restorePragmas();
+    if (failed) {
+        // reverse the rename if we did it
+        renameTable(m_tableName, m_item->text(0));
+    } else {
+        updated = true;
+        m_item->setText(0, m_tableName);
+    }
 }
 
 void AlterTableDialog::checkChanges()

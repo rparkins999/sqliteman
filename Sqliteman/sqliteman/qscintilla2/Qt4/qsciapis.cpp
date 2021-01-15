@@ -951,8 +951,10 @@ QStringList QsciAPIs::installedAPIFiles() const
 
     QFileInfoList flist = apidir.entryInfoList(filters, QDir::Files, QDir::IgnoreCase);
 
-    foreach (QFileInfo fi, flist)
-        fnames << fi.absoluteFilePath();
+    QFileInfoList::const_iterator it;
+    for (it = flist.constBegin(); it != flist.constEnd(); ++it) {
+        fnames << it->absoluteFilePath();
+    }
 
     return fnames;
 }

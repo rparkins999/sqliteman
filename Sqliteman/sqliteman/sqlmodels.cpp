@@ -216,81 +216,81 @@ bool SqlTableModel::insertRowIntoTable(const QSqlRecord &values)
 
 void SqlTableModel::doPrimeInsert(int row, QSqlRecord & record)
 {
-	QList<FieldInfo> fl = Database::tableFields(objectName(), m_schema);
+	QList<FieldInfo> l = Database::tableFields(objectName(), m_schema);
 	bool ok;
 	QString defval;
 	// guess what type is the default value.
-	foreach (FieldInfo column, fl)
-	{
-		if (   (column.isAutoIncrement)
-			|| (   column.isWholePrimaryKey
-			    && (column.type.toLower() == "integer")))
+    QList<FieldInfo>::const_iterator i;
+    for (i = l.constBegin(); i != l.constEnd(); ++i) {
+		if (   (i->isAutoIncrement)
+			|| (   i->isWholePrimaryKey
+			    && (i->type.toLower() == "integer")))
 		{
-			record.setValue(column.name, QVariant(++m_LastSequence));
-			record.setGenerated(column.name, false);
+			record.setValue(i->name, QVariant(++m_LastSequence));
+			record.setGenerated(i->name, false);
 		}
-		else if (column.defaultValue.isEmpty())
+		else if (i->defaultValue.isEmpty())
 		{
 			// prevent integer type being displayed as 0
-			record.setValue(column.name, QVariant());
+			record.setValue(i->name, QVariant());
 		}
-		else if (column.defaultisQuoted)
+		else if (i->defaultisQuoted)
 		{
-			record.setValue(column.name, QVariant(column.defaultValue));
-			record.setGenerated(column.name, false);
+			record.setValue(i->name, QVariant(i->defaultValue));
+			record.setGenerated(i->name, false);
 		}
-		else if (column.defaultIsExpression)
+		else if (i->defaultIsExpression)
 		{
-			record.setValue(column.name, QVariant(column.defaultValue));
-			record.setGenerated(column.name, false);
+			record.setValue(i->name, QVariant(i->defaultValue));
+			record.setGenerated(i->name, false);
 		}
 		else
 		{
 			char s[22];
 			time_t dummy;
-			defval = column.defaultValue;
+			defval = i->defaultValue;
 			if (defval.compare("CURRENT_TIMESTAMP", Qt::CaseInsensitive) == 0)
 			{
 				time(&dummy);
 				(void)strftime(s, 20, "%F %T", localtime(&dummy));
-				record.setValue(column.name, QVariant(s));
-				record.setGenerated(column.name, false);
+				record.setValue(i->name, QVariant(s));
+				record.setGenerated(i->name, false);
 			}
 			else if (defval.compare("CURRENT_TIME", Qt::CaseInsensitive) == 0)
 			{
 				time(&dummy);
 				(void)strftime(s, 20, "%T", localtime(&dummy));
-				record.setValue(column.name, QVariant(s));
-				record.setGenerated(column.name, false);
+				record.setValue(i->name, QVariant(s));
+				record.setGenerated(i->name, false);
 				
 			}
 			else if (defval.compare("CURRENT_DATE", Qt::CaseInsensitive) == 0)
 			{
 				time(&dummy);
 				(void)strftime(s, 20, "%F", localtime(&dummy));
-				record.setValue(column.name, QVariant(s));
-				record.setGenerated(column.name, false);
+				record.setValue(i->name, QVariant(s));
+				record.setGenerated(i->name, false);
 			}
 			else
 			{
-				int i = defval.toInt(&ok);
+				int j = defval.toInt(&ok);
 				if (ok)
 				{
-					record.setValue(column.name, QVariant(i));
-					record.setGenerated(column.name, false);
+					record.setValue(i->name, QVariant(j));
+					record.setGenerated(i->name, false);
 				}
 				else
 				{
 					double d = defval.toDouble(&ok);
 					if (ok)
 					{
-						record.setValue(column.name, QVariant(d));
-						record.setGenerated(column.name, false);
+						record.setValue(i->name, QVariant(d));
+						record.setGenerated(i->name, false);
 					}
 					else
 					{
-						record.setValue(column.name, QVariant(defval));
-						record.setGenerated(column.name, false);
+						record.setValue(i->name, QVariant(defval));
+						record.setGenerated(i->name, false);
 					}
 				}
 			}
@@ -355,21 +355,20 @@ void SqlTableModel::reset(QString tableName, bool isNew)
 	bool rowid = true;
 	bool _rowid_ = true;
 	bool oid = true;
-	foreach (FieldInfo c, columns)
-	{
-		if (c.name.compare("rowid", Qt::CaseInsensitive) == 0)
+    QList<FieldInfo>::const_iterator i;
+    for (i = columns.constBegin(); i != columns.constEnd(); ++i) {
+		if (i->name.compare("rowid", Qt::CaseInsensitive) == 0)
 			{ rowid = false; }
-		if (c.name.compare("_rowid_", Qt::CaseInsensitive) == 0)
+		if (i->name.compare("_rowid_", Qt::CaseInsensitive) == 0)
 			{ _rowid_ = false; }
-		if (c.name.compare("oid", Qt::CaseInsensitive) == 0)
+		if (i->name.compare("oid", Qt::CaseInsensitive) == 0)
 			{ oid = false; }
 	}
-	int colnum = 0;
-	foreach (FieldInfo c, columns)
-	{
-		if (c.isPartOfPrimaryKey)
+	int j;
+    for (i = columns.constBegin(), j = 0; i != columns.constEnd(); ++i, ++j) {
+		if (i->isPartOfPrimaryKey)
 		{
-			if (c.isAutoIncrement)
+			if (i->isAutoIncrement)
 			{
 				QString sql = QString("SELECT seq FROM ") 
 							  + Utils::q(m_schema.toLower())
@@ -383,9 +382,9 @@ void SqlTableModel::reset(QString tableName, bool isNew)
 					m_LastSequence = seqQuery.value(0).toLongLong();
 				}
 			}
-			else if (   (c.type.toLower() == "integer")
-					 && c.isWholePrimaryKey
-					 && !c.isColumnPkDesc)
+			else if (   (i->type.toLower() == "integer")
+					 && i->isWholePrimaryKey
+					 && !i->isColumnPkDesc)
 			{
 				QString name;
 				if (rowid) { name = "rowid"; }
@@ -413,30 +412,27 @@ void SqlTableModel::reset(QString tableName, bool isNew)
 			}
 			if (isNew)
 			{
-				if (c.isAutoIncrement)
+				if (i->isAutoIncrement)
 				{
-					m_header[colnum] = SqlTableModel::Auto;
+					m_header[j] = SqlTableModel::Auto;
 				}
 				else
 				{
-					m_header[colnum] = SqlTableModel::PK;
+					m_header[j] = SqlTableModel::PK;
 				}
 			}
-			++colnum;
 			continue;
 		}
 		if (isNew)
 		{
 			// show has default icon
-			if (!c.defaultValue.isEmpty())
+			if (!i->defaultValue.isEmpty())
 			{
-				m_header[colnum] = SqlTableModel::Default;
-				++colnum;
+				m_header[j] = SqlTableModel::Default;
 				continue;
 			}
-			m_header[colnum] = SqlTableModel::None;
+			m_header[j] = SqlTableModel::None;
 		}
-		++colnum;
 	}
 }
 

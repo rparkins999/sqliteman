@@ -66,8 +66,11 @@ DataExportDialog::DataExportDialog(DataViewer * parent, const QString & tableNam
 	ui.lineEndBox->setCurrentIndex(prefs->exportEol());
 
 	QStringList enc;
-	foreach (QString s, QTextCodec::availableCodecs())
-		enc << s;
+    QList<QByteArray> l(QTextCodec::availableCodecs());
+    QList<QByteArray>::const_iterator i;
+    for (i = l.constBegin(); i != l.constEnd(); ++i) {
+        enc << QString(*i);
+    }
 	enc.sort();
 	ui.encodingBox->addItems(enc);
 	ui.encodingBox->setCurrentIndex(enc.indexOf(prefs->exportEncoding()));

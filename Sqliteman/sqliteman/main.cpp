@@ -78,10 +78,11 @@ ArgsParser::ArgsParser(int c, char ** v)
 {
 	QDir d(TRANSLATION_DIR, "*.qm");
 	int i = 1; // 0 is for system default
-	foreach (QString f, d.entryList())
-	{
-		m_localeList[i] = f.remove("sqliteman_").remove(".qm");
-		++i;
+	QStringList l = d.entryList();
+	QStringList::const_iterator j;
+    for (j = l.constBegin(); j != l.constEnd(); ++i, ++j) {
+        QString s = *j; // non-const copy
+		m_localeList[i] = s.remove("sqliteman_").remove(".qm");
 	}
 }
 
@@ -93,8 +94,11 @@ void ArgsParser::langsAvailable()
 	// does compile problems in some Qt4 configurations.
 	QTextStream cout(stdout, QIODevice::WriteOnly);
 	cout << QString("Available translation:") << endl;
-	foreach (QString l, m_localeList.values())
-		cout << QString("  --lang ") << l << endl;
+    QList<QString> values = m_localeList.values();
+    QList<QString>::const_iterator i;
+    for (i = values.constBegin(); i != values.constEnd(); ++i) {
+		cout << QString("  --lang ") << *i << endl;
+    }
 }
 
 /*! \brief Get the right translations.

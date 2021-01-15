@@ -30,18 +30,19 @@ QStringList QueryEditorWidget::getColumns()
 {
 	QStringList columns;
 	SqlParser * parser = Database::parseTable(m_table, m_schema);
+    QList<FieldInfo> l = parser->m_fields;
+    QList<FieldInfo>::const_iterator i;
 	if (parser->m_hasRowid)
 	{
-		bool rowid = true;
-		bool _rowid_ = true;
-		bool oid = true;
-		foreach (FieldInfo i, parser->m_fields)
-		{
-			if (i.name.compare("rowid", Qt::CaseInsensitive) == 0)
+		bool rowid = true; // no column named rowid
+		bool _rowid_ = true; // no column named _rowid_
+		bool oid = true; // no column named oid
+        for (i = l.constBegin(); i != l.constEnd(); ++i) {
+			if (i->name.compare("rowid", Qt::CaseInsensitive) == 0)
 				{ rowid = false; }
-			if (i.name.compare("_rowid_", Qt::CaseInsensitive) == 0)
+			if (i->name.compare("_rowid_", Qt::CaseInsensitive) == 0)
 				{ _rowid_ = false; }
-			if (i.name.compare("oid", Qt::CaseInsensitive) == 0)
+			if (i->name.compare("oid", Qt::CaseInsensitive) == 0)
 				{ oid = false; }
 		}
 		if (rowid)
@@ -52,7 +53,9 @@ QStringList QueryEditorWidget::getColumns()
 			{ columns << QString("oid"); m_rowid = "oid"; }
 	}
 
-	foreach (FieldInfo i, parser->m_fields) { columns << i.name; }
+    for (i = l.constBegin(); i != l.constEnd(); ++i) {
+        columns << i->name;
+    }
 	delete parser;
 	return columns;
 }
@@ -396,8 +399,9 @@ QString QueryEditorWidget::deleteStatement()
 void QueryEditorWidget::addAllSelect()
 {
 	QStringList list(columnModel->stringList());
-	foreach (QString s, list)
-	{
+    QStringList::const_iterator i;
+    for (i = list.constBegin(); i != list.constEnd(); ++i) {
+        QString s(*i);
 		if (s.compare(m_rowid))
 		{
 			selectModel->append(s);
@@ -414,9 +418,10 @@ void QueryEditorWidget::addSelect()
 		return;
 	QStringList list(columnModel->stringList());
 	QString val;
-	foreach (QModelIndex i, selections->selectedIndexes())
-	{
-		val = columnModel->data(i, Qt::DisplayRole).toString();
+    QModelIndexList l = selections->selectedIndexes();
+    QModelIndexList::const_iterator i;
+    for (i = l.constBegin(); i != l.constEnd(); ++i) {
+		val = columnModel->data(*i, Qt::DisplayRole).toString();
 		selectModel->append(val);
 		list.removeAll(val);
 	}
@@ -434,9 +439,10 @@ void QueryEditorWidget::removeSelect()
 	if (!selections->hasSelection()) { return; }
 	QStringList list(selectModel->stringList());
 	QString val;
-	foreach (QModelIndex i, selections->selectedIndexes())
-	{
-		val = selectModel->data(i, Qt::DisplayRole).toString();
+    QModelIndexList l = selections->selectedIndexes();
+    QModelIndexList::const_iterator i;
+    for (i = l.constBegin(); i != l.constEnd(); ++i) {
+		val = selectModel->data(*i, Qt::DisplayRole).toString();
 		columnModel->append(val);
 		list.removeAll(val);
 	}

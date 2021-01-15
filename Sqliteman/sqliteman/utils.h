@@ -8,95 +8,72 @@ for which a new license (GPL+exception) is in place.
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <QColor>
 #include <QCoreApplication>
+#include <QComboBox>
+#include <QFont>
+#include <QHeaderView>
+#include <QIcon>
+#include <QItemSelection>
+#include <QLine>
+#include <QLineEdit>
+#include <QLineF>
+#include <QList>
+#include <QMap>
+#include <QModelIndex>
+#include <QObject>
+#include <QPixmap>
+#include <QPixmapCache>
+#include <QPoint>
+#include <QPointF>
+#include <QRect>
+#include <QRectF>
+#include <QSqlError>
+#include <QSqlRecord>
+#include <QString>
+#include <QTableView>
+#include <QTableWidgetItem>
+#include <QTextEdit>
+#include <QTime>
+#include <QTreeWidgetItem>
+#include <QUrl>
+#include <QVariant>
+#include <QVector>
 
 #include "sqlparser.h"
 
-class QComboBox;
-class QColor;
-class QIcon;
-class QItemSelection;
-class QLineEdit;
-class QModelIndex;
-class QPixmap;
-class QRect;
-class QRectF;
-class QSqlError;
-class QSqlRecord;
-class QTableView;
-class QTextEdit;
-class QTreeWidgetItem;
 
 //! Various helper functions
 namespace Utils {
-	
-/*! A set of helper functions for simpler code
-*/
-QIcon getIcon(const QString & fileName);
-QPixmap getPixmap(const QString & fileName);
 
-QString getTranslator(const QString & localeName);
+    /*! A set of helper functions for simpler code */
+    QIcon getIcon(const QString & fileName);
+    QPixmap getPixmap(const QString & fileName);
 
-//! \brief Check if the object tree should be refilled depending on sql statement
-bool updateObjectTree(const QString & sql);
+    QString getTranslator(const QString & localeName);
 
-//! \brief Check if the current table may have changed depending on sql statement
-bool updateTables(const QString & sql);
+    //! \brief Check if the object tree should be refilled depending on sql statement
+    bool updateObjectTree(const QString & sql);
 
-//! \brief Quote argument using specified quote character
-QString q(QString s, QString c);
+    //! \brief Check if the current table may have changed depending on sql statement
+    bool updateTables(const QString & sql);
 
-//! \brief Quote identifier for generated SQL statement
-QString q(QString s);
+    //! \brief Quote argument using specified quote character
+    QString q(QString s, QString c);
 
-//! \brief Quote list of identifiers for generated SQL statement
-QString q(QStringList l, QString c);
+    //! \brief Quote identifier for generated SQL statement
+    QString q(QString s);
 
-#if 0 // not used, but kept in case needed in the future
-QString unQuote(QString s);
-#endif
+    //! \brief Quote list of identifiers for generated SQL statement
+    QString q(QStringList l, QString c);
 
-QString like(QString s);
-QString startswith(QString s);
+    #if 0 // not used, but kept in case needed in the future
+    QString unQuote(QString s);
+    #endif
 
-void setColumnWidths(QTableView * tv);
+    QString like(QString s);
+    QString startswith(QString s);
 
-//debugging hacks
-void dump(QString s);
-void dump(QModelIndex x);
-void dump(QList<QModelIndex> l);
-void dump(QItemSelection selection);
-void dump(QTreeWidgetItem & item);
-void dump(QTreeWidgetItem * item);
-void dump(QComboBox & box);
-void dump(QComboBox *box);
-void dump(QStringList sl);
-void dump(QList<int> il);
-void dump(QVector<int> iv);
-void dump(QTextEdit & te);
-void dump(QTextEdit * te);
-QString colorToString(QColor c);
-void dump(QColor c);
-QString rectToString(QRect r);
-void dump(QRect r);
-QString rectFToString(QRectF r);
-void dump(QRectF r);
-QString variantToString(QVariant x);
-void dump(QVariant x);
-void dump(QSqlRecord & rec);
-void dump(QLineEdit & le);
-void dump(QLineEdit * le);
-void dump(QSqlError & e);
-void dump(QSqlError * e);
-void dump(Token & t);
-void dump(QList<Token> tl);
-void dump(Expression * e);
-void dump(FieldInfo f);
-void dump(QList<FieldInfo> fl);
-void dump(SqlParser & p);
-void dump(SqlParser * pp);
-void dump(QList<SqlParser> pl);
-void dump(QMap<QString,QString> map);
-};
-
+    void setColumnWidths(QTableView * tv);
+}
 #endif

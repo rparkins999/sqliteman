@@ -955,24 +955,26 @@ void LiteManWindow::createTable()
 	dlg.exec();
 	if (dlg.updated)
 	{
-		foreach (QTreeWidgetItem* it,
-			schemaBrowser->tableTree->searchMask(
-				schemaBrowser->tableTree->trTables))
-		{
-			if (   (it->type() == TableTree::TablesItemType)
-				&& (it->text(1) == dlg.schema()))
+        QList<QTreeWidgetItem*> l =
+            schemaBrowser->tableTree->searchMask(
+                schemaBrowser->tableTree->trTables);
+        QList<QTreeWidgetItem*>::const_iterator it;
+        for (it = l.constBegin(); it != l.constEnd(); ++it) {
+            QTreeWidgetItem* p = *it;
+			if (   (p->type() == TableTree::TablesItemType)
+				&& (p->text(1) == dlg.schema()))
 			{
-				schemaBrowser->tableTree->buildTables(it, it->text(1));
+				schemaBrowser->tableTree->buildTables(p, p->text(1));
 				if (m_activeItem && (item != NULL))
 				{
 					// item recreated but should still be current
 					if (dlg.schema() == old.text(1))
 					{
-						for (int i = 0; i < it->childCount(); ++i)
+						for (int i = 0; i < p->childCount(); ++i)
 						{
-							if (it->child(i)->text(0) == old.text(0))
+							if (p->child(i)->text(0) == old.text(0))
 							{
-								setActiveItem(it->child(i));
+								setActiveItem(p->child(i));
 							}
 						}
 					}
@@ -1484,10 +1486,14 @@ void LiteManWindow::analyzeDialog()
 	AnalyzeDialog *dia = new AnalyzeDialog(this);
 	dia->exec();
 	delete dia;
-	foreach (QTreeWidgetItem* item, schemaBrowser->tableTree->searchMask(schemaBrowser->tableTree->trSys))
-	{
-		if (item->type() == TableTree::SystemItemType)
-			schemaBrowser->tableTree->buildCatalogue(item, item->text(1));
+    QList<QTreeWidgetItem*> l =
+        schemaBrowser->tableTree->searchMask(
+            schemaBrowser->tableTree->trSys);
+    QList<QTreeWidgetItem*>::const_iterator it;
+    for (it = l.constBegin(); it != l.constEnd(); ++it) {
+        QTreeWidgetItem* p = *it;
+		if (p->type() == TableTree::SystemItemType)
+			schemaBrowser->tableTree->buildCatalogue(p, p->text(1));
 	}
 }
 
@@ -1534,9 +1540,9 @@ void LiteManWindow::attachDatabase()
 			continue;
 		}
 		QStringList databases(Database::getDatabases().keys());
-		foreach(QString db, databases)
-		{
-			if (db.compare(schema, Qt::CaseInsensitive) == 0)
+        QStringList::const_iterator i;
+        for (i = databases.constBegin(); i != databases.constEnd(); ++i) {
+			if (i->compare(schema, Qt::CaseInsensitive) == 0)
 			{
 				QMessageBox::critical(this, tr("Attach Database"),
 					tr("%1 is already in use as a schema name")

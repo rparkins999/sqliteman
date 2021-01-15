@@ -44,13 +44,13 @@ ImportTableDialog::ImportTableDialog(LiteManWindow * parent,
 	resize(ww, hh);
 
 	QString n;
-	int i = 0;
 	int currIx = 0;
-	foreach (n, Database::getDatabases().keys())
-	{
-		if (n == m_schema) { currIx = i; }
-		schemaComboBox->addItem(n);
-		++i;
+    QList<QString> l = Database::getDatabases().keys();
+    QList<QString>::const_iterator i;
+	int j;
+    for (i = l.constBegin(), j = 0; i != l.constEnd(); ++i, ++j) {
+		if (*i == m_schema) { currIx = j; }
+		schemaComboBox->addItem(*i);
 	}
 	schemaComboBox->setCurrentIndex(currIx);
 	setTablesForSchema(m_schema);
@@ -250,14 +250,14 @@ void ImportTableDialog::slotAccepted()
 		return;
 	}
 	
-	foreach (l, values)
-	{
+    QList<QStringList>::const_iterator it;
+    for (it = values.constBegin(); it != values.constEnd(); ++it) {
 		++row;
-		if (l.count() != cols)
+		if (it->count() != cols)
 		{
 			log.append(tr("Row = %1; Imported values = %2; "
 						  "Table columns count = %3; Values = (%4)")
-					.arg(row).arg(l.count()).arg(cols).arg(l.join(", ")));
+					.arg(row).arg(it->count()).arg(cols).arg(it->join(", ")));
 			result = false;
 			continue;
 		}
@@ -265,13 +265,13 @@ void ImportTableDialog::slotAccepted()
 		query.prepare(sql);
 		for (int i = 0; i < cols ; ++i)
 		{
-			if (l.at(i).isEmpty())
+			QString s(it->at(i));
+			if (s.isEmpty())
 			{
 				query.addBindValue(QVariant(QVariant::String));
 			}
 			else
 			{
-				QString s(l.at(i));
 				if (s.startsWith("X'", Qt::CaseInsensitive))
 				{
 					QByteArray b;
@@ -285,7 +285,7 @@ void ImportTableDialog::slotAccepted()
 				}
 				else
 				{
-					query.addBindValue(l.at(i));
+					query.addBindValue(s);
 				}
 			}
 		}
@@ -546,16 +546,15 @@ ImportTable::XMLModel::XMLModel(QString fileName, QList<FieldInfo> fields,
 void ImportTableDialog::setTablesForSchema(const QString & schema)
 {
 	int currIx = 0;
-	int i = 0;
 	QString n;
 
 	tableComboBox->clear();
-	foreach (n, Database::getObjects("table", schema).keys())
-	{
-		if (n == m_tableName)
-			currIx = i;
-		tableComboBox->addItem(n);
-		++i;
+    QList<QString> keys;
+    QList<QString>::const_iterator it;
+	int i;
+    for (it = keys.constBegin(), i = 0; it != keys.constEnd(); ++it, ++i) {
+		if (*it == m_tableName) { currIx = i; }
+		tableComboBox->addItem(*it);
 	}
 	tableComboBox->setCurrentIndex(currIx);
 }
