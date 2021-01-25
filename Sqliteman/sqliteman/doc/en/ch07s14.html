@@ -138,7 +138,15 @@
 						CURRENT_TIME, it will be prefilled with the date and/or
 						time when the record is created, but if the field is
 						not modified it will be overwritten when changes are
-						committed with the date and/or time then.
+						committed with the date and/or time then. If the default
+						for a field is an sqlite expression, it will be
+						prefilled with the result of evaluating the expression:
+						since it is possible
+						<a href="apb.html"> (see appendix B) </a>
+						to constuct an sqlite constant expression with a
+						non-constant value using sqlite built-in functions, the
+						actual value when the changes are committed may be
+						different.
 					 </span>
 				 </p>
 			</dd>

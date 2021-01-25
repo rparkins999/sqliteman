@@ -300,7 +300,7 @@ QString pd::prepareVariant(QVariant v) {
     }
 }
 
-QString pd::prepareFieldInfo(FieldInfo f) {
+QString pd::prepareFieldInfo(const struct FieldInfo f) {
 	QString s("name ");
 	s.append(f.name);
 	if (!f.type.isEmpty()) { s.append(", type "); s.append(f.type); }
@@ -757,8 +757,9 @@ void pd::dump(QVector<QVariant> &v) {
     }
 }
 // The following are for sqliteman's own application types
-void pd::dump(Token & t) {
-	dump(SqlParser::toString(t));
+void pd::dump(enum tokenType t) { dump(preparetokenType(t)); }
+void pd::dump(const struct Token & t) {
+    dump(preparetokenType(t.type) + '(' + t.name + ')');
 }
 void pd::dump(QList<Token> &l) {
     if (l.isEmpty()) { qDebug ("Empty QList<Token>"); }
@@ -771,9 +772,8 @@ void pd::dump(QList<Token> &l) {
         endList();
     }
 }
-void pd::dump(Expression * e) {
-	dump(SqlParser::toString(e));
-}
+void pd::dump(enum exprType t) { dump(prepareexprType(t)); }
+void pd::dump(Expression * e) { dump(SqlParser::toString(e)); }
 void pd::dump(QList<Expression *> &l) {
     if (l.isEmpty()) { qDebug ("Empty QList<Expression *>"); }
     else {
@@ -785,23 +785,30 @@ void pd::dump(QList<Expression *> &l) {
         endList();
     }
 }
-void pd::dump(FieldInfo &f) {
-	dump(prepareFieldInfo(f));
-}
-void pd::dump(QList<FieldInfo> &l) {
+void pd::dump(const struct FieldInfo &f) { dump(prepareFieldInfo(f)); }
+void pd::dump(QList<struct FieldInfo> &l) {
     if (l.isEmpty()) { qDebug ("Empty QList<FieldInfo>"); }
     else {
         startList("QList");
-        QList<FieldInfo>::const_iterator i;
+        QList<struct FieldInfo>::const_iterator i;
         for (i = l.constBegin(); i != l.constEnd(); ++i) {
             addItem(prepareFieldInfo(*i));
         }
         endList();
     }
 }
-void pd::dump(SqlParser & p) {
-	dump(p.toString());
-}
+void pd::dump(SqlParser & p) { dump(p.toString()); }
 void pd::dump(SqlParser * pp) {
 	pp ? dump(*pp) : qDebug("Null SqlParser");
+}
+void pd::dump(QList<SqlParser *> &l) {
+    if (l.isEmpty()) { qDebug ("Empty QList<SqlParser *"); }
+    else {
+        startList("QList");
+        QList<SqlParser *>::const_iterator i;
+        for (i = l.constBegin(); i != l.constEnd(); ++i) {
+            addItem((*i)->toString());
+        }
+        endList();
+    }
 }

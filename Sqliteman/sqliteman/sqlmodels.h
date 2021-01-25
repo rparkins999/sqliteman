@@ -95,6 +95,9 @@ protected:
 
 		// override the one in QSqlTableModel
 		bool insertRowIntoTable(const QSqlRecord &values);
+        
+        // used to calculate a default value
+        QVariant evaluate(QString expression);
 
 		void reset(QString tableName, bool isNew);
 

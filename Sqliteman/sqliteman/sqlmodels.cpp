@@ -214,6 +214,13 @@ bool SqlTableModel::insertRowIntoTable(const QSqlRecord &values)
 	return !query.lastError().isValid();
 }
 
+QVariant SqlTableModel::evaluate(QString expression) {
+    QString sql = "VALUES(" + expression + ");";
+    QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
+    if (query.first()) { return query.value(0); }
+    else { return QVariant(QVariant::String); } // NULL
+}
+
 void SqlTableModel::doPrimeInsert(int row, QSqlRecord & record)
 {
 	QList<FieldInfo> l = Database::tableFields(objectName(), m_schema);
@@ -241,7 +248,7 @@ void SqlTableModel::doPrimeInsert(int row, QSqlRecord & record)
 		}
 		else if (i->defaultIsExpression)
 		{
-			record.setValue(i->name, QVariant(i->defaultValue));
+			record.setValue(i->name, evaluate(i->defaultValue));
 			record.setGenerated(i->name, false);
 		}
 		else

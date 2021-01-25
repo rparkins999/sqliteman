@@ -173,8 +173,6 @@ QString SqlEditor::query()
 
 QString SqlEditor::prepareExec(toSQLParse::tokenizer &tokens, int line, int pos)
 {
-	int LastLine = line;
-	int LastOffset = pos;
 	int endLine, endCol;
 
 	if (ui.sqlTextEdit->lines() <= tokens.line())
@@ -241,8 +239,6 @@ QString SqlEditor::prepareExec(toSQLParse::tokenizer &tokens, int line, int pos)
 	if (line != oline ||
 		   pos != opos)
 	{
-		LastLine = line;
-		LastOffset = pos;
 		ui.sqlTextEdit->setSelection(line, pos, endLine, endCol);
 		t = t.mid(i);
 	}
@@ -250,7 +246,7 @@ QString SqlEditor::prepareExec(toSQLParse::tokenizer &tokens, int line, int pos)
 	return t;
 }
 
-
+// FIXME sometimes errors are not reported
 void SqlEditor::action_Run_SQL_triggered()
 {
 	if (creator && creator->checkForPending())

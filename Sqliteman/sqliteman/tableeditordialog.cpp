@@ -7,10 +7,12 @@ for which a new license (GPL+exception) is in place.
 
 #include <QCheckBox>
 #include <QMessageBox>
+#include <QPalette>
 #include <QSettings>
 #include <QTableWidget>
 
 #include "mylineedit.h"
+#include "sqlparser.h"
 #include "tableeditordialog.h"
 #include "utils.h"
 
@@ -142,7 +144,7 @@ QString TableEditorDialog::getSQLfromDesign()
 		}
 		else
 		{
-			sql += ",\n";
+			sql += ",";
 		}
 		MyLineEdit * ed =
 			qobject_cast<MyLineEdit *>(ui.columnTable->cellWidget(i, 0));
@@ -182,7 +184,7 @@ QString TableEditorDialog::getSQLfromDesign()
 		sql += Utils::q(primaryKeys, "\"");
 		sql += " )";
 	}
-	sql += "\n)";
+	sql += ")";
 	if (ui.withoutRowid->isChecked())
 	{
 		sql += " WITHOUT ROWID ";
@@ -243,11 +245,12 @@ bool TableEditorDialog::checkOk(QString newName)
 		int cols = ui.columnTable->rowCount();
 		int colsLeft = cols;
 		bool autoSeen = false;
+        MyLineEdit * edit;
 		for (int i = 0; i < cols; i++)
 		{
-			MyLineEdit * edit =
-				qobject_cast<MyLineEdit*>(ui.columnTable->cellWidget(i, 0));
-			QString cname(edit->text());
+            QString cname = (
+                qobject_cast<MyLineEdit*>
+                    (ui.columnTable->cellWidget(i, 0)))->text();
 			QComboBox * types =
 				qobject_cast<QComboBox*>(ui.columnTable->cellWidget(i, 1));
 			QString ctype(types->currentText());
@@ -262,7 +265,7 @@ bool TableEditorDialog::checkOk(QString newName)
 			if (cname.isEmpty()) { m_dubious = true; }
 			for (int j = 0; j < i; ++j)
 			{
-				MyLineEdit * edit =
+				edit =
 					qobject_cast<MyLineEdit*>(ui.columnTable->cellWidget(j, 0));
 				bool b =
 					(edit->text().compare(cname, Qt::CaseInsensitive) != 0);
@@ -277,18 +280,26 @@ bool TableEditorDialog::checkOk(QString newName)
 				}
 				autoSeen = true;
 			}
-			if (cextra.contains("PRIMARY KEY"))
-			{
-				++pkCount;
-			}
+			if (cextra.contains("PRIMARY KEY")) { ++pkCount; }
+            edit = qobject_cast<MyLineEdit*>
+                (ui.columnTable->cellWidget(i, 3));
+            QPalette p = edit->palette();
+            QString defaultvalue(edit->text());
+			if (   (defaultvalue.isEmpty())
+                || (SqlParser().isValidDefault(defaultvalue)))
+            {
+                p.setColor(QPalette::Text, QColor("#000000"));
+            } else {
+                p.setColor(QPalette::Text, QColor("#FF0000"));
+                ok = false;
+            }
+            edit->setPalette(p);
 		}
 		if (   (   (ui.withoutRowid->isChecked())
 				&& ((pkCount == 0) || autoSeen))
 			|| (autoSeen && (pkCount > 0))
 			|| (colsLeft == 0))
-		{
-			ok = false;
-		}
+		{ ok = false; }
 	}
 	return ok;
 }

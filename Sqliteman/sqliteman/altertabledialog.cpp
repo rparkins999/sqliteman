@@ -28,6 +28,11 @@ for which a new license (GPL+exception) is in place.
 #include "sqlparser.h"
 #include "utils.h"
 
+namespace {
+    // Static variable for createNew, prevents failure when using it
+    // 21 times in a single sqliteman session.
+    static int createCount = 0;
+}
 
 void AlterTableDialog::addField(QString oldName, QString oldType,
 								int x, QString oldDefault)
@@ -265,12 +270,40 @@ QList<SqlParser *> AlterTableDialog::originalIndexes(QString tableName)
 	return ret;
 }
 
+QString AlterTableDialog::createNew (QString databaseName, QString createBody)
+{
+    QSqlQuery query;
+    QString sql;
+    for (int i = 0; i < 20; ++i) {
+        sql = "CREATE TABLE ";
+        if (!databaseName.isEmpty()) {
+            sql.append(Utils::q(databaseName)).append(".");
+        }
+        QString name =
+            QString("sqliteman%1Z%2").arg(getpid()).arg(createCount++);
+        sql.append(name).append(" ").append(createBody);
+        query = QSqlQuery(sql, QSqlDatabase::database(SESSION_NAME));
+        if (!query.lastError().isValid()) {
+            query.clear();
+            return name;
+        }
+    }
+    QString errtext = tr("Cannot create table after 20 tries")
+                    + ":<br/><span style=\" color:#ff0000;\">"
+                    + query.lastError().text()
+                    + "<br/></span>" + tr("using sql statement:")
+                    + "<br/><tt>" + sql;
+	resultAppend(errtext);
+    query.clear();
+    return NULL;
+}
+
 // This version should work correctly if multiple tasks are using it
 // simultaneously.
 QString AlterTableDialog::renameTemp(QString oldTableName) {
     QSqlQuery query;
     QString sql;
-    for (int i = 1; i < 20; ++i) {
+    for (int i = 0; i < 20; ++i) {
         QString name = QString("liteman%1tmp%2").arg(getpid()).arg(i);
         sql = QString(
             "ALTER TABLE %1.%2 RENAME TO %3 ;")
@@ -592,6 +625,21 @@ void AlterTableDialog::restorePragmas() {
     }
 }
 
+// Creating a view referencing a table that does not exist creates the view,
+// but it is of course empty.
+// Creating a view referencing a column that does not exist in a table that
+// does exist creates the view, but it is also empty.
+// Subsequently creating the missing table or column chnages the view
+// to show the data selected.
+// Note however that sqliteman's view creator GUI quotes column names and
+// a quoted column name that does not match a column name in the referenced
+// table will be treated as a text string and creates a column with that
+// text string as its name and the same text string in every row.
+// Any ALTER TABLE statement when the schema contains a view on a table
+// which does not exist will fail if PRAGMA legacy_alter_table is 0.
+// Renaming a column updates any foreign key references to it, regardless of
+// the settings of PRAGMAs legacy_alter_table and foreign_keys
+
 // This does the transaction inside alterButton_clicked()
 // so that cleanup happens in only one place.
 // returns true if we need to roll back
@@ -718,6 +766,7 @@ bool AlterTableDialog::doit(QString newTableName) {
 }
 
 // User clicked on "Alter", go ahead and do it
+// FIXME Use ALTER TABLE REANME COLUMN where appropriate
 void AlterTableDialog::alterButton_clicked()
 {
     // If we're altering the active table and there are unsaved changes,
@@ -821,6 +870,7 @@ void AlterTableDialog::alterButton_clicked()
         renameTable(m_tableName, m_item->text(0));
         return;
 	}
+	QString savePointTableName(m_tableName);
 	bool failed = doit(newTableName);
 	if (failed) {
 		doRollback(tr("Cannot roll back after error"));
@@ -828,7 +878,7 @@ void AlterTableDialog::alterButton_clicked()
     restorePragmas();
     if (failed) {
         // reverse the rename if we did it
-        renameTable(m_tableName, m_item->text(0));
+        renameTable(savePointTableName, m_item->text(0));
     } else {
         updated = true;
         m_item->setText(0, m_tableName);

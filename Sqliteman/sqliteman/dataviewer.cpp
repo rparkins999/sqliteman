@@ -1099,6 +1099,7 @@ void DataViewer::showStatusText(bool show)
 		ui.statusText->hide();
 		ui.statusText->setFixedHeight(0);
 	}
+	ui.splitterBlob->update();
 }
 
 QAbstractItemModel * DataViewer::tableData()

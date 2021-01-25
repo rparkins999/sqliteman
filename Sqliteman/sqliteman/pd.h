@@ -62,7 +62,7 @@ private:
     static QString prepareUrl(QUrl u);
     static QString prepareVariant(QVariant v);
 
-    static QString prepareFieldInfo(FieldInfo f);
+    static QString prepareFieldInfo(const struct FieldInfo f);
 
 // All the rest are the class dumping routines which can be called from gdb
 public:
@@ -130,14 +130,21 @@ public:
     static void dump(QVector<QVariant> &v);
 
     // The following are for sqliteman's own application types
-    static void dump(Token & t);
+    static void dump(enum tokenType t);
+    static void dump(const struct Token & t);
     static void dump(QList<Token> &l);
+    static void dump(enum exprType t);
     static void dump(Expression * e);
     static void dump(QList<Expression *> &l);
-    static void dump(FieldInfo &f);
-    static void dump(QList<FieldInfo> &l);
+    static void dump(const struct FieldInfo &f);
+    static void dump(QList<struct FieldInfo> &l);
     static void dump(SqlParser & p);
     static void dump(SqlParser * pp);
-
+    static void dump(QList<SqlParser *> &l);
+    
+    // magic for printing enumerations
+#define ENUMPRINT
+#include "sqlparser.h"
+#undef ENUMPRINT
 };
 #endif

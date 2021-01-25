@@ -30,7 +30,15 @@ If the table is changed other than by just renaming it, and the table is a
 other table references it), the Alter Table function may fail.
 </p></div><p>In this dialog you can <span class="guibutton">Add</span> and <span class="guibutton">Remove</span> table
   columns and set the options for new ones.</p><p>
-  The Alter button is enabled only when at least something has changed from the original table definition, and the table name is nonempty, and all column names are different, and if there is an AUTOINCREMENT column its type is INTEGER and no other column is a PRIMARY KEY, and if Without rowid is checked there is at least one PRIMARY KEY column.</p>
+The Alter button is enabled
+only when at least something has changed from the original table definition,
+and the table name is nonempty,
+and all column names are different,
+and if there is an AUTOINCREMENT column its type is INTEGER
+and no other column is a PRIMARY KEY,
+and if Without rowid is checked there is at least one PRIMARY KEY column,
+and any column default values are admissible
+(see <a href="apb.html">Appendix B</a>).</p>
   <p>Sqlite will permit a table to be created with a table name which contains non-alphanumeric characters or with an empty string as a column name, so sqliteman allows these. However in both of these cases it asks if you really want to do it, since the underlying library doesn't display such tables correctly.</p><p>
           </p><div class="screenshot"><div class="mediaobject"><img src="alterTable.png" alt="Alter table dialog"></div></div><p>
           </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2526118"></a>Steps to alter table</h3></div></div></div><div class="orderedlist"><ol type="1"><li><p>Remember triggers and indexes from the original table</p></li><li><p>Rename the original table with temporary name if it is a case-insensitive match for the new name</p></li><li><p>Create new table with new name containing new column structure</p></li><li><p>Perform INSERT INTO new table SELECT FROM (possibly renamed) old table</p></li><li><p>Drop old table</p></li><li><p>Try to recreate original indexes and triggers</p></li></ol></div><p>When there is no change other than the name, only the rename

@@ -87,12 +87,30 @@ class AlterTableDialog : public TableEditorDialog
 		*/
 		bool renameTable(QString oldTableName, QString newTableName);
 
+		/*! \brief Create a new table with a previously unused name.
+		\param databaseName database in which to create it:
+                            if null or empty, use "main".
+		\param createBody body of create statement
+                          starting with "AS" or a "(".
+		\retval name of created table
+        This tries to create a new table with a generated name.
+        If it fails because the generated name is already in use, it tries
+        with different names for another 19 attempts. If it still fails,
+        it shows an error message and returns null. If it succeeds, it returns
+        the generated name. Note we don't save time by checking whether the
+        error is something other than the name already existing: this would be
+        a programming error and it isn't worth having the extra code in the
+        released version. It should work correctly if multiple tasks are using
+        it simultaneously.
+		*/
+        QString createNew (QString databaseName, QString createBody);
+
         // Tries to rename oldTableName to a generated temporary name
         // and returns the temporary name if it succeeds.
         // If after several tries it fails, it returns null.
         QString renameTemp (QString oldTableName);
 
-		bool checkColumn(int i, QString cname,
+        bool checkColumn(int i, QString cname,
 						 QString ctype, QString cextra);
 		void resizeTable();
 		void swap(int i, int j);

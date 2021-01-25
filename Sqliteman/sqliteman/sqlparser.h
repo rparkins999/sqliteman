@@ -10,42 +10,68 @@ This class parses SQL schemas (not general SQL statements). Since the
 schema is known to be valid, we do not always detect bad syntax.
 */
 
-#ifndef SQLPARSER_H
-#define SQLPARSER_H
+#ifdef ENUMPRINT
+#undef SQLPARSER_H
+#undef ENUM
+#undef ENUMVALUE
+#undef ENUMLAST
+#define ENUM(type)  static QString prepare##type(enum type x) { switch (x) {
+#define ENUMVALUE(x) case x: return #x;
+#define ENUMLAST(x) case x: return #x; default: return NULL; } } 
+#endif
 
-enum tokenType {
-	tokenNone,
-	tokenIdentifier,
-	tokenQuotedIdentifier,
-	tokenSquareIdentifier,
-	tokenBackQuotedIdentifier,
-	tokenStringLiteral,
-	tokenBlobLiteral,
-	tokenNumeric,
-	tokenOperator,
-	tokenPostfix,
-	tokenSingle
-};
+#ifndef SQLPARSER_H
+
+#ifndef ENUMPRINT
+#undef ENUM
+#undef ENUMVALUE
+#undef ENUMLAST
+#define ENUM(type) enum type {
+#define ENUMVALUE(x) x,
+#define ENUMLAST(x) x };
+#endif
+
+ENUM(tokenType)
+ENUMVALUE(tokenQuotedIdentifier) // "identifier"
+ENUMVALUE(tokenSquareIdentifier) // [identifier]
+ENUMVALUE(tokenBackQuotedIdentifier) //`identifier`
+ENUMVALUE(tokenStringLiteral) // 'anything'
+ENUMVALUE(tokenBlobLiteral)
+ENUMVALUE(tokenIdentifier)
+ENUMVALUE(tokenOperatorA) // binary operator (alphanumeric)
+ENUMVALUE(tokenPostfixA) // (see QStringList posts)
+ENUMVALUE(tokenPrefixA) // NOT, NOT EXISTS
+ENUMVALUE(tokenNumeric)
+ENUMVALUE(tokenOpen) // (
+ENUMVALUE(tokenComma) // ,
+ENUMVALUE(tokenClose) // )
+ENUMVALUE(tokenOperator) // binary operator
+ENUMVALUE(tokenPrefix) // ~
+ENUMVALUE(tokenPlusMinus) // can be prefix or binary opeator
+ENUMVALUE(tokenNOT) // NOT, can be prefix or part of a longer operator
+ENUMVALUE(tokenNone) // never returned by tokenise()
+ENUMLAST(tokenInvalid) // unterminated quote, bad number, invalid character
+
+// To simplify our parsing, we treat commas and some keywords as operators.
+ENUM(exprType)
+ENUMVALUE(exprNull) // empty expression
+ENUMVALUE(exprToken) // a single operand
+ENUMVALUE(exprOpX) // unary-prefix-operator expression
+ENUMVALUE(exprXOpX) // expression binary-operator expression
+ENUMVALUE(exprXOp) // expression unary-postfix-operator
+ENUMVALUE(exprExpr) // ( expression )
+ENUMLAST(exprCall) // fname (expression)
+
+#ifndef ENUMPRINT
 
 enum itemType {
 	createTable,
 	createIndex
 };
 
-// To simplify our parsing, we treat commas and some keywords as operators.
-enum exprType {
-	exprToken, // a single operand
-	exprOpX, // unary-prefix-operator expression
-	exprXOpX, // expression binary-operator expression
-	exprXOp, // expression unary-postfix-operator
-	exprCall, // fname (expression)
-	exprExpr // ( expression )
-};
-
 typedef struct Token {
 	QString name;
 	enum tokenType type;
-	bool isColName;
 } Token;
 
 typedef struct Expression {
@@ -74,8 +100,6 @@ typedef struct FieldInfo {
 class SqlParser
 {
 	public:
-		bool m_isValid; // false -> couldn't parse CREATE statement
-		enum itemType m_type;
 		bool m_isUnique; // UNIQUE (index only)
 		bool m_hasRowid; // true -> not WITHOUT ROWID (or not a table)
 		QString m_indexName;
@@ -85,28 +109,37 @@ class SqlParser
 		Expression * m_whereClause; // index only
 
 	private:
-		QStringList operators;
-		QStringList posts;
 		int m_depth;
+        enum itemType m_type;
+        QList<Token> m_tokens;
 		QList<Token> tokenise(QString input);
-		void clearField(FieldInfo &f);
+		void destroyExpression(Expression * e);
+        Expression * internalParser(int state, int level, QStringList ends);
+        Expression * parseExpression(QString input);
+        void clearField(FieldInfo &f);
 		void addToPrimaryKey(QString s);
 		void addToPrimaryKey(FieldInfo &f);
-		void destroyExpression(Expression * e);
-		Expression * parseExpression(QList<Token> & tokens, QStringList ends);
-		// replacing column names, returns false if any deleted
+		static QString tos(Token t);
+        static QString brackets(Expression * expr);
+		static QString tos(Expression * expr);
+        bool isValidDefault(Expression * expr);
+        // replacing column names, returns false if any deleted
 		bool replaceToken(QMap<QString,QString> map, Expression * expr);
 		bool replace(QMap<QString,QString> map,
 					 Expression * expr, bool inside = false);
 
 	public:
-		SqlParser(QString input);
-		~SqlParser();
+        SqlParser();
+        SqlParser(QString input);
+        ~SqlParser();
 		static QString defaultToken(FieldInfo &f);
-		bool replace(QMap<QString,QString> map, QString newTableName);
 		static QString toString(Token t);
 		static QString toString(Expression * expr);
+        bool isValidDefault(QString input);
 		QString toString();
+ 		bool replace(QMap<QString,QString> map, QString newTableName);
 };
 
+#endif // ENUMPRINT
 #endif // SQLPARSER_H
+#define SQLPARSER_H
