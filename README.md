@@ -1,7 +1,9 @@
 # sqliteman
 
-This is an improved version of pvanek/sqliteman. The main change is that the Item View is fully editable and edits are properly synchronised between the Full View and the Item View. As a consequence of this, it is no longer necessary after editing a field to click on another field before committing. There are also numerous UI improvements and bug fixes. This version builds for Linux. It should build on Windows too since I have added a Windows version of the build timestamp, but I do not have a Windows system to test it on.
+Sqliteman is powerful GUI tool for doing almost anything with sqlite databases. Without writing any SQL code you can create or open a database and view its structure, create, alter, or drop tables, display and edit the records in a table, import data into a table, export data from a table, create, alter, or drop views, display a view, and create or drop indices.
 
-Any volunteer to build on Windows or Mac OS would be welcome.
+If you want to write SQL code, sqliteman has syntax-aware SQL editor which allows you to create, edit, and execute single SQL statements or SQL scripts. scripts can be loaded from or saved into a file.
 
-This version supports incremental search on a column and a new search widget allowing editing the rows found by the search. It also uses the installed sqlite library instead of building from internal source.
+This version was originally forked from pvanek/sqliteman, but has had many bugs fixed and much extra functionality added. This version builds for Linux. It should build on Windows too since I have added a Windows version of the build timestamp, but I do not have a Windows system to test it on. Any volunteer to build on Windows or Mac OS would be welcome.
+
+If you want to see what sqliteman can do and what its GUI looks like without installing it, you can view its comprehensive help pages directly from GitHub using this link: <http://rparkins999.github.io/sqliteman/Sqliteman/sqliteman/doc/en/index.html>.
