@@ -1,0 +1,78 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Appendix B. Default values</title>
+    <link rel="stylesheet" href="kde-default.css" type="text/css">
+</head>
+<body bgcolor="white" text="black">
+<div class="navheader">
+    <table width="100%" summary="Navigation header">
+        <tr><th colspan="3" align="center">Appendix B. Default values</th></tr>
+        <tr>
+            <td width="20%" align="left">
+                <a accesskey="p" href="apas04.html">Prev</a>
+            </td>
+            <th width="60%" align="center"></th>
+        </tr>
+    </table>
+    <hr>
+</div>
+<div class="appendix" lang="en">
+    <div class="titlepage">
+        <div><div><h2 class="title">
+            <a name="defaults"></a>Appendix B. Default values
+        </h2></div></div>
+    </div>
+    <div>
+        <h3>
+            Sqlite has some complicated rules about what is allowed
+            in a column default value:
+        </h3>
+        <dl>
+            <dt>
+                <span class="sect1">
+                    A constant expression enclosed in () is allowed.
+                    A constant expression may contain operators recognised by
+                    sqlite (see
+                    <a href = "https://www.sqlite.org/lang_expr.html#operators">
+                    its documentation</a> for details),
+                    quoted strings, numbers, and calls of built-in scalar functions. Calls to built-in functions are evaluated
+                    when a row is created, so they can in fact return
+                    non-constant results, for example random().
+                </span>
+                <br><br>
+            </dt>
+            <dt>
+                <span class="sect1">
+                    A bare or quoted identifier
+                    (using any of the quoting methods allowed by sqlite)
+                    is allowed, and will be treated as a string.
+                </span>
+                <br><br>
+            </dt>
+            <dt>
+                <span class="sect1">
+                    A quoted string is allowed, optionally preceded
+                    by a plus or minus sign. If the sign
+                    is present the string will be converted to a number using
+                    sqlite's normal rules (which may result in zero)
+                    and negated if the sign is a minus.
+                </span>
+                <br><br>
+            </dt>
+            <dt>
+                <span class="sect1">
+                    An integer or a floating point number is allowed,
+                    optionally preceded by a plus or minus sign.
+                </span>
+                <br><br>
+            </dt>
+             <dt>
+                GENERATED column values (a new feature in sqlite)
+                are not yet supported by sqliteman.
+                <br><br>
+            </dt>
+       </dl>
+    </div>
+</div>
+<div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="apas04.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"></td></tr><tr><td width="40%" align="left" valign="top">Licenses </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> Requirements</td></tr></table></div></body></html>
