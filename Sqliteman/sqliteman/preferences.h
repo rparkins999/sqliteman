@@ -64,6 +64,9 @@ class Preferences : public QObject
 		
 		bool openNewInItemView() { return m_newInItemView; }
 		void setOpenNewInItemView(bool v) { m_newInItemView = v; }
+		
+		bool prefillNew() { return m_prefillNew; }
+		void setPrefillNew(bool v) { m_prefillNew = v; }
 
 		int GUItranslator() { return m_GUItranslator; };
 		void setGUItranslator(int v) { m_GUItranslator = v; };
@@ -173,6 +176,7 @@ class Preferences : public QObject
 		QString m_lastDB;
         QString m_lastSqlFile;
 		bool m_newInItemView;
+        bool m_prefillNew;
 		int m_GUItranslator;
 		int m_GUIstyle;
 		QFont m_GUIfont;

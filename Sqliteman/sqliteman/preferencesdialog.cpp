@@ -222,6 +222,7 @@ PreferencesDialog::PreferencesDialog(QWidget * parent)
 	m_prefsLNF->openLastSqlFileCheckBox->setChecked(prefs->openLastSqlFile());
 	m_prefsLNF->rowsToRead->setCurrentIndex(prefs->rowsToRead());
 	m_prefsLNF->newInItemCheckBox->setChecked(prefs->openNewInItemView());
+	m_prefsLNF->prefillNewCheckBox->setChecked(prefs->prefillNew());
 
 	m_prefsData->nullCheckBox->setChecked(prefs->nullHighlight());
 	m_prefsData->nullAliasEdit->setText(prefs->nullHighlightText());
@@ -277,6 +278,7 @@ bool PreferencesDialog::saveSettings()
 	prefs->setOpenLastSqlFile(m_prefsLNF->openLastSqlFileCheckBox->isChecked());
 	prefs->setRowsToRead(m_prefsLNF->rowsToRead->currentIndex());
 	prefs->setOpenNewInItemView(m_prefsLNF->newInItemCheckBox->isChecked());
+	prefs->setPrefillNew(m_prefsLNF->prefillNewCheckBox->isChecked());
 	// data results
 	prefs->setNullHighlight(m_prefsData->nullCheckBox->isChecked());
 	prefs->setNullHighlightText(m_prefsData->nullAliasEdit->text());
@@ -317,6 +319,7 @@ void PreferencesDialog::restoreDefaults()
 	m_prefsLNF->openLastSqlFileCheckBox->setChecked(true);
 	m_prefsLNF->rowsToRead->setCurrentIndex(5);
 	m_prefsLNF->newInItemCheckBox->setChecked(false);
+	m_prefsLNF->prefillNewCheckBox->setChecked(false);
 
 	m_prefsData->nullCheckBox->setChecked(true);
 	m_prefsData->nullAliasEdit->setText("{null}");

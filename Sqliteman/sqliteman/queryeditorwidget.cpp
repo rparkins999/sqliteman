@@ -400,7 +400,8 @@ void QueryEditorWidget::addAllSelect()
 {
 	QStringList list(columnModel->stringList());
     QStringList::const_iterator i;
-    for (i = list.constBegin(); i != list.constEnd(); ++i) {
+    for (i = columnModel->stringList().constBegin();
+         i != columnModel->stringList().constEnd(); ++i) {
         QString s(*i);
 		if (s.compare(m_rowid))
 		{

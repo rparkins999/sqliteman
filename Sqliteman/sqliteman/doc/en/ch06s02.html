@@ -51,9 +51,11 @@
 	<p>
 		The "Context" is the set of operations you can use for the selected
 		object in the object tree browser. You can use the alternative access to
-		this menu by the right mouse button (for right handed mouse).
+		this menu by clicking the right mouse button on an item in the
+		shema browser (for right handed mouse).
 	</p>
-	<p>Not all operations are available for all database objects.</p>
+	<p>The context menu only shows operations which are available for the
+	selected database object: if there are none, the menu is disabled.</p>
 	<p></p>
 	<div class="variablelist">
 		<dl>
@@ -70,8 +72,8 @@
 						Force a refresh of the schema browser.
 						<span class="application">Sqliteman</span>
 						should handle self-initialized changes in the schema
-						automatically but you can use this option to promote
-						changes made out of
+						automatically but you can use this option to update
+						the browser to show changes made outside
 						<span class="application">Sqliteman</span>
 					</span>
 				</p>
@@ -120,8 +122,8 @@
 			<dd>
 				<p>
 					<span class="action">
-						Show database physical information in the script
-						output.
+						Show database schema information for the table
+						in the script output.
 					</span>
 				</p>
 			</dd>
@@ -139,7 +141,10 @@
 			<dd>
 				<p>
 					<span class="action">
-						Raise a dialog for table changing.
+						Raise a dialog to modify a table. This allows some
+						more general changes than the built-in sqlite
+						ALTER TABLE statement, but does not handle some
+						special cases.
 						<a href="ch07s03.html" title="Alter Table">
 							See full Alter Table documentation</a>.
 					</span>
@@ -172,7 +177,9 @@
 					<span class="action">
 						Delete all records but  keep the table: this is shown
 						only if the table contains some records. Sqliteman will
-						ask if you really want to do this.
+						ask if you really want to do this. Since deleting many
+						records is slow, sqliteman cheats by dropping the table
+						and recreating it.
 					</span>
 				</p>
 			</dd>
@@ -203,7 +210,7 @@
             <dd>
                 <p>
                     <span class="action">
-                        Import data into table.
+                        Raise a dialog to import data into table.
                         <a href="ch07s04.html" title="Import Table Data">
                             See full Import Table Data documentation</a>.
                     </span>
@@ -219,7 +226,7 @@
             <dd>
                 <p>
                     <span class="action">
-                        Create table content - data for testing etc.
+                        Raise a dialog to create table content, for testing etc.
                         <a href="ch07s05.html" title="Populate Table">
                         See full Populate Table documentation</a>.
                     </span>
@@ -235,7 +242,7 @@
             <dd>
                 <p>
                     <span class="action">
-                        Create a view in special dialog.
+                        Raise a dialog to create a view.
                         <a href="ch07s06.html" title="View related dialogs">
                             See full Create View documentation</a>.
                     </span>
@@ -251,8 +258,8 @@
             <dd>
                 <p>
                     <span class="action">
-                        Show database physical information in the script
-                        output.
+                        Show database schema information for the view
+                        in the script output.
                     </span>
                 </p>
             </dd>
@@ -266,7 +273,7 @@
             <dd>
                 <p>
                     <span class="action">
-                        This opens a dialog similar to that for
+                        Raise a dialog similar to that for
                         <span class="guimenuitem">Create View...</span>
                         except that it allows you to redefine an existing
                         view rather than creating a new one.
@@ -303,7 +310,7 @@
                         Perform REINDEX command. If is it called when an index
                         is selected, only that index is recreated.
                         If is it called when a table is selected
-                        all indexes are recreated.
+                        all indexes on that table are recreated.
                     </span>
                 </p>
             </dd>
@@ -317,7 +324,7 @@
             <dd>
                 <p>
                     <span class="action">
-                        Raise a dialog for the new index.
+                        Raise a dialog to create a new index.
                         <a href="ch07s07.html" title="Create Index">
                             See full Create Index documentation</a>.
                     </span>
@@ -332,7 +339,7 @@
             <dd>
                 <p>
                     <span class="action">
-                        Show index physical information in the
+                        Show database schema information for the index in the
                         script result window.
                     </span>
                 </p>
@@ -358,6 +365,13 @@
                         Create Trigger...
                     </span>
                 </span>
-            </dt><dd><p><span class="action">Raise a dialog for the new trigger. There is a trigger template prepared for you. Just modify it to your needs. Then press the "Create" button and check the result.</span></p></dd><dt><span class="term"><span class="guimenu">Context</span>-&gt;<span class="guimenuitem">Alter Trigger...</span></span></dt><dd><p><span class="action">Raise a similar dialog to the "Create Trigger" one with current trigger body preset. Sqlite does not support direct ALTER TRIGGER so there is a DROP and new CREATE performed after you click the <span class="guibutton">Alter</span> button.</span></p></dd><dt><span class="term"><span class="guimenu">Context</span>-&gt;<span class="guimenuitem">Drop Trigger</span></span></dt><dd><p><span class="action">Drop the trigger (delete it from the database). Sqliteman will ask if you really want to do this.</span></p></dd><dt><span class="term"><span class="guimenu">Context</span>-&gt;<span class="guimenuitem">Describe Trigger</span></span></dt><dd><p><span class="action">Show trigger physical information in the script result window.</span></p></dd><dt><span class="term"><span class="guimenu">Context</span>-&gt;<span class="guimenuitem">Constraint Triggers...</span></span></dt><dd><p><span class="action">Raise a dialog to create FOREIGN KEY constraint checks in the triggers.
+            </dt><dd><p><span class="action">Raise a dialog to create a new
+            trigger. There is a trigger template prepared for you.
+            Just modify it to your needs. Then press the "Create" button
+            and check the result.
+            </span></p></dd><dt><span class="term"><span class="guimenu">Context</span>-&gt;<span class="guimenuitem">Alter Trigger...</span></span></dt><dd><p><span class="action">Raise a similar dialog to the "Create Trigger" one with current trigger body preset. Sqlite does not support direct ALTER TRIGGER so there is a DROP and new CREATE performed after you click the <span class="guibutton">Alter</span> button.</span></p></dd><dt><span class="term"><span class="guimenu">Context</span>-&gt;<span class="guimenuitem">Drop Trigger</span></span></dt><dd><p><span class="action">Drop the trigger (delete it from the database). Sqliteman will ask if you really want to do this.</span></p></dd><dt><span class="term"><span class="guimenu">Context</span>-&gt;<span class="guimenuitem">Describe Trigger</span></span></dt><dd><p><span class="action">
+            Show database schema information for the trigger
+            in the script result window.
+            </span></p></dd><dt><span class="term"><span class="guimenu">Context</span>-&gt;<span class="guimenuitem">Constraint Triggers...</span></span></dt><dd><p><span class="action">Raise a dialog to create FOREIGN KEY constraint checks in the triggers.
       <a href="ch07s08.html" title="Constraint Triggers">See full Constraint Triggers documentation</a>.</span></p></dd></dl></div><p>
 </p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ch06.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ch06.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ch06s03.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 6. <span class="application">Sqliteman</span> Menu Structure </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> The <span class="guimenu">Database</span> Menu</td></tr></table></div></body></html>

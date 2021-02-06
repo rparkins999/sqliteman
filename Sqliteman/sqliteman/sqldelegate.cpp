@@ -31,6 +31,8 @@ QWidget *SqlDelegate::createEditor(QWidget *parent,
 			this, SLOT(editor_closeEditor()));
     connect(editor, SIGNAL(textChanged()),
             this, SLOT(editor_textChanged()));
+    connect(editor, SIGNAL(nullclicked()),
+                this, SLOT(editor_nullClicked()));
 	return editor;
 }
 
@@ -72,6 +74,11 @@ void SqlDelegate::editor_textChanged()
     SqlDelegateUi *ed = qobject_cast<SqlDelegateUi*>(sender());
     emit commitData(ed);
     emit dataChanged();
+}
+
+void SqlDelegate::editor_nullClicked()
+{
+    emit insertNull();
 }
 
 SqlDelegateUi::SqlDelegateUi(QWidget * parent)
@@ -144,11 +151,9 @@ QVariant SqlDelegateUi::sqlData()
 	return m_sqlData;
 }
 
-void SqlDelegateUi::nullButton_clicked(bool)
+void SqlDelegateUi::nullButton_clicked(bool state)
 {
-	lineEdit->setText(QString());
-	m_sqlData = QString();
-    emit textChanged();
+    emit nullclicked();
 	emit closeEditor();
 }
 

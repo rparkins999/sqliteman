@@ -17,33 +17,26 @@ This is a QT bug.
 #include <QSqlError>
 #include <QSqlField>
 #include <QSqlQuery>
+#include <QVariant>
 
 #include "database.h"
 #include "preferences.h"
 #include "sqlmodels.h"
 #include "utils.h"
 
-
-SqlTableModel::SqlTableModel(QObject * parent, QSqlDatabase db)
-	: QSqlTableModel(parent, db),
-	m_pending(false),
-	m_schema(""),
-	m_useCount(1)
-{
-	m_deleteCache.clear();
-	m_insertCache.clear();
-	Preferences * prefs = Preferences::instance();
-	switch (prefs->rowsToRead())
-	{
-		case 0: m_readRowsCount = 256; break;
-		case 1: m_readRowsCount = 512; break;
-		case 2: m_readRowsCount = 1024; break;
-		case 3: m_readRowsCount = 2048; break;
-		case 4: m_readRowsCount = 4096; break;
-		default: m_readRowsCount = 0; break;
-	}
-	connect(this, SIGNAL(primeInsert(int, QSqlRecord &)),
-			this, SLOT(doPrimeInsert(int, QSqlRecord &)));
+namespace {
+    int rowsToRead() {
+        Preferences * prefs = Preferences::instance();
+        switch (prefs->rowsToRead())
+        {
+            case 0: return 256;
+            case 1: return 512;
+            case 2: return 1024;
+            case 3: return 2048;
+            case 4: return 4096;
+            default: return 0;
+        }
+    }
 }
 
 QVariant SqlTableModel::data(const QModelIndex & item, int role) const
@@ -194,7 +187,6 @@ QVariant SqlTableModel::headerData(int section, Qt::Orientation orientation, int
 	return QSqlTableModel::headerData(section, orientation, role);
 }
 
-// seems to be never called ???
 bool SqlTableModel::insertRowIntoTable(const QSqlRecord &values)
 {
 	bool generated = false;
@@ -221,90 +213,248 @@ QVariant SqlTableModel::evaluate(QString expression) {
     else { return QVariant(QVariant::String); } // NULL
 }
 
+void SqlTableModel::reset(QString tableName, bool isNew)
+{
+	if (isNew) { m_header.clear(); }
+	m_deleteCache.clear();
+	m_insertCache.clear();
+}
+
+// We get the FieldInfo's here and keep them,
+// because we modify the defaultKeyValue
+// for a field which has an actual or implied UNIQUE constraint.
+void SqlTableModel::refreshFields() {
+	m_fields = Database::tableFields(objectName(), m_schema);
+    bool donePK = false;
+    QList<FieldInfo>::iterator i;
+	int j;
+    for (i = m_fields.begin(), j = 0; i != m_fields.end(); ++i, ++j) {
+        if (i->isAutoIncrement)
+        { // get the next autoincrement value so we can fake new ones
+            QString sql = QString("SELECT seq FROM ") 
+                            + Utils::q(m_schema.toLower())
+                            + ".sqlite_sequence WHERE lower(name) = "
+                            + Utils::q(objectName().toLower())
+                            + ";";
+            QSqlQuery seqQuery(sql, QSqlDatabase::database(SESSION_NAME));
+            if (!(seqQuery.lastError().isValid()))
+            {
+                if (seqQuery.first()) {
+                    i->defaultKeyValue = seqQuery.value(0).toLongLong();
+                } else {
+                    i->defaultKeyValue = 0; // table has no rows yet
+                }
+            }
+        } else if (   i->isUnique
+                   || (i->isPartOfPrimaryKey && !donePK))
+        { // this column must be unique, get largest number used
+            QString sql = QString("SELECT CAST (") // cast non-integers ...
+                            + Utils::q(i->name)
+                            + " AS INTEGER)FROM " /// ... to integer
+                            + Utils::q(m_schema) + "." + Utils::q(objectName())
+                            + " ORDER BY CAST ( " + Utils::q(i->name)
+                            + " AS INTEGER ) DESC LIMIT 1;"; // select largest
+            QSqlQuery seqQuery(sql, QSqlDatabase::database(SESSION_NAME));
+            if (!(seqQuery.lastError().isValid()))
+            {
+                if (seqQuery.first()) {
+                    i->defaultKeyValue = seqQuery.value(0).toLongLong();
+                } else {
+                    i->defaultKeyValue = 0; // no rows or no numbers yet
+                }
+                if (i->isPartOfPrimaryKey) { donePK = true; }
+            }
+        }
+    }
+}
+
+// Called when creating a new record, handles copying data if wanted.
 void SqlTableModel::doPrimeInsert(int row, QSqlRecord & record)
 {
-	QList<FieldInfo> l = Database::tableFields(objectName(), m_schema);
-	bool ok;
-	QString defval;
-	// guess what type is the default value.
-    QList<FieldInfo>::const_iterator i;
-    for (i = l.constBegin(); i != l.constEnd(); ++i) {
-		if (   (i->isAutoIncrement)
-			|| (   i->isWholePrimaryKey
-			    && (i->type.toLower() == "integer")))
+    Preferences * prefs = Preferences::instance();
+    bool prefill = prefs->prefillNew();
+    QList<FieldInfo>::iterator i;
+    int j = 0; // field number
+    bool noPKyet = true;
+    for (i = m_fields.begin(); i != m_fields.end(); ++i, ++j) {
+        if (   prefill
+            && (   i->isAutoIncrement
+                || (   i->isWholePrimaryKey
+                    && (i->type.toLower() == "integer")
+                    && !(i->isColumnPkDesc))))
 		{
-			record.setValue(i->name, QVariant(++m_LastSequence));
-			record.setGenerated(i->name, false);
-		}
-		else if (i->defaultValue.isEmpty())
-		{
-			// prevent integer type being displayed as 0
-			record.setValue(i->name, QVariant());
-		}
-		else if (i->defaultisQuoted)
-		{
-			record.setValue(i->name, QVariant(i->defaultValue));
-			record.setGenerated(i->name, false);
-		}
-		else if (i->defaultIsExpression)
-		{
-			record.setValue(i->name, evaluate(i->defaultValue));
-			record.setGenerated(i->name, false);
-		}
-		else
-		{
-			char s[22];
-			time_t dummy;
-			defval = i->defaultValue;
-			if (defval.compare("CURRENT_TIMESTAMP", Qt::CaseInsensitive) == 0)
-			{
-				time(&dummy);
-				(void)strftime(s, 20, "%F %T", localtime(&dummy));
-				record.setValue(i->name, QVariant(s));
-				record.setGenerated(i->name, false);
-			}
-			else if (defval.compare("CURRENT_TIME", Qt::CaseInsensitive) == 0)
-			{
-				time(&dummy);
-				(void)strftime(s, 20, "%T", localtime(&dummy));
-				record.setValue(i->name, QVariant(s));
-				record.setGenerated(i->name, false);
-				
-			}
-			else if (defval.compare("CURRENT_DATE", Qt::CaseInsensitive) == 0)
-			{
-				time(&dummy);
-				(void)strftime(s, 20, "%F", localtime(&dummy));
-				record.setValue(i->name, QVariant(s));
-				record.setGenerated(i->name, false);
-			}
-			else
-			{
-				int j = defval.toInt(&ok);
-				if (ok)
-				{
-					record.setValue(i->name, QVariant(j));
-					record.setGenerated(i->name, false);
-				}
-				else
-				{
-					double d = defval.toDouble(&ok);
-					if (ok)
-					{
-						record.setValue(i->name, QVariant(d));
-						record.setGenerated(i->name, false);
-					}
-					else
-					{
-						record.setValue(i->name, QVariant(defval));
-						record.setGenerated(i->name, false);
-					}
-				}
-			}
-		}
+            // This logic can put in a smaller rowid than sqlite would,
+            // (if for example some rows were created and then deleted
+            // before committing) but it is a valid one unless
+            // 9223372036854775807 has been used.
+            record.setValue(i->name, QVariant(++(i->defaultKeyValue)));
+            record.setGenerated(i->name, true);
+            continue;
+        }
+        QVariant defval = QVariant(); // Invalid QVariant -> NULL field
+        bool generated = false; // true if we create a value
+        if (!(m_copyThis.isEmpty())) {
+            defval = m_copyThis.value(j);
+            generated = true;
+        } else if (prefill) {
+            char s[22];
+            time_t dummy;
+            bool ok;
+            if (i->defaultisQuoted) {
+                defval = QVariant(i->defaultValue);
+            } else if (i->defaultIsExpression) {
+                defval = evaluate(i->defaultValue);
+            } else  if (i->defaultValue.compare(
+                "CURRENT_TIMESTAMP", Qt::CaseInsensitive) == 0)
+            {
+                time(&dummy);
+                (void)strftime(s, 20, "%F %T", localtime(&dummy));
+                defval = QVariant(s);
+            } else if (i->defaultValue.compare(
+                "CURRENT_TIME", Qt::CaseInsensitive) == 0)
+            {
+                time(&dummy);
+                (void)strftime(s, 20, "%T", localtime(&dummy));
+                defval = QVariant(s);
+            } else if (i->defaultValue.compare(
+                "CURRENT_DATE", Qt::CaseInsensitive) == 0)
+            {
+                time(&dummy);
+                (void)strftime(s, 20, "%F", localtime(&dummy));
+                defval = QVariant(s);
+            } else if (!(i->defaultValue).isNull()) {
+                QString val(i->defaultValue);
+                qlonglong j = val.toLongLong(&ok);
+                if (ok) {
+                    defval = QVariant(j);
+                } else {
+                    double d = val.toDouble(&ok);
+                    if (ok) { defval = QVariant(d); }
+                    else { defval = val; }
+                }
+            }
+            if (i->isNotNull && defval.isNull()) {
+                defval = QVariant(""); // force a non-null value
+                generated = true;
+            }
+        }
+        if (   prefill
+            && (   (noPKyet && i->isPartOfPrimaryKey)
+                || i->isUnique))
+        {
+            bool forceValue = false;
+            QMap<int,bool>::const_iterator it;
+            QSqlQuery query(QSqlDatabase::database(SESSION_NAME));
+            if (defval.isNull()) {
+                forceValue = true; // need to force a non-NULL value
+            } else { // see if defval is already in the table
+                QString sql("VALUES ( ? IN ( SELECT "
+                            + Utils::q(i->name) + " FROM "
+                            + Utils::q(m_schema) + "." + Utils::q(objectName()));
+                bool first = true;
+                for (it = m_insertCache.constBegin();
+                        it != m_insertCache.constEnd(); ++it)
+                {
+                    if (first) {
+                        first = false;
+                        sql += " UNION ALL VALUES ( ";
+                    } else { sql += ","; }
+                    sql += "(?)"; // add args for rows in insert cache
+                }
+                if (!first) { sql += ")"; }
+                sql += "));";
+                query.prepare(sql); // construct a query to find it
+                query.addBindValue(defval);
+                for (it = m_insertCache.constBegin();
+                        it != m_insertCache.constEnd(); ++it)
+                { // bind values from rows in insert cache
+                    QModelIndex mi = createIndex(it.key(), j);
+                    query.addBindValue(QSqlTableModel::data(mi));
+                }
+                query.exec(); // run the query
+                if (query.first() && (query.value(0) != 0)) {
+                    forceValue = true; // need to force a different value
+                }
+            }
+            if (forceValue) {
+                // Construct an integer that isn't in the table.
+                QString sql = "VALUES ( 1 + max ( ( SELECT CAST ( "
+                            + Utils::q(i->name)
+                            + " AS INTEGER ) AS x FROM "
+                            + Utils::q(m_schema) + "." + Utils::q(objectName())
+                            + " ORDER BY x DESC LIMIT 1)" ;
+                for (it = m_insertCache.constBegin();
+                        it != m_insertCache.constEnd(); ++it)
+                { sql += ", ?"; } // add args for rows in insert cache
+                sql += "));";
+                query.prepare(sql);
+                for (it = m_insertCache.constBegin();
+                        it != m_insertCache.constEnd(); ++it)
+                { // bind values from rows in insert cache
+                    QModelIndex mi = createIndex(it.key(), j);
+                    query.addBindValue(QSqlTableModel::data(mi));
+                }
+                query.exec(); // find an integer not already in table
+                query.first(); // must succeed
+                defval = query.value(0);
+                generated = true;
+            }
+        }
+        record.setValue(i->name, defval);
+        record.setGenerated(i->name, generated);
 	}
 }
 
+bool SqlTableModel::deleteRowFromTable(int row)
+{
+	bool result = QSqlTableModel::deleteRowFromTable(row);
+	if (result) { emit reallyDeleting(row); }
+	return result;
+}
+
+SqlTableModel::SqlTableModel(QObject * parent, QSqlDatabase db)
+	: QSqlTableModel(parent, db),
+	m_pending(false),
+	m_schema(""),
+	m_useCount(1)
+{
+	m_deleteCache.clear();
+	m_insertCache.clear();
+    m_copyThis = QSqlRecord();
+	connect(this, SIGNAL(primeInsert(int, QSqlRecord &)),
+			this, SLOT(doPrimeInsert(int, QSqlRecord &)));
+}
+
+/*
+ * Note this isn't SQL's pending transaction mode (between BEGIN and COMMIT),
+ * but our own flag meaning that QT's local copy of the model has pending
+ * changes which haven't yet been written to the database.
+ */
+void SqlTableModel::setPendingTransaction(bool pending)
+{
+	m_pending = pending;
+
+	if (!pending)
+	{
+		for (int i = 0; i < m_deleteCache.size(); ++i)
+		{
+			emit headerDataChanged(
+				Qt::Vertical, m_deleteCache[i], m_deleteCache[i]);
+		}
+		m_deleteCache.clear();
+		m_insertCache.clear();
+	}
+}
+
+bool SqlTableModel::copyRow (int row, QSqlRecord record) {
+    m_copyThis = record;
+    bool result = insertRows(row, 1, QModelIndex());
+    m_copyThis.clear();
+    return result;
+}
+
+// insert new rows
+// count is always 1, but we're overriding QSqlTableModel::insertRows
 bool SqlTableModel::insertRows ( int row, int count, const QModelIndex & parent)
 {
 	if (QSqlTableModel::insertRows(row, count, parent))
@@ -348,101 +498,6 @@ bool SqlTableModel::isNewRow(int row)
 	return m_insertCache.contains(row) && !m_insertCache.value(row);
 }
 
-//FIXME We would like to fill in the value for non-autoincrement integer
-//      primary keys, but sqlite doesn't seem to create an sqlite_sequence
-//      entry in this case.
-// FIXME need to check for single column primary key and not WITHOUT_ROWID
-void SqlTableModel::reset(QString tableName, bool isNew)
-{
-	if (isNew) { m_header.clear(); }
-	m_deleteCache.clear();
-	m_insertCache.clear();
-	m_LastSequence = 1;
-	QList<FieldInfo> columns = Database::tableFields(tableName, m_schema);
-	bool rowid = true;
-	bool _rowid_ = true;
-	bool oid = true;
-    QList<FieldInfo>::const_iterator i;
-    for (i = columns.constBegin(); i != columns.constEnd(); ++i) {
-		if (i->name.compare("rowid", Qt::CaseInsensitive) == 0)
-			{ rowid = false; }
-		if (i->name.compare("_rowid_", Qt::CaseInsensitive) == 0)
-			{ _rowid_ = false; }
-		if (i->name.compare("oid", Qt::CaseInsensitive) == 0)
-			{ oid = false; }
-	}
-	int j;
-    for (i = columns.constBegin(), j = 0; i != columns.constEnd(); ++i, ++j) {
-		if (i->isPartOfPrimaryKey)
-		{
-			if (i->isAutoIncrement)
-			{
-				QString sql = QString("SELECT seq FROM ") 
-							  + Utils::q(m_schema.toLower())
-							  + ".sqlite_sequence WHERE lower(name) = "
-							  + Utils::q(tableName.toLower())
-							  + ";";
-				QSqlQuery seqQuery(sql, QSqlDatabase::database(SESSION_NAME));
-				if (!(seqQuery.lastError().isValid()))
-				{
-					seqQuery.first();
-					m_LastSequence = seqQuery.value(0).toLongLong();
-				}
-			}
-			else if (   (i->type.toLower() == "integer")
-					 && i->isWholePrimaryKey
-					 && !i->isColumnPkDesc)
-			{
-				QString name;
-				if (rowid) { name = "rowid"; }
-				else if (_rowid_) { name = "_rowid_"; }
-				else if (oid) { name = "oid"; }
-				if (!(name.isEmpty()))
-				{
-					QString sql = QString("SELECT ")
-								  + name
-								  + " FROM "
-								  + Utils::q(m_schema.toLower())
-								  + "."
-								  + Utils::q(tableName.toLower())
-								  + " ORDER BY "
-								  + name
-								  + " DESC LIMIT 1;";
-					QSqlQuery seqQuery(sql,
-									   QSqlDatabase::database(SESSION_NAME));
-					if (!(seqQuery.lastError().isValid()))
-					{
-						seqQuery.first();
-						m_LastSequence = seqQuery.value(0).toLongLong();
-					}
-				}
-			}
-			if (isNew)
-			{
-				if (i->isAutoIncrement)
-				{
-					m_header[j] = SqlTableModel::Auto;
-				}
-				else
-				{
-					m_header[j] = SqlTableModel::PK;
-				}
-			}
-			continue;
-		}
-		if (isNew)
-		{
-			// show has default icon
-			if (!i->defaultValue.isEmpty())
-			{
-				m_header[j] = SqlTableModel::Default;
-				continue;
-			}
-			m_header[j] = SqlTableModel::None;
-		}
-	}
-}
-
 void SqlTableModel::setTable(const QString &tableName)
 {
 	reset(tableName, true);
@@ -454,9 +509,23 @@ void SqlTableModel::setTable(const QString &tableName)
 	{
 		QSqlTableModel::setTable(m_schema + "." + tableName);
 	}
-	// For some strange reason QSqlTableModel::tableName gives us back
+	// For some strange reason QSqlTableModel:i->defaultKeyValue:tableName gives us back
 	// schema.table, so we stash the undecorated table name in the object name
 	setObjectName(tableName);
+    refreshFields();
+    QList<FieldInfo>::iterator i;
+    int j;
+    for (i = m_fields.begin(), j = 0; i != m_fields.end(); ++i, ++j) {
+        if (i->isAutoIncrement) {
+            m_header[j] = SqlTableModel::Auto; // show autoincrement icon
+        } else if (i->isPartOfPrimaryKey) {
+            m_header[j] = SqlTableModel::PK; // show primary key icon
+        } else if (!i->defaultValue.isEmpty()) {
+            m_header[j] = SqlTableModel::Default; // show has default icon
+        } else {
+            m_header[j] = SqlTableModel::None;
+        }
+    }
 }
 
 void SqlTableModel::detach (SqlTableModel * model)
@@ -466,13 +535,18 @@ void SqlTableModel::detach (SqlTableModel * model)
 
 void SqlTableModel::fetchAll()
 {
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    bool moreFetched = false;
 	if (rowCount() > 0)
 	{
 		while (canFetchMore(QModelIndex()))
 		{
 			fetchMore();
+            moreFetched = true;
 		}
 	}
+	if (moreFetched) { refreshFields(); }
+    QApplication::restoreOverrideCursor();
 }
 
 void SqlTableModel::fetchMore()
@@ -484,40 +558,17 @@ void SqlTableModel::fetchMore()
 bool SqlTableModel::select()
 {
 	bool result = QSqlTableModel::select();
+    int readRowsCount = rowsToRead();
+    bool moreFetched = false;
 	while (   result &&
 			  canFetchMore(QModelIndex())
-		   && (   (m_readRowsCount == 0)
-			   || (rowCount() < m_readRowsCount)))
+		   && (   (readRowsCount == 0)
+			   || (rowCount() < readRowsCount)))
 	{
 		fetchMore();
+        moreFetched = true;
 	}
-	return result;
-}
-/*
- * Note this isn't SQL's pending transaction mode (between BEGIN and COMMIT),
- * but our own flag meaning that QT's local copy of the model has pending
- * changes which haven't yet been written to the database.
- */
-void SqlTableModel::setPendingTransaction(bool pending)
-{
-	m_pending = pending;
-
-	if (!pending)
-	{
-		for (int i = 0; i < m_deleteCache.size(); ++i)
-		{
-			emit headerDataChanged(
-				Qt::Vertical, m_deleteCache[i], m_deleteCache[i]);
-		}
-		m_deleteCache.clear();
-		m_insertCache.clear();
-	}
-}
-
-bool SqlTableModel::deleteRowFromTable(int row)
-{
-	bool result = QSqlTableModel::deleteRowFromTable(row);
-	if (result) { emit reallyDeleting(row); }
+	if (moreFetched) { refreshFields(); }
 	return result;
 }
 
@@ -526,6 +577,7 @@ bool SqlTableModel::submitAll()
 	if (QSqlTableModel::submitAll())
 	{
 		reset(objectName(), false);
+        refreshFields();
 		return true;
 	}
 	else
@@ -538,24 +590,14 @@ void SqlTableModel::revertAll()
 {
 	QSqlTableModel::revertAll();
 	reset(objectName(), false);
+    refreshFields();
 }
 
 
 SqlQueryModel::SqlQueryModel( QObject * parent)
 	: QSqlQueryModel(parent),
 	m_useCount(1)
-{
-	Preferences * prefs = Preferences::instance();
-	switch (prefs->rowsToRead())
-	{
-		case 0: m_readRowsCount = 256; break;
-		case 1: m_readRowsCount = 512; break;
-		case 2: m_readRowsCount = 1024; break;
-		case 3: m_readRowsCount = 2048; break;
-		case 4: m_readRowsCount = 4096; break;
-		default: m_readRowsCount = 0; break;
-	}
-}
+{ }
 
 QVariant SqlQueryModel::data(const QModelIndex & item, int role) const
 {
@@ -619,38 +661,33 @@ QVariant SqlQueryModel::data(const QModelIndex & item, int role) const
 	return QSqlQueryModel::data(item, role);
 }
 
-void SqlQueryModel::setQuery ( const QSqlQuery & query )
-{
-	QSqlQueryModel::setQuery(query);
-	info = record();
+void SqlQueryModel::initialRead() {
+	info = record(); // force column count to be set
 	if (columnCount() > 0)
 	{
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        int readRowsCount = rowsToRead();
 		while (   canFetchMore(QModelIndex())
-			   && (   (m_readRowsCount == 0)
-				   || (rowCount() < m_readRowsCount)))
+			   && (   (readRowsCount == 0)
+				   || (rowCount() < readRowsCount)))
 		{
 			fetchMore();
 		}
-        QApplication::restoreOverrideCursor();
 	}
+}
+
+void SqlQueryModel::setQuery ( const QSqlQuery & query )
+{
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+	QSqlQueryModel::setQuery(query);
+    initialRead();
+    QApplication::restoreOverrideCursor();
 }
 
 void SqlQueryModel::setQuery ( const QString & query, const QSqlDatabase & db)
 {
 	QSqlQueryModel::setQuery(query, db);
-	info = record();
-	if (columnCount() > 0)
-	{
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-		while (   canFetchMore(QModelIndex())
-			   && (   (m_readRowsCount == 0)
-				   || (rowCount() < m_readRowsCount)))
-		{
-			fetchMore();
-		}
-        QApplication::restoreOverrideCursor();
-	}
+    initialRead();
+    QApplication::restoreOverrideCursor();
 }
 
 void SqlQueryModel::detach (SqlQueryModel * model)
@@ -660,13 +697,13 @@ void SqlQueryModel::detach (SqlQueryModel * model)
 
 void SqlQueryModel::fetchAll()
 {
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 	if (rowCount() > 0)
 	{
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 		while (canFetchMore(QModelIndex()))
 		{
 			fetchMore();
 		}
-        QApplication::restoreOverrideCursor();
 	}
+    QApplication::restoreOverrideCursor();
 }

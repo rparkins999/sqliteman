@@ -38,10 +38,12 @@ class SqlDelegate : public QItemDelegate
 
     signals:
         void dataChanged();
+        void insertNull();
 
 	private slots:
 		void editor_closeEditor();
         void editor_textChanged();
+        void editor_nullClicked();
 };
 
 
@@ -69,6 +71,7 @@ class SqlDelegateUi : public QWidget, public Ui::SqlDelegateUi
 	signals:
 		void closeEditor();
         void textChanged();
+        void nullclicked();
 
 	private:
 		QVariant m_sqlData;

@@ -248,6 +248,10 @@ p, h1, h2, h3, h4, h5, h6, td, th {
   font-weight: bold;
 }
 
+.application {
+  font-family: monospace;
+}
+
 /* Visual cues for GUI elements etc in the text */
 
 .guimenu, .guimenuitem, .guisubmenu { 

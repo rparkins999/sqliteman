@@ -87,6 +87,8 @@ typedef struct FieldInfo {
     QString referencedTable;
     QStringList referencedKeys;
 	QString defaultValue;
+    // 64-bit signed integer, set and updated in sqlmodels.cpp
+    qlonglong defaultKeyValue;
 	bool defaultIsExpression;
 	bool defaultisQuoted;
 	bool isPartOfPrimaryKey;
@@ -95,6 +97,7 @@ typedef struct FieldInfo {
 	bool isTablePkDesc;
 	bool isAutoIncrement;
 	bool isNotNull;
+    bool isUnique;
 } FieldInfo;
 
 class SqlParser

@@ -1,0 +1,500 @@
+<html><head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Chapter 7. Features and Dialogs</title>
+    <link rel="stylesheet" href="kde-default.css" type="text/css">
+    <meta name="generator" content="DocBook XSL Stylesheets V1.67.2">
+    <meta name="keywords"
+        content="Sqliteman, SQL, Sqlite, development, database">
+    <link rel="start" href="index.html" title="The Sqliteman Handbook">
+    <link rel="up" href="index.html" title="The Sqliteman Handbook">
+    <link rel="prev" href="ch07.html" title="Chapter 7">
+    <link rel="next" href="ch07s00.html" title="User defined functions">
+</head>
+<body bgcolor="white" text="black" link="#0000FF"
+    vlink="#840084" alink="#0000FF">
+    <div class="navheader">
+        <table width="100%" summary="Navigation header">
+            <tr><th colspan="3" align="center">
+                Preferences
+            </th></tr>
+            <tr><td width="20%" align="left">
+                <a accesskey="p" href="ch07.html">Prev</a>
+            </td>
+            <th width="60%" align="center">Chapter 7. Features and Dialogs</th>
+            <td width="20%" align="right">
+                <a accesskey="n" href="ch07s00.html">Next</a>
+            </td></tr>
+        </table>
+    <hr></div>
+    <div class="chapter" lang="en">
+        <div class="sect1" lang="en">
+            <div class="titlepage">
+                    <h2 class="title" style="clear: both">
+                        <a name="preferences"></a>Preferences
+                    </h2>
+            </div>
+        <p>The Preferences dialog allows you to customize
+            <span class="application">sqliteman</span>
+            to fit your needs better.
+        </p>
+        <p>
+            Any changes to preferences are not stored
+            until and unless you click on the
+            <span class="guibutton">Save</span>
+            button. If you click on the
+            <span class="guibutton">Cancel</span>
+            button or dismiss the window,
+            your changes will not be stored.
+        </p>
+    <div class="sect2" lang="en">
+        <div class="titlepage">
+            <h3 class="title">
+                <a name="id2525375"></a>Look and Feel
+            </h3>
+        </div>
+        <p>
+            You can set GUI behavior in in this section.
+            Remember that Language and Style settings only take effect when
+            <span class="application">sqliteman</span> is restarted.
+            Some of these preferences can be overridden by the application
+            <a href="ch03.html#options" title="options">
+                command line parameters</a>.
+        </p>
+        <p></p>
+        <div class="screenshot">
+            <div class="mediaobject">
+                <img src="preferences-lnf.png"
+                    alt="Preferences: Look and Feel">
+            </div>
+        </div>
+        <p></p>
+        <div class="variablelist">
+            <dl>
+                <dt>
+                    <span class="term">GUI Language</span>
+                </dt>
+                <dd>
+                    <p>
+                        Allows you to choose one of the translations for
+                        the user interface.
+                    </p>
+                    <div class="caution"
+                        style="margin-left: 0.5in; margin-right: 0.5in;">
+                        <h3 class="title">Caution</h3>
+                        <p>
+                            Remember that translations are provided by a group
+                            of volunteers (not by the
+                            <span class="application">sqliteman</span>
+                            developers). It's better
+                            <a href="ch09.html"
+                                title="Chapter 9. Credits and License">
+                                to contact translation authors
+                            </a> in the case of any errors.
+                        </p><p>
+                            In this version, translations are not currently
+                            being updated.
+                            Volunteers to update them are welcome.
+                        </p>
+                    </div>
+                </dd>
+                <dt>
+                    <span class="term">GUI Style</span>
+                </dt>
+                <dd>
+                    <p>
+                        Change the application "skin". Available styles
+                        depend on what is installed on your platform.
+                        The default style should be a good choice.
+                    </p>
+                </dd>
+                <dt>
+                    <span class="term">GUI Font</span>
+                </dt>
+                <dd>
+                    <p>
+                        Change the font and/or size used for GUI text.
+                    </p>
+                </dd>
+                <dt>
+                    <span class="term">Recently Used Databases</span>
+                </dt>
+                <dd>
+                    <p>
+                        Specify the number of items in the
+                        <span class="guimenu">File</span>-&gt;<span
+                            class="guimenuitem">Recent Databases
+                        </span>
+                        menu.
+                    </p>
+                </dd>
+                <dt>
+                    <span class="term">Open Last Database on Start</span>
+                </dt>
+                <dd>
+                    <p>
+                        If this box is checked, the last used database
+                        will be opened when
+                        <span class="application">sqliteman</span>
+                        starts.
+                    </p>
+                </dd>
+                <dt>
+                    <span class="term">Open Last SQL Document on Start</span>
+                </dt>
+                <dd>
+                    <p>
+                        If this box is checked, the last used SQL script
+                        will be opened when
+                        <span class="application">sqliteman</span>
+                        starts.
+                    </p>
+                </dd>
+                <dt>
+                    <span class="term">Rows to read from tables:</span>
+                </dt>
+                <dd>
+                    <p>
+                        This determines the number of rows initially read
+                        from a table when opening it. Available choices are
+                        256, 512, 1024, 2048, 4096, or All.
+                        Unless your computer is slow or short of memory or you
+                        are opening big databases, "All" is usually the best
+                        choice
+                    </p>
+                </dd>
+                <dt>
+                    <span class="term">Open New Row in Item View </span>
+                </dt>
+                <dd>
+                    <p>
+                        If this box is checked, clicking the
+                        <a href="ch07s14.html#newrow">New Row</a>
+                        or
+                        <a href="ch07s14.html#copyrow">Duplicate Row</a>
+                        button will cause the newly created row
+                        to be opened in the
+                        <a href="ch07s14.html#itemview">Item View.</a>
+                    </p>
+                </dd>
+                <dt><span class="term">Prefill new rows</span></dt>
+                <dd>
+                    <p>
+                        If this box is not checked, all fields of a new row
+                        will be NULL, and all fields of a copy row will be
+                        exact copies of the copied row. This means that
+                        <span class="application">sqliteman</span>
+                        does not show you what will actually be inserted when
+                        you commit the new or copied row into the database, and
+                        committing changes may cause uniqueness constraint
+                        violations. Additionally
+                        <span class="application">sqliteman</span>
+                        allows a field with a UNIQUE constraint or which
+                        is a PRIMARY KEY (which implies a UNIQUE constraint)
+                        to be NULL in multiple rows without violating the
+                        constraint. This behaviour is supported for legacy
+                        compatibility reasons and is probably not what you want
+                        when creating a new row.
+                    </p>
+                    <p>
+                        If this box is checked, when creating a new row
+                        <span class="application">sqliteman</span>
+                        will insert default values. For both new and
+                        copied rows,
+                        <span class="application">sqliteman</span>
+                        will calculate a value for any field which is an
+                        INTEGER PRIMARY KEY alias for the rowid,
+                        force an empty string into any field which would
+                        otherwise violate a NOT NULL constraint, and overwrite
+                        default or copied values if necessary to make UNIQUE
+                        fields and the first or only PRIMARY KEY field unique
+                        and not NULL.
+                    </p>
+                    <p>
+                        It is not possible for
+                        <span class="application">sqliteman</span>
+                        to insert exactly what
+                        <span class="application">sqlite</span>
+                        would insert. In order to display default values
+                        <span class="application">sqliteman</span>
+                        must calculate them when a new row is created,
+                        not when it is committed into the database,
+                        so timestamps may be earlier and default
+                        expressions involving
+                        <span class="application">sqlite</span>
+                        built-in functions can
+                        produce different values at different times.
+                        Rowid aliases can also differ, if some other process
+                        inserts or deletes rows, or if you delete some rows
+                        and then insert others before committing, or if the
+                        maximum possible rowid number (9223372036854775807)
+                        has been used. If another process inserts rows,
+                        uniqueness contraints can still be violated when you
+                        commit your changes.
+                    </p>
+                </dd>
+            </dl>
+        </div>
+    </div>
+    <div class="sect2" lang="en">
+        <div class="titlepage">
+            <h3 class="title">
+                <a name="preferences-dataViewer"></a>
+                Data Display
+            </h3>
+        </div>
+        <p>
+            You can change the settings of the data result viewer here.
+            Changes take effect immediately with no need for a restart.
+            Viewer features are
+            <a href="ch07s14.html" title="Data Viewer">
+                described in its own section</a>.
+        </p>
+        <p></p>
+        <div class="screenshot">
+            <div class="mediaobject">
+                <img src="preferences-display.png"
+                    alt="Preferences: Data Display">
+            </div>
+        </div>
+        <p></p>
+            <div class="variablelist">
+                <dl>
+                    <dt>
+                        <span class="term">NULL handling</span>
+                    </dt>
+                    <dd>
+                        <p>
+                            If NULL highlighting is enabled, you can set a
+                            text string to be displayed in a NULL field
+                            and the background colour.
+                        </p><p>
+                            If NULL highlighting is not enabled, there is no
+                            visible difference between a NULL value and an
+                            empty string, although
+                            <span class="application">sqlite</span>
+                            treats them differently.
+                        </p>
+                    </dd>
+                    <dt>
+                        <span class="term">BLOB handling</span>
+                    </dt>
+                    <dd>
+                        <p>
+                            If BLOB highlighting is enabled, you can set a
+                            text string to be displayed in a BLOB field
+                            and the background colour.
+                        </p><p>
+                            If BLOB highlighting is not enabled, you will get
+                            the unfiltered binary content of a BLOB cell.
+                        </p>
+                    </dd>
+                    <dt>
+                        <span class="term">Limit Text Length Display</span>
+                    </dt>
+                    <dd>
+                        <p>
+                            If this box is checked, when showing the
+                            <a href="ch07s14.html#fullview">
+                                Full View
+                            </a>
+                            of a table or the result of a query, the
+                            <a href="ch07s14.html" title="Data Viewer">
+                                Data Viewer
+                            </a>
+                            will truncate field values instead
+                            of trying to expand the widths of the columns
+                            or breaking the text over multiple lines.
+                        </p>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+<div class="sect2" lang="en">
+    <div class="titlepage">
+        <div>
+            <h3 class="title">
+                <a name="preferences-sqlEditor"></a>
+                SQL Editor
+            </h3>
+        </div>
+    </div>
+    <p>
+        You can change settings of the SQL editor here.
+        Changes take effect immediately without needing a restart of
+        <span class="application">sqliteman</span>.
+        SQL Editor features are
+        <a href="ch07s12.html" title="SQL Editor">
+            described in its own section</a>.
+    </p>
+    <p>
+    </p>
+    <div class="screenshot">
+        <div class="mediaobject">
+            <img src="preferences-editor.png"
+                alt="Preferences: SQL Editor">
+        </div>
+    </div>
+    <p>
+    </p>
+    <div class="variablelist">
+        <dl>
+            <dt>
+                <span class="term">Font</span>
+            </dt>
+            <dd>
+                <p>
+                    Specify font and font size. It is usual
+                    use a non-proportional font for the source code editor.
+                </p>
+            </dd>
+            <dt>
+                <span class="term">
+                    Use Active Line Highlightin
+                </span>
+            </dt>
+            <dd>
+                <p>
+                    The active line will be highlighted if this feature
+                    is set. Change its color with the
+                    <span class="guibutton">Color...</span>
+                    button.
+                </p>
+            </dd>
+            <dt>
+                <span class="term">
+                    Use Maximum Text Width Mark
+                </span>
+            </dt>
+            <dd>
+                <p>
+                    When this option is set, a vertical line at the given
+                    column position will be shown.
+                    This can be useful to keep coding standards
+                </p>
+            </dd>
+            <dt
+                ><span class="term">
+                    Use Code Completion With Length
+                </span>
+            </dt>
+            <dd>
+                <p>
+                    Code completion will be enabled if is this feature
+                    is set. The editor will show a pop-up menu with
+                    matching words when the currently edited word reaches
+                    the threshold length.
+                </p>
+            </dd>
+            <dt>
+                <span class="term">Use Editor Shortcuts
+                </span>
+            </dt>
+            <dd>
+                <p>
+                    The editor shortcuts mechanism will be allowed if
+                    this feature is enabled. Pressing the
+                    <span class="guibutton">Define...</span>
+                    button will open a shortcut definition dialog.
+                </p>
+                <p>
+                    You can define shortcuts and expansion in this
+                    sub-dialog:
+                </p>
+                <p>
+                </p>
+                    <div class="screenshot">
+                        <div class="mediaobject">
+                            <img src="preferences-shortcuts.png"
+                                alt="Preferences: Editor Shortcuts">
+                        </div>
+                    </div>
+                <p>
+                </p>
+            </dd>
+        </dl>
+    </div>
+</div>
+<div class="sect2" lang="en">
+    <div class="titlepage">
+        <div>
+            <h3 class="title">
+                <a name="preferences-extensionManager"></a>
+                Extension Manager
+            </h3>
+        </div>
+    </div>
+    <p>
+        Here you can enable or disable extension loading and add or remove
+        <span class="application">sqlite</span>
+        extensions from the list of those automatically loaded when
+        <span class="application">sqliteman </span>
+        is started. Extensions can also be explicitly loaded from the
+        <a href="ch06.html#id2455340">
+            <span class="guimenu">System</span> Menu</a>.
+    </p>
+    <p>
+    </p>
+    <div class="screenshot">
+        <div class="mediaobject">
+            <img src="extensionmanager.png"
+                alt="Preferences: Extension Manager">
+        </div>
+    </div>
+    <p>
+    </p>
+    <div class="variablelist">
+    </div>
+    <dl>
+        <dt>
+        <span class="term">Allow Extension Loading</span>
+        </dt>
+        <dd>
+        <p>
+            If the box is checked, extension loading is allowed.
+        </p>
+        </dd>
+        <dt>
+        <span class="term">Automatically Loaded Extensions</span>
+        </dt>
+        <dd>
+        <p>
+            The list shows the extensions which will be automatically loaded
+            when
+            <span class="application">sqliteman</span>
+            is started. The
+            <span class="guibutton">Add...</span>
+            button will bring up a file browser window to add an extension
+            to the list.
+            Selecting an extension in the list (by clcking on it)
+            and then clicking the
+            <span class="guibutton">Remove</span>
+            button will remove the selected extension from the list.
+        </p>
+        </dd>
+    </dl>
+</div></div></div></div>
+<div class="navfooter"><hr>
+    <table width="100%" summary="Navigation footer">
+        <tr>
+            <td width="40%" align="left">
+                <a accesskey="p" href="ch07.html">Prev</a>
+            </td>
+            <td width="20%" align="center"></td>
+            <td width="40%" align="right">
+                <a accesskey="n" href="ch07s00.html">Next</a>
+            </td>
+        </tr>
+        <tr>
+            <td width="40%" align="left" valign="top">
+                Features and Dialogs
+            </td>
+            <td width="20%" align="center">
+                <a accesskey="h" href="index.html">Contents</a>
+            </td>
+            <td width="40%" align="right" valign="top">
+                User defined functions
+            </td>
+        </tr>
+    </table>
+</div>
+</body></html>

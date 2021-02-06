@@ -353,20 +353,21 @@ void DataViewer::addRow()
 	{
 		model->fetchAll();
 		activeRow = model->rowCount();
-		model->insertRows(activeRow, 1);
-		ui.tableView->scrollToBottom();
-		ui.tableView->selectRow(activeRow);
-		if (Preferences::instance()->openNewInItemView())
-		{
-			rowDoubleClicked(activeRow);
-		}
-		updateButtons();
-		if (ui.tabWidget->currentIndex() == 1)
-		{
-			ui.itemView->setCurrentIndex(
-				ui.tableView->currentIndex().row(),
-				ui.tableView->currentIndex().column());
-		}
+		if (model->insertRows(activeRow, 1)) {
+            ui.tableView->scrollToBottom();
+            ui.tableView->selectRow(activeRow);
+            if (Preferences::instance()->openNewInItemView())
+            {
+                rowDoubleClicked(activeRow);
+            }
+            updateButtons();
+            if (ui.tabWidget->currentIndex() == 1)
+            {
+                ui.itemView->setCurrentIndex(
+                    ui.tableView->currentIndex().row(),
+                    ui.tableView->currentIndex().column());
+            }
+        }
 	}
 }
 
@@ -382,13 +383,12 @@ void DataViewer::copyRow()
         int row = index.row();
         if (row >= 0)
         {
-            QSqlRecord rec(model->record(row));
 			model->fetchAll();
-			if (model->insertRecord(-1, rec))
+            activeRow = model->rowCount();
+			if (model->copyRow(activeRow, model->record(row)))
 			{
-				QModelIndex newIndex = ui.tableView->model()->index(
-					model->rowCount() - 1, index.column());
-				ui.tableView->setCurrentIndex(newIndex);
+                ui.tableView->scrollToBottom();
+                ui.tableView->selectRow(activeRow);
 				if (Preferences::instance()->openNewInItemView())
 				{
 					rowDoubleClicked(activeRow);
@@ -887,6 +887,8 @@ DataViewer::DataViewer(QWidget * parent)
 	ui.tableView->setItemDelegate(delegate);
 	connect(delegate, SIGNAL(dataChanged()),
 		this, SLOT(tableView_dataChanged()));
+	connect(delegate, SIGNAL(insertNull()),
+		this, SLOT(actInsertNull_triggered()));
 
 	// workaround for Ctrl+C
 	DataViewerTools::KeyPressEater *keyPressEater = new DataViewerTools::KeyPressEater(this);
@@ -1233,8 +1235,8 @@ void DataViewer::rowCountChanged()
 		= qobject_cast<QSqlQueryModel*>(ui.tableView->model());
 	if ((model != 0) && (model->columnCount() > 0))
 	{
-		if(   (model->rowCount() != 0)
-		   && model->canFetchMore())
+		if (   (model->rowCount() != 0)
+		    && model->canFetchMore())
 	    {
 			cached = canFetchMore + "<br/>";
 	    }

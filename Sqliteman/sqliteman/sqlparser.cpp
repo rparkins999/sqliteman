@@ -1,5 +1,5 @@
 /*
-For general Sqliteman cop= yright and licensing information please refer
+For general Sqliteman copyright and licensing information please refer
 to the COPYING file provided with the program. Following this notice may exist
 a copyright and/or license notice that predates the release of Sqliteman
 for which a new license (GPL+exception) is in place.
@@ -26,11 +26,11 @@ namespace { // local to this file (and therefore static)
     QStringList prefixes({"CASE", "CAST", "DISTINCT", "EXISTS" });
     // identifiers which are binary operators
     QStringList operators({"AND", "AS", "BETWEEN", "COLLATE",
-                          "ELSE", "ESCAPE", "GLOB", "IN",
-                          "IS", "LIKE", "MATCH", "OR", "REGEXP"});
+                           "ELSE", "ESCAPE", "GLOB", "IN", "IS",
+                           "LIKE", "MATCH", "OR", "REGEXP", "THEN", "WHEN"});
     // identifiers which can combine after NOT
-    QStringList afterNOTs({"LIKE", "GLOB", "REGEXP", "MATCH",
-                          "BETWEEN", "IN"});
+    QStringList afterNOTs({"BETWEEN", "GLOB", "IN", "LIKE",
+                           "MATCH", "REGEXP"});
     // used to save creating one whenever needed
     Expression nullExpression = {exprNull, NULL, {"", tokenNone}, NULL};
     // used to save creating one whenever needed
@@ -610,7 +610,7 @@ Expression * SqlParser::internalParser(
                 switch (t.type) {
                     case tokenIdentifier:
                         if (   (m_tokens.size() > 0)
-                            && (m_tokens.at(0).name == "("))
+                            && (m_tokens.at(0).type == tokenOpen))
                         { // We assume here that a user defined function name
                           // must be a valid unquoted identifier, although the
                           // sqlite documentation doesn't explicitly say this.
@@ -640,12 +640,25 @@ Expression * SqlParser::internalParser(
                     case tokenPrefix:
                     case tokenPrefixA:
                     case tokenPlusMinus: // prefixes
-                        if (t.name.compare("CAST", Qt::CaseInsensitive) == 0) {
+                        if (t.name.compare(
+                            "CASE", Qt::CaseInsensitive) == 0)
+                        {
+                            if (m_tokens.isEmpty()) { return NULL; }
+                            else if (m_tokens.at(0).name.compare(
+                                     "WHEN", Qt::CaseInsensitive) == 0)
+                            {
+                                m_tokens.removeFirst();
+                                t.name = "CASE WHEN"; // treat as single prefix
+                            }
+                            // fall though into normal prefix handling
+                        } else if (t.name.compare(
+                                   "CAST", Qt::CaseInsensitive) == 0)
+                        {
                             if (   m_tokens.isEmpty()
                                 || (m_tokens.at(0).type != tokenOpen))
                             {
                                 return NULL; // CAST not followed by '('
-                            }
+                            } // otherise fall into standard prefix code
                             expr = new Expression(); // CAST expression
                             expr->type = exprCall; // looks like a call
                             expr->terminal = t;
@@ -653,13 +666,12 @@ Expression * SqlParser::internalParser(
                             expr->right = internalParser(4, level, ends);
                             state = 3; // got operand, look for operator or end
                             continue;
-                        } else {
-                            // recurse to check for multiple prefixes
-                            expr = new Expression();
-                            expr->type = exprOpX;
-                            expr->terminal = t;
-                            expr->right = internalParser(1, level, ends);
                         }
+                        // recurse to check for multiple prefixes
+                        expr = new Expression();
+                        expr->type = exprOpX;
+                        expr->terminal = t;
+                        expr->right = internalParser(1, level, ends);
                         if (expr->right == NULL) { // invalid expression
                             destroyExpression(expr);
                             return NULL;
@@ -959,6 +971,7 @@ void SqlParser::clearField(FieldInfo &f)
 	f.isTablePkDesc = false;
 	f.isAutoIncrement = false;
 	f.isNotNull = false;
+    f.isUnique = false;
 }
 
 void SqlParser::addToPrimaryKey(FieldInfo &f)
@@ -1005,8 +1018,8 @@ void SqlParser::addToPrimaryKey(QString s)
 	}
 }
 
-// Currently this only parses CREATE TABLE or CREATE INDEX
-// statements as they can appear in the schema.
+// Currently this only parses CREATE TABLE or CREATE INDEX statements
+// (which sqliteman can alter) as they can appear in the schema.
 SqlParser::SqlParser(QString input)
 {
 	m_isUnique = false;
@@ -1020,7 +1033,8 @@ SqlParser::SqlParser(QString input)
 	while (!m_tokens.isEmpty())
 	{
         Token t = m_tokens.at(0);
-		QString s(t.name);
+		QString s;
+        if (t.type == tokenIdentifier) { s = t.name; } else { s = ""; }
 		switch (state)
 		{
 			case 0: // nothing
@@ -1031,21 +1045,15 @@ SqlParser::SqlParser(QString input)
 				continue;
 			case 1: // seen CREATE
 				// TEMP[ORARY] doesn't get copied to schema
-				if (s.compare("TABLE", Qt::CaseInsensitive) == 0)
-				{
-					state = 2; // CREATE TABLE
-					m_type = createTable;
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					m_isUnique = true;
-					state = 82; // CREATE UNIQUE
-				}
-				else if (s.compare("INDEX", Qt::CaseInsensitive) == 0)
-				{
-					state = 83; // CREATE INDEX
-				}
-				else { break; } // not a valid create statement
+                if (s.compare("TABLE", Qt::CaseInsensitive) == 0) {
+                    state = 2; // CREATE TABLE
+                    m_type = createTable;
+                } else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    m_isUnique = true;
+                    state = 89; // CREATE UNIQUE
+                } else if (s.compare("INDEX", Qt::CaseInsensitive) == 0) {
+                    state = 90; // CREATE INDEX
+                } else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
 			case 2: // CREATE TABLE
@@ -1057,18 +1065,15 @@ SqlParser::SqlParser(QString input)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-					m_tableName = s;
+					m_tableName = t.name;
 					state = 3; // had table name
-				}
-				else { break; } // not a valid create statement
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
 			case 3:
-				if (s.compare("(") == 0)
-				{
+				if (t.type == tokenOpen) {
 					state = 4; // CREATE TABLE ( <columns...>
-				}
-				else { break; } // not a valid create statement
+				} else { break; } // AS SELECT is not copied to the schema
 				m_tokens.removeFirst();
 				continue;
 			case 4: // look for a column definition
@@ -1078,923 +1083,704 @@ SqlParser::SqlParser(QString input)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-					f.name = s;
+					f.name = t.name;
 					state = 6; // look for type name or constraint or , or )
-				}
-				else { break; } // not a valid create statement
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
 			case 5: // look for column definition or table constraint
-				if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0)
+				if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0) {
+					state = 46; // look for table constraint name
+				} else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0) {
+					state = 48; // look for KEY
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 55; // look for columns and conflict clause
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 64; // look for bracketed expression
+				} else if (s.compare("FOREIGN", Qt::CaseInsensitive) == 0) {
+					state = 66; // look for KEY
+				} else if (   (t.type == tokenIdentifier)
+                           || (t.type == tokenQuotedIdentifier)
+                           || (t.type == tokenSquareIdentifier)
+                           || (t.type == tokenBackQuotedIdentifier)
+                           || (t.type == tokenStringLiteral))
 				{
-					state = 39; // look for table constraint name
-				}
-				else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0)
-				{
-					state = 41; // look for KEY
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 48; // look for columns and conflict clause
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 57; // look for bracketed expression
-				}
-				else if (s.compare("FOREIGN", Qt::CaseInsensitive) == 0)
-				{
-					state = 59; // look for KEY
-				}
-				else if (   (t.type == tokenIdentifier)
-						 || (t.type == tokenQuotedIdentifier)
-						 || (t.type == tokenSquareIdentifier)
-						 || (t.type == tokenBackQuotedIdentifier)
-						 || (t.type == tokenStringLiteral))
-				{
-					f.name = s;
+					f.name = t.name;
 					state = 6; // look for type name or constraint or , or )
-				}
-				else { break; } // not a valid create statement
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
 			case 6: // look for type name or column constraint or , or )
-				if (s.compare(",") == 0)
-				{
+				if (t.type == tokenComma) {
 					m_fields.append(f);
 					clearField(f);
 					state = 5;
-				}
-				else if (s.compare(")") == 0)
-				{
+				} else if (t.type == tokenClose) {
 					m_fields.append(f);
 					clearField(f);
-					state = 79; // check for WITHOUT ROWID or rubbish at end
-				}
-				else if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0)
-				{
-					state = 8; // look for column constraint name
-				}
-				else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0)
-				{
-					state = 10; // look for KEY
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 16; // look for NULL
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 17; // look for conflict clause or next
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 20; // look for bracketed expression
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 22; // look for default value
-				}
-				else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 25; // look for collation name
-				}
-				else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0)
-				{
-					state = 26; // look for (foreign) table name
-				}
-				else if (   (t.type == tokenIdentifier)
-						 || (t.type == tokenQuotedIdentifier)
-						 || (t.type == tokenSquareIdentifier)
-						 || (t.type == tokenBackQuotedIdentifier)
-						 || (t.type == tokenStringLiteral))
-				{
-					f.type = s;
-					state = 7; // look for constraint or , or )
-				}
-				else { break; } // not a valid create statement
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0) {
+					state = 15; // look for column constraint name
+				} else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0) {
+					state = 17; // look for KEY
+				} else if (t.type == tokenNOT) {
+					state = 23; // look for NULL
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 24; // look for conflict clause or next
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 27; // look for bracketed expression
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 29; // look for default value
+				} else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 32; // look for collation name
+				} else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 33; // look for (foreign) table name
+				} else if (   (t.type == tokenIdentifier)
+						   || (t.type == tokenQuotedIdentifier)
+						   || (t.type == tokenSquareIdentifier)
+						   || (t.type == tokenBackQuotedIdentifier)
+						   || (t.type == tokenStringLiteral))
+				{ // look for more type name or column constraint or , or ) 
+                    f.type = t.name;
+                    state = 7; 
+                } else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 7: // look for column constraint or , or )
-				if (s.compare(",") == 0)
-				{
+			case 7: // look for more type name or column constraint or , or )
+				if (t.type == tokenOpen) {
+                    f.type.append("(");
+					state = 8; // look for field width(s)
+				} else if (t.type == tokenComma) {
 					m_fields.append(f);
 					clearField(f);
-					state = 5; // look for column definition or table constraint
-				}
-				else if (s.compare(")") == 0)
-				{
+					state = 5;
+				} else if (t.type == tokenClose) {
 					m_fields.append(f);
 					clearField(f);
-					state = 81; // check for WITHOUT ROWID or rubbish at end
-				}
-				else if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0)
-				{
-					state = 8; // look for column constraint name
-				}
-				else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0)
-				{
-					state = 10; // look for KEY
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 16; // look for NULL
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 17; // look for conflict clause or next
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 20; // look for bracketed expression
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 22; // look for default value
-				}
-				else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 25; // look for collation name
-				}
-				else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0)
-				{
-					state = 26; // look for (foreign) table name
-				}
-				else { break; } // not a valid create statement
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0) {
+					state = 15; // look for column constraint name
+				} else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0) {
+					state = 17; // look for KEY
+				} else if (t.type == tokenNOT) {
+					state = 23; // look for NULL
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 24; // look for conflict clause or next
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 27; // look for bracketed expression
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 29; // look for default value
+				} else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 32; // look for collation name
+				} else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 33; // look for (foreign) table name
+				} else if (   (t.type == tokenIdentifier)
+						   || (t.type == tokenQuotedIdentifier)
+						   || (t.type == tokenSquareIdentifier)
+						   || (t.type == tokenBackQuotedIdentifier)
+						   || (t.type == tokenStringLiteral))
+				{ f.type.append(" ").append(t.name); }
+                else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 8: // look for column constraint name
+            case 8: // look for field width(s)
+                if (t.type == tokenPlusMinus) {
+                    f.type.append(t.name);
+                    state = 9; // only one sign allowed before number
+                } else if (t.type == tokenNumeric) { // real IS allowed
+                    f.type.append(t.name);
+                    state = 10; // look for , or )
+                } else { break; } // not a valid create statement
+				m_tokens.removeFirst();
+				continue;
+            case 9: // look for first field width after sign
+                if (t.type == tokenNumeric) { // real IS allowed
+                    f.type.append(t.name);
+                    state = 10; // look for , or )
+                } else { break; } // not a valid create statement
+				m_tokens.removeFirst();
+				continue;
+            case 10: // look for second field width or )
+                if (t.type == tokenComma) {
+                    f.type.append(t.name);
+                    state = 11; // look for second field width
+                } else if (t.type == tokenClose) {
+                    f.type.append(t.name);
+                    state = 14;
+                } else { break; } // not a valid create statement
+				m_tokens.removeFirst();
+				continue;
+            case 11: // look for second field width
+                if (t.type == tokenPlusMinus) {
+                    f.type.append(t.name);
+                    state = 12; // only one sign allowed before number
+                } else if (t.type == tokenNumeric) { // real IS allowed
+                    f.type.append(t.name);
+                    state = 13; // look for )
+                } else { break; } // not a valid create statement
+				m_tokens.removeFirst();
+				continue;
+            case 12: // look for second field width after sign
+                if (t.type == tokenNumeric) { // real IS allowed
+                    f.type.append(t.name);
+                    state = 13; // look for )
+                } else { break; } // not a valid create statement
+				m_tokens.removeFirst();
+				continue;
+            case 13: // look for ) after second field width
+                if (t.type == tokenClose) {
+                    f.type.append(t.name);
+                    state = 14; // look for column constraint or , or )
+                } else { break; } // not a valid create statement
+				m_tokens.removeFirst();
+				continue;
+			case 14: // look for column constraint or , or )
+				if (t.type == tokenComma) {
+					m_fields.append(f);
+					clearField(f);
+                    // look for column definition or table constraint
+					state = 5;
+				} else if (t.type == tokenClose) {
+					m_fields.append(f);
+					clearField(f);
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0) {
+					state = 15; // look for column constraint name
+				} else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0) {
+					state = 17; // look for KEY
+				} else if (t.type == tokenNOT) {
+					state = 23; // look for NULL
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 24; // look for conflict clause or next
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 27; // look for bracketed expression
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 29; // look for default value
+				} else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 32; // look for collation name
+				} else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 33; // look for (foreign) table name
+				} else { break; } // not a valid create statement
+				m_tokens.removeFirst();
+				continue;
+			case 15: // look for column constraint name
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
 					|| (t.type == tokenSquareIdentifier)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-					state = 9; // look for constraint or , or )
-				}
-				else { break; } // not a valid create statement
+					state = 16; // look for constraint or , or )
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 9: // look for constraint
-				if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0)
-				{
-					state = 10; // look for KEY
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 16; // look for NULL
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 17; // look for conflict clause or next
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 20; // look for bracketed expression
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 22; // look for default value
-				}
-				else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 25; // look for collation name
-				}
-				else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0)
-				{
-					state = 26; // look for (foreign) table name
-				}
-				else { break; } // not a valid create statement
+			case 16: // look for constraint
+				if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0) {
+					state = 17; // look for KEY
+				} else if (t.type == tokenNOT) {
+					state = 23; // look for NULL
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 24; // look for conflict clause or next
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 27; // look for bracketed expression
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 29; // look for default value
+				} else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 32; // look for collation name
+				} else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 33; // look for (foreign) table name
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 10: // look for KEY
-				if (s.compare("KEY", Qt::CaseInsensitive) == 0)
-				{
+			case 17: // look for KEY
+				if (s.compare("KEY", Qt::CaseInsensitive) == 0) {
 					addToPrimaryKey(f);
-					state = 11; // look for ASC or DESC or conflict clause
-				}
-				else { break; } // not a valid create statement
+					state = 18; // look for ASC or DESC or conflict clause
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 11: // look for ASC or DESC or conflict clause
-				if (s.compare("ASC", Qt::CaseInsensitive) == 0)
-				{
-					state = 12; // look for conflict clause
-				}
-				else if (s.compare("DESC", Qt::CaseInsensitive) == 0)
-				{
+			case 18: // look for ASC or DESC or conflict clause
+				if (s.compare("ASC", Qt::CaseInsensitive) == 0) {
+					state = 19; // look for conflict clause
+				} else if (s.compare("DESC", Qt::CaseInsensitive) == 0) {
 					f.isColumnPkDesc = true;
-					state = 12; // look for conflict clause
-				}
-				else if (s.compare("ON", Qt::CaseInsensitive) == 0)
+					state = 19; // look for conflict clause
+				} else if (s.compare("ON", Qt::CaseInsensitive) == 0) {
+					state = 20; // look for CONFLICT
+				} else if (s.compare(
+                    "AUTOINCREMENT", Qt::CaseInsensitive) == 0)
 				{
-					state = 13; // look for CONFLICT
-				}
-				else if (s.compare("AUTOINCREMENT", Qt::CaseInsensitive) == 0)
-				{
-					//FIXME DESC or ASC is allowed after AUTOINCREMENT
 					f.isAutoIncrement = true;
-					state = 7; // look for column constraint or , or )
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 16; // look for NULL
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 17; // look for conflict clause or next
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 20; // look for bracketed expression
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 22; // look for default value
-				}
-				else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 25; // look for collation name
-				}
-				else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0)
-				{
-					state = 26; // look for (foreign) table name
-				}
-				else if (s.compare(",") == 0)
-				{
+					state = 14; // look for column constraint or , or )
+				} else if (t.type == tokenNOT) {
+					state = 23; // look for NULL
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 24; // look for conflict clause or next
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 27; // look for bracketed expression
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 29; // look for default value
+				} else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 32; // look for collation name
+				} else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 33; // look for (foreign) table name
+				} else if (t.type == tokenComma) {
 					m_fields.append(f);
 					clearField(f);
 					state = 5;
-				}
-				else if (s.compare(")") == 0)
-				{
+				} else if (t.type == tokenClose) {
 					m_fields.append(f);
 					clearField(f);
-					state = 81; // check for WITHOUT ROWID or rubbish at end
-				}
-				else { break; } // not a valid create statement
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 12: // look for conflict clause
-				if (s.compare("ON", Qt::CaseInsensitive) == 0)
+			case 19: // look for conflict clause
+				if (s.compare("ON", Qt::CaseInsensitive) == 0) {
+					state = 20; // look for CONFLICT
+				} else if (s.compare(
+                    "AUTOINCREMENT", Qt::CaseInsensitive) == 0)
 				{
-					state = 13; // look for CONFLICT
-				}
-				else if (s.compare("AUTOINCREMENT", Qt::CaseInsensitive) == 0)
-				{
-					//FIXME DESC or ASC is allowed after AUTOINCREMENT
+                    if (f.isColumnPkDesc) { break; } // not after DESC
 					f.isAutoIncrement = true;
-					state = 7; // look for column constraint or , or )
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 16; // look for NULL
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 17; // look for conflict clause or next
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 20; // look for bracketed expression
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 22; // look for default value
-				}
-				else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 25; // look for collation name
-				}
-				else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0)
-				{
-					state = 26; // look for (foreign) table name
-				}
-				else if (s.compare(",") == 0)
-				{
+					state = 14; // look for column constraint or , or )
+				} else if (t.type == tokenNOT) {
+					state = 23; // look for NULL
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 24; // look for conflict clause or next
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 27; // look for bracketed expression
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 29; // look for default value
+				} else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 32; // look for collation name
+				} else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 33; // look for (foreign) table name
+				} else if (t.type == tokenComma) {
 					m_fields.append(f);
 					clearField(f);
 					state = 5;
-				}
-				else if (s.compare(")") == 0)
-				{
+				} else if (t.type == tokenClose) {
 					m_fields.append(f);
 					clearField(f);
-					state = 81; // check for WITHOUT ROWID or rubbish at end
-				}
-				else { break; } // not a valid create statement
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 13: // look for CONFLICT
-				if (s.compare("CONFLICT", Qt::CaseInsensitive) == 0)
-				{
-					state = 14; // look for conflict action
-				}
-				else { break; } // not a valid create statement
+			case 20: // look for CONFLICT
+				if (s.compare("CONFLICT", Qt::CaseInsensitive) == 0) {
+					state = 21; // look for conflict action
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 14: // look for conflict action
-				if (s.compare("ROLLBACK", Qt::CaseInsensitive) == 0)
-				{
-					state = 15; // look for AUTOINCREMENT or next
-				}
-				else if (s.compare("ABORT", Qt::CaseInsensitive) == 0)
-				{
-					state = 15; // look for AUTOINCREMENT or next
-				}
-				else if (s.compare("FAIL", Qt::CaseInsensitive) == 0)
-				{
-					state = 15; // look for AUTOINCREMENT or next
-				}
-				else if (s.compare("IGNORE", Qt::CaseInsensitive) == 0)
-				{
-					state = 15; // look for AUTOINCREMENT or next
-				}
-				else if (s.compare("REPLACE", Qt::CaseInsensitive) == 0)
-				{
-					state = 15; // look for AUTOINCREMENT or next
-				}
-				else { break; } // not a valid create statement
+			case 21: // look for conflict action
+				if (s.compare("ROLLBACK", Qt::CaseInsensitive) == 0) {
+					state = 22; // look for AUTOINCREMENT or next
+				} else if (s.compare("ABORT", Qt::CaseInsensitive) == 0) {
+					state = 22; // look for AUTOINCREMENT or next
+				} else if (s.compare("FAIL", Qt::CaseInsensitive) == 0) {
+					state = 22; // look for AUTOINCREMENT or next
+				} else if (s.compare("IGNORE", Qt::CaseInsensitive) == 0) {
+					state = 22; // look for AUTOINCREMENT or next
+				} else if (s.compare("REPLACE", Qt::CaseInsensitive) == 0) {
+					state = 22; // look for AUTOINCREMENT or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 15: // look for AUTOINCREMENT or next
-				if (s.compare("AUTOINCREMENT", Qt::CaseInsensitive) == 0)
-				{
+			case 22: // look for AUTOINCREMENT or next
+				if (s.compare("AUTOINCREMENT", Qt::CaseInsensitive) == 0) {
 					//FIXME DESC or ASC is allowed after AUTOINCREMENT
 					f.isAutoIncrement = true;
-					state = 7; // look for column constraint or , or )
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 16; // look for NULL
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 17; // look for conflict clause or next
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 20; // look for bracketed expression
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 22; // look for default value
-				}
-				else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 25; // look for collation name
-				}
-				else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0)
-				{
-					state = 26; // look for (foreign) table name
-				}
-				else if (s.compare(",") == 0)
-				{
+					state = 14; // look for column constraint or , or )
+				} else if (t.type == tokenNOT) {
+					state = 23; // look for NULL
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 24; // look for conflict clause or next
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 27; // look for bracketed expression
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 29; // look for default value
+				} else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 32; // look for collation name
+				} else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 33; // look for (foreign) table name
+				} else if (t.type == tokenComma) {
 					m_fields.append(f);
 					clearField(f);
 					state = 5;
-				}
-				else if (s.compare(")") == 0)
-				{
+				} else if (t.type == tokenClose) {
 					m_fields.append(f);
 					clearField(f);
-					state = 81; // check for WITHOUT ROWID or rubbish at end
-				}
-				else { break; } // not a valid create statement
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 16: // look for NULL
-				if (s.compare("NULL", Qt::CaseInsensitive) == 0)
-				{
+			case 23: // look for NULL
+				if (s.compare("NULL", Qt::CaseInsensitive) == 0) {
 					f.isNotNull = true;
-					state = 15; // look for conflict clause or next
-				}
-				else { break; } // not a valid create statement
+					state = 22; // look for conflict clause or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 17: // look for conflict clause or next
-				if (s.compare("ON", Qt::CaseInsensitive) == 0)
-				{
-					state = 18; // look for CONFLICT
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 16; // look for NULL
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 17; // look for conflict clause or next
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 20; // look for bracketed expression
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 22; // look for default value
-				}
-				else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 25; // look for collation name
-				}
-				else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0)
-				{
-					state = 26; // look for (foreign) table name
-				}
-				else if (s.compare(",") == 0)
-				{
+			case 24: // look for conflict clause or next
+				if (s.compare("ON", Qt::CaseInsensitive) == 0) {
+					state = 25; // look for CONFLICT
+				} else if (t.type == tokenNOT) {
+					state = 23; // look for NULL
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 24; // look for conflict clause or next
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 27; // look for bracketed expression
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 29; // look for default value
+				} else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 32; // look for collation name
+				} else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 33; // look for (foreign) table name
+				} else if (t.type == tokenComma) {
 					m_fields.append(f);
 					clearField(f);
 					state = 5;
-				}
-				else if (s.compare(")") == 0)
-				{
+				} else if (t.type == tokenClose) {
 					m_fields.append(f);
 					clearField(f);
-					state = 81; // check for WITHOUT ROWID or rubbish at end
-				}
-				else { break; } // not a valid create statement
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 18: // look for CONFLICT
-				if (s.compare("CONFLICT", Qt::CaseInsensitive) == 0)
-				{
-					state = 19; // look for conflict action
-				}
-				else { break; } // not a valid create statement
+			case 25: // look for CONFLICT
+				if (s.compare("CONFLICT", Qt::CaseInsensitive) == 0) {
+					state = 26; // look for conflict action
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 19: // look for conflict action
-				if (s.compare("ROLLBACK", Qt::CaseInsensitive) == 0)
-				{
-					state = 7; // look for constraint or , or )
-				}
-				else if (s.compare("ABORT", Qt::CaseInsensitive) == 0)
-				{
-					state = 7; // look for constraint or , or )
-				}
-				else if (s.compare("FAIL", Qt::CaseInsensitive) == 0)
-				{
-					state = 7; // look for constraint or , or )
-				}
-				else if (s.compare("IGNORE", Qt::CaseInsensitive) == 0)
-				{
-					state = 7; // look for constraint or , or )
-				}
-				else if (s.compare("REPLACE", Qt::CaseInsensitive) == 0)
-				{
-					state = 7; // look for constraint or , or )
-				}
-				else { break; } // not a valid create statement
+			case 26: // look for conflict action
+				if (s.compare("ROLLBACK", Qt::CaseInsensitive) == 0) {
+					state = 14; // look for constraint or , or )
+				} else if (s.compare("ABORT", Qt::CaseInsensitive) == 0) {
+					state = 14; // look for constraint or , or )
+				} else if (s.compare("FAIL", Qt::CaseInsensitive) == 0) {
+					state = 14; // look for constraint or , or )
+				} else if (s.compare("IGNORE", Qt::CaseInsensitive) == 0) {
+					state = 14; // look for constraint or , or )
+				} else if (s.compare("REPLACE", Qt::CaseInsensitive) == 0) {
+					state = 14; // look for constraint or , or )
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 20: // look for bracketed expression
-				if (s.compare("(") == 0)
-				{
-					state = 21; // look for end of expression
+			case 27: // look for bracketed expression
+				if (t.type == tokenOpen) {
+					state = 28; // look for end of expression
 					++m_depth;
-				}
-				else { break; } // not a valid create statement
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 21: // look for end of expression
-				if (s.compare("(") == 0)
-				{
-					++m_depth;
-				}
-				else if (s.compare(")") == 0)
-				{
-					if (--m_depth == 0) { state = 7; }
+			case 28: // look for end of expression
+				if (t.type == tokenOpen) { ++m_depth; }
+				else if (t.type == tokenClose) {
+					if (--m_depth == 0) { state = 14; }
 				}
 				m_tokens.removeFirst();
 				continue;
-			case 22: // look for default value
-                if (s.compare("(") == 0) {
+			case 29: // look for default value
+                if (t.type == tokenOpen) {
 					f.defaultIsExpression = true;
 					f.defaultValue = "(";
                     m_lastToString = t;
-					state = 23; // scan for end of default value expression
+					state = 30; // scan for end of default value expression
 					++m_depth;
-				} else if (   (s.compare("+") == 0)
-                           || (s.compare("-") == 0))
-				{
-					f.defaultValue = s;
-					state = 24; // look for (signed) number
-				}
-				else
-				{
+				} else if (t.type == tokenPlusMinus) {
+					f.defaultValue = t.name;
+					state = 31; // look for (signed) number
+				} else {
 					if (   (t.type == tokenStringLiteral)
                         || (t.type == tokenQuotedIdentifier)
 						|| (t.type == tokenSquareIdentifier)
 						|| (t.type == tokenBackQuotedIdentifier))
-					{
-						f.defaultisQuoted = true;
-					}
+					{ f.defaultisQuoted = true; }
 					f.defaultValue = s;
-					state = 7; // look for column constraint or , or )
+					state = 14; // look for column constraint or , or )
 				}
 				m_tokens.removeFirst();
 				continue;
-			case 23: // scan for end of default value expression
+			case 30: // scan for end of default value expression
                 // We don't attempt to parse it because we got it
                 // from the schema so we know it is valid.
-				if (s.compare("(") == 0)
-				{
-					f.defaultValue.append(s);
+				if (t.type == tokenOpen) {
+					f.defaultValue.append("(");
 					++m_depth;
-				}
-				else if (s.compare(")") == 0)
-				{
-					f.defaultValue.append(s);
-					if (--m_depth == 0) { state = 7; }
-				}
-				else
-				{
+				} else if (t.type == tokenClose) {
+					f.defaultValue.append(")");
+					if (--m_depth == 0) { state = 14; }
+				} else {
 					f.defaultValue.append(tos(t));
 				}
 				m_tokens.removeFirst();
 				continue;
-			case 24: // look for (signed) number
+			case 31: // look for (signed) number
                 // Strangely sqlite allows a string literal instead
 				if (   (t.type == tokenNumeric)
                     || (t.type == tokenStringLiteral))
 				{
-					f.defaultValue.append(s);
-					state = 7; // look for column constraint or , or )
-				}
-				else { break; } // not a valid create statement
+					f.defaultValue.append(t.name);
+					state = 14; // look for column constraint or , or )
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 25: // look for collation name
+			case 32: // look for collation name
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
 					|| (t.type == tokenSquareIdentifier)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-					state = 7; // look for constraint or , or )
-				}
-				else { break; } // not a valid create statement
+					state = 14; // look for constraint or , or )
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 26: // look for (foreign) table name
+			case 33: // look for (foreign) table name
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
 					|| (t.type == tokenSquareIdentifier)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-                    f.referencedTable = s;
-					state = 27; // look for clause or next
-				}
-				else { break; } // not a valid create statement
+                    f.referencedTable = t.name;
+					state = 34; // look for clause or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 27: // look for column list or rest of foreign key clause
-				if (s.compare("(") == 0)
-				{
-					state = 28; // look for column list
-				}
-				else if (s.compare("ON", Qt::CaseInsensitive) == 0)
-				{
-					state = 31; // look for DELETE or UPDATE
-				}
-				else if (s.compare("MATCH", Qt::CaseInsensitive) == 0)
-				{
-					state = 35; // look for SIMPLE or PARTIAL or FULL
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 36; // look for DEFERRABLE
-				}
-				else if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0)
-				{
-					state = 37; // look for INITIALLY or next
-				}
-				else if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0)
-				{
-					state = 8; // look for column constraint name
-				}
-				else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0)
-				{
-					state = 10; // look for KEY
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 16; // look for NULL
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 17; // look for conflict clause or next
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 20; // look for bracketed expression
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 22; // look for default value
-				}
-				else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 25; // look for collation name
-				}
-				else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0)
-				{
-					state = 26; // look for (foreign) table name
-				}
-				else if (s.compare(",") == 0)
-				{
+			case 34: // look for column list or rest of foreign key clause
+				if (t.type == tokenOpen) {
+					state = 35; // look for column list
+				} else if (s.compare("ON", Qt::CaseInsensitive) == 0) {
+					state = 38; // look for DELETE or UPDATE
+				} else if (s.compare("MATCH", Qt::CaseInsensitive) == 0) {
+					state = 42; // look for SIMPLE or PARTIAL or FULL
+				} else if (t.type == tokenNOT) {
+					state = 43; // look for DEFERRABLE or NULL
+				} else if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0) {
+					state = 44; // look for INITIALLY or next
+				} else if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0) {
+					state = 15; // look for column constraint name
+				} else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0) {
+					state = 17; // look for KEY
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 24; // look for conflict clause or next
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 27; // look for bracketed expression
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 29; // look for default value
+				} else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 32; // look for collation name
+				} else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 33; // look for (foreign) table name
+				} else if (t.type == tokenComma) {
 					m_fields.append(f);
 					clearField(f);
 					state = 5;
-				}
-				else if (s.compare(")") == 0)
-				{
+				} else if (t.type == tokenClose) {
 					m_fields.append(f);
 					clearField(f);
-					state = 81; // check for WITHOUT ROWID or rubbish at end
+					state = 86; // check for WITHOUT ROWID or rubbish at end
 				}
 				else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 28: // look for column list
+			case 35: // look for column list
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
 					|| (t.type == tokenSquareIdentifier)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-                    f.referencedKeys.append(s);
-					state = 29; // look for next column name or )
-				}
-				else { break; } // not a valid create statement
+                    f.referencedKeys.append(t.name);
+					state = 36; // look for next column name or )
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 29: // look for next column name or )
-				if (s.compare(",") == 0)
-				{
-					state = 28; // look for column list
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 30; // look for rest of foreign key clause
-				}
-				else { break; } // not a valid create statement
+			case 36: // look for next column name or )
+				if (t.type == tokenComma) {
+					state = 35; // look for column list
+				} else if (t.type == tokenClose) {
+					state = 37; // look for rest of foreign key clause
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 30: // look for rest of foreign key clause
-				if (s.compare("ON", Qt::CaseInsensitive) == 0)
-				{
-					state = 31; // look for DELETE or UPDATE
-				}
-				else if (s.compare("MATCH", Qt::CaseInsensitive) == 0)
-				{
-					state = 35; // look for SIMPLE or PARTIAL or FULL
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 36; // look for DEFERRABLE
-				}
-				else if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0)
-				{
-					state = 37; // look for INITIALLY
-				}
-				else if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0)
-				{
-					state = 8; // look for column constraint name
-				}
-				else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0)
-				{
-					state = 10; // look for KEY
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 16; // look for NULL
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 17; // look for conflict clause or next
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 20; // look for bracketed expression
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 22; // look for default value
-				}
-				else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 25; // look for collation name
-				}
-				else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0)
-				{
-					state = 26; // look for (foreign) table name
-				}
-				else if (s.compare(",") == 0)
-				{
+			case 37: // look for rest of foreign key clause
+				if (s.compare("ON", Qt::CaseInsensitive) == 0) {
+					state = 38; // look for DELETE or UPDATE
+				} else if (s.compare("MATCH", Qt::CaseInsensitive) == 0) {
+					state = 42; // look for SIMPLE or PARTIAL or FULL
+				} else if (t.type == tokenNOT) {
+					state = 43; // look for DEFERRABLE or NULL
+				} else if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0) {
+					state = 44; // look for INITIALLY
+				} else if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0) {
+					state = 15; // look for column constraint name
+				} else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0) {
+					state = 17; // look for KEY
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 24; // look for conflict clause or next
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 27; // look for bracketed expression
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 29; // look for default value
+				} else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 32; // look for collation name
+				} else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 33; // look for (foreign) table name
+				} else if (t.type == tokenComma) {
 					m_fields.append(f);
 					clearField(f);
 					state = 5;
-				}
-				else if (s.compare(")") == 0)
-				{
+				} else if (t.type == tokenClose) {
 					m_fields.append(f);
 					clearField(f);
-					state = 81; // check for WITHOUT ROWID or rubbish at end
-				}
-				else { break; } // not a valid create statement
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 31: // look for DELETE or UPDATE
-				if (s.compare("DELETE", Qt::CaseInsensitive) == 0)
-				{
-					state = 32; // look for foreign key action
-				}
-				else if (s.compare("UPDATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 32; // look for foreign key action
-				}
-				else { break; } // not a valid create statement
+			case 38: // look for DELETE or UPDATE
+				if (s.compare("DELETE", Qt::CaseInsensitive) == 0) {
+					state = 39; // look for foreign key action
+				} else if (s.compare("UPDATE", Qt::CaseInsensitive) == 0) {
+					state = 39; // look for foreign key action
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 32: // look for foreign key action
-				if (s.compare("SET", Qt::CaseInsensitive) == 0)
-				{
-					state = 33; // look for NULL or DEFAULT
-				}
-				else if (s.compare("CASCADE", Qt::CaseInsensitive) == 0)
-				{
-					state = 30; // look for rest of foreign key clause
-				}
-				else if (s.compare("RESTRICT", Qt::CaseInsensitive) == 0)
-				{
-					state = 30; // look for rest of foreign key clause
-				}
-				else if (s.compare("NO", Qt::CaseInsensitive) == 0)
-				{
-					state = 34; // look for ACTION
-				}
-				else { break; } // not a valid create statement
+			case 39: // look for foreign key action
+				if (s.compare("SET", Qt::CaseInsensitive) == 0) {
+					state = 40; // look for NULL or DEFAULT
+				} else if (s.compare("CASCADE", Qt::CaseInsensitive) == 0) {
+					state = 37; // look for rest of foreign key clause
+				} else if (s.compare("RESTRICT", Qt::CaseInsensitive) == 0) {
+					state = 37; // look for rest of foreign key clause
+				} else if (s.compare("NO", Qt::CaseInsensitive) == 0) {
+					state = 41; // look for ACTION
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 33: // look for NULL or DEFAULT
-				if (s.compare("NULL", Qt::CaseInsensitive) == 0)
-				{
-					state = 30; // look for rest of foreign key clause
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 30; // look for rest of foreign key clause
-				}
-				else { break; } // not a valid create statement
+			case 40: // look for NULL or DEFAULT
+				if (s.compare("NULL", Qt::CaseInsensitive) == 0) {
+					state = 37; // look for rest of foreign key clause
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 37; // look for rest of foreign key clause
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 34: // look for ACTION
-				if (s.compare("ACTION", Qt::CaseInsensitive) == 0)
-				{
-					state = 30; // look for rest of foreign key clause
-				}
-				else { break; } // not a valid create statement
+			case 41: // look for ACTION
+				if (s.compare("ACTION", Qt::CaseInsensitive) == 0) {
+					state = 37; // look for rest of foreign key clause
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 35: // look for SIMPLE or PARTIAL or FULL
-				if (s.compare("SIMPLE", Qt::CaseInsensitive) == 0)
-				{
-					state = 30; // look for rest of foreign key clause
-				}
-				else if (s.compare("PARTIAL", Qt::CaseInsensitive) == 0)
-				{
-					state = 30; // look for rest of foreign key clause
-				}
-				else if (s.compare("FULL", Qt::CaseInsensitive) == 0)
-				{
-					state = 30; // look for rest of foreign key clause
-				}
-				else { break; } // not a valid create statement
+			case 42: // look for SIMPLE or PARTIAL or FULL
+				if (s.compare("SIMPLE", Qt::CaseInsensitive) == 0) {
+					state = 37; // look for rest of foreign key clause
+				} else if (s.compare("PARTIAL", Qt::CaseInsensitive) == 0) {
+					state = 37; // look for rest of foreign key clause
+				} else if (s.compare("FULL", Qt::CaseInsensitive) == 0) {
+					state = 37; // look for rest of foreign key clause
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 36: // look for DEFERRABLE
-				if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0)
-				{
-					state = 37; // look for INITIALLY etc
-				}
-				else { break; } // not a valid create statement
+			case 43: // look for DEFERRABLE or NULL
+				if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0) {
+					state = 44; // look for INITIALLY etc
+				} else if (s.compare("NULL", Qt::CaseInsensitive) == 0) {
+					f.isNotNull = true;
+					state = 22; // look for conflict clause or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 37: // look for INITIALLY or next
-				if (s.compare("INITIALLY", Qt::CaseInsensitive) == 0)
-				{
-					state = 38; // look for DEFERRED or IMMEDIATE
-				}
-				else if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0)
-				{
-					state = 8; // look for column constraint name
-				}
-				else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0)
-				{
-					state = 10; // look for KEY
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 16; // look for NULL
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 17; // look for conflict clause or next
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 20; // look for bracketed expression
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 22; // look for default value
-				}
-				else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 25; // look for collation name
-				}
-				else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0)
-				{
-					state = 26; // look for (foreign) table name
-				}
-				else if (s.compare(",") == 0)
-				{
+			case 44: // look for INITIALLY or next
+				if (s.compare("INITIALLY", Qt::CaseInsensitive) == 0) {
+					state = 45; // look for DEFERRED or IMMEDIATE
+				} else if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0) {
+					state = 15; // look for column constraint name
+				} else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0) {
+					state = 17; // look for KEY
+				} else if (t.type == tokenNOT) {
+					state = 23; // look for NULL
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 24; // look for conflict clause or next
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 27; // look for bracketed expression
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 29; // look for default value
+				} else if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 32; // look for collation name
+				} else if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 33; // look for (foreign) table name
+				} else if (t.type == tokenComma) {
 					m_fields.append(f);
 					clearField(f);
 					state = 5;
-				}
-				else if (s.compare(")") == 0)
-				{
+				} else if (t.type == tokenClose) {
 					m_fields.append(f);
 					clearField(f);
-					state = 81; // check for WITHOUT ROWID or rubbish at end
-				}
-				else { break; } // not a valid create statement
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 38: // look for DEFERRED or IMMEDIATE
-				if (s.compare("DEFERRED", Qt::CaseInsensitive) == 0)
-				{
-					state = 7; // look for column constraint or , or )
-				}
-				else if (s.compare("IMMEDIATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 7; // look for column constraint or , or )
-				}
-				else { break; } // not a valid create statement
+			case 45: // look for DEFERRED or IMMEDIATE
+				if (s.compare("DEFERRED", Qt::CaseInsensitive) == 0) {
+					state = 14; // look for column constraint or , or )
+				} else if (s.compare("IMMEDIATE", Qt::CaseInsensitive) == 0) {
+					state = 14; // look for column constraint or , or )
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 39: // look for table constraint name
+			case 46: // look for table constraint name
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
 					|| (t.type == tokenSquareIdentifier)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-					state = 40; // look for rest of table constraint
+					state = 47; // look for rest of table constraint
 				}
 				else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 40: // look for rest of table constraint
-				if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0)
-				{
-					state = 41; // look for KEY
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 48; // look for columns and conflict clause
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 57; // look for bracketed expression
-				}
-				else if (s.compare("FOREIGN", Qt::CaseInsensitive) == 0)
-				{
-					state = 59; // look for KEY
-				}
+			case 47: // look for rest of table constraint
+				if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0) {
+					state = 48; // look for KEY
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 55; // look for columns and conflict clause
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 64; // look for bracketed expression
+				} else if (s.compare("FOREIGN", Qt::CaseInsensitive) == 0) {
+					state = 66; // look for KEY
+				} else { break; } // not a valid create statement
+				m_tokens.removeFirst();
+				continue;
+			case 48: // look for KEY
+				if (s.compare("KEY", Qt::CaseInsensitive) == 0) {
+					state = 49; // look for columns and conflict clause
+				} else { break; } // not a valid create statement
+				m_tokens.removeFirst();
+				continue;
+			case 49: // look for columns and conflict clause
+				if (t.type == tokenOpen) { state = 50; }
 				else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 41: // look for KEY
-				if (s.compare("KEY", Qt::CaseInsensitive) == 0)
-				{
-					state = 42; // look for columns and conflict clause
-				}
-				else { break; } // not a valid create statement
-				m_tokens.removeFirst();
-				continue;
-			case 42: // look for columns and conflict clause
-				if (s.compare("(") == 0)
-				{
-					state = 43;
-				}
-				else { break; } // not a valid create statement
-				m_tokens.removeFirst();
-				continue;
-			case 43: // look for next column in list
+			case 50: // look for next column in list
 				// sqlite doesn't currently support expressions here
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
@@ -2003,89 +1789,63 @@ SqlParser::SqlParser(QString input)
 					|| (t.type == tokenStringLiteral))
 				{
 					addToPrimaryKey(s);
-					state = 44; // look for COLLATE or ASC/DESC or next
-				}
-				else { break; } // not a valid create statement
+					state = 51; // look for COLLATE or ASC/DESC or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 44: // look for COLLATE or ASC/DESC or next
-				if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 45; // look for collation name
-				}
-				else if (s.compare("ASC", Qt::CaseInsensitive) == 0)
-				{
-					state = 47; // look for , or )
-				}
-				else if (s.compare("DESC", Qt::CaseInsensitive) == 0)
-				{
+			case 51: // look for COLLATE or ASC/DESC or next
+				if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 52; // look for collation name
+				} else if (s.compare("ASC", Qt::CaseInsensitive) == 0) {
+					state = 54; // look for , or )
+				} else if (s.compare("DESC", Qt::CaseInsensitive) == 0) {
 					f.isTablePkDesc = true;
-					state = 47; // look for , or )
-				}
-				else if (s.compare(",") == 0)
-				{
-					state = 43; // look for next column in list
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 54; // look for conflict clause or next
-				}
-				else { break; } // not a valid create statement
+					state = 54; // look for , or )
+				} else if (t.type == tokenComma) {
+					state = 50; // look for next column in list
+				} else if (t.type == tokenClose) {
+					state = 61; // look for conflict clause or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 45: // look for collation name
+			case 52: // look for collation name
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
 					|| (t.type == tokenSquareIdentifier)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-					state = 46; // look for ASC/DESC or next
-				}
-				else { break; } // not a valid create statement
+					state = 53; // look for ASC/DESC or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 46: // look for ASC/DESC or next
-				if (s.compare("ASC", Qt::CaseInsensitive) == 0)
-				{
-					state = 47; // look for , or )
-				}
-				else if (s.compare("DESC", Qt::CaseInsensitive) == 0)
-				{
-					state = 47; // look for , or )
-				}
-				else if (s.compare(",") == 0)
-				{
-					state = 43; // look for next column in list
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 54; // look for conflict clause or next
-				}
-				else { break; } // not a valid create statement
+			case 53: // look for ASC/DESC or next
+				if (s.compare("ASC", Qt::CaseInsensitive) == 0) {
+					state = 54; // look for , or )
+				} else if (s.compare("DESC", Qt::CaseInsensitive) == 0) {
+					state = 54; // look for , or )
+				} else if (t.type == tokenComma) {
+					state = 50; // look for next column in list
+				} else if (t.type == tokenClose) {
+					state = 61; // look for conflict clause or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 47: // look for , or )
-				if (s.compare(",") == 0)
-				{
-					state = 43; // look for next column in list
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 54; // look for conflict clause or next
-				}
-				else { break; } // not a valid create statement
+			case 54: // look for , or )
+				if (t.type == tokenComma) {
+					state = 50; // look for next column in list
+				} else if (t.type == tokenClose) {
+					state = 61; // look for conflict clause or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 48: // look for columns and conflict clause
-				if (s.compare("(") == 0)
-				{
-					state = 49;
-				}
-				else { break; } // not a valid create statement
+			case 55: // look for columns and conflict clause
+				if (t.type == tokenOpen) {
+					state = 56;
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 49: // look for next column in list
+			case 56: // look for next column in list
 				// sqlite doesn't currently support expressions here
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
@@ -2093,459 +1853,313 @@ SqlParser::SqlParser(QString input)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-					state = 50; // look for COLLATE or ASC/DESC or next
-				}
-				else { break; } // not a valid create statement
+					state = 57; // look for COLLATE or ASC/DESC or next
+				}  else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 50: // look for COLLATE or ASC/DESC or next
-				if (s.compare("COLLATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 51; // look for collation name
-				}
-				else if (s.compare("ASC", Qt::CaseInsensitive) == 0)
-				{
-					state = 53; // look for , or )
-				}
-				else if (s.compare("DESC", Qt::CaseInsensitive) == 0)
-				{
-					state = 53; // look for , or )
-				}
-				else if (s.compare(",") == 0)
-				{
-					state = 49; // look for next column in list
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 54; // look for conflict clause or next
-				}
-				else { break; } // not a valid create statement
+			case 57: // look for COLLATE or ASC/DESC or next
+				if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
+					state = 58; // look for collation name
+				} else if (s.compare("ASC", Qt::CaseInsensitive) == 0) {
+					state = 60; // look for , or )
+				} else if (s.compare("DESC", Qt::CaseInsensitive) == 0) {
+					state = 60; // look for , or )
+				} else if (t.type == tokenComma) {
+					state = 56; // look for next column in list
+				} else if (t.type == tokenClose) {
+					state = 61; // look for conflict clause or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 51: // look for collation name
+			case 58: // look for collation name
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
 					|| (t.type == tokenSquareIdentifier)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-					state = 52; // look for ASC/DESC or next
-				}
-				else { break; } // not a valid create statement
+					state = 59; // look for ASC/DESC or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 52: // look for ASC/DESC or next
-				if (s.compare("ASC", Qt::CaseInsensitive) == 0)
-				{
-					state = 53; // look for , or )
-				}
-				else if (s.compare("DESC", Qt::CaseInsensitive) == 0)
-				{
-					state = 53; // look for , or )
-				}
-				else if (s.compare(",") == 0)
-				{
-					state = 49; // look for next column in list
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 54; // look for conflict clause or next
-				}
-				else { break; } // not a valid create statement
+			case 59: // look for ASC/DESC or next
+				if (s.compare("ASC", Qt::CaseInsensitive) == 0) {
+					state = 60; // look for , or )
+				} else if (s.compare("DESC", Qt::CaseInsensitive) == 0) {
+					state = 60; // look for , or )
+				} else if (t.type == tokenComma) {
+					state = 56; // look for next column in list
+				} else if (t.type == tokenClose) {
+					state = 61; // look for conflict clause or next
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 53: // look for , or )
-				if (s.compare(",") == 0)
-				{
-					state = 49; // look for next column in list
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 54; // look for conflict clause or next
-				}
-				else { break; } // not a valid create statement
+			case 60: // look for , or )
+				if (t.type == tokenComma) {
+					state = 56; // look for next column in list
+				} else if (t.type == tokenClose) {
+					state = 61; // look for conflict clause or next
+				}  else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 54: // look for conflict clause or next
-				if (s.compare("ON", Qt::CaseInsensitive) == 0)
-				{
-					state = 55; // look for CONFLICT
-				}
-				else if (s.compare(",") == 0)
-				{
-					state = 78; // look for next table constraint
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 79; // check for WITHOUT ROWID or rubbish at end
-				}
-				else { break; } // not a valid create statement
+			case 61: // look for conflict clause or next
+				if (s.compare("ON", Qt::CaseInsensitive) == 0) {
+					state = 62; // look for CONFLICT
+				} else if (t.type == tokenComma) {
+					state = 85; // look for next table constraint
+				} else if (t.type == tokenClose) {
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 55: // look for CONFLICT
-				if (s.compare("CONFLICT", Qt::CaseInsensitive) == 0)
-				{
-					state = 56; // look for conflict action
-				}
-				else { break; } // not a valid create statement
+			case 62: // look for CONFLICT
+				if (s.compare("CONFLICT", Qt::CaseInsensitive) == 0) {
+					state = 63; // look for conflict action
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 56: // look for conflict action
-				if (s.compare("ROLLBACK", Qt::CaseInsensitive) == 0)
-				{
-					state = 77; // look for next table constraint or end
-				}
-				else if (s.compare("ABORT", Qt::CaseInsensitive) == 0)
-				{
-					state = 77; // look for next table constraint or end
-				}
-				else if (s.compare("FAIL", Qt::CaseInsensitive) == 0)
-				{
-					state = 77; // look for next table constraint or end
-				}
-				else if (s.compare("IGNORE", Qt::CaseInsensitive) == 0)
-				{
-					state = 77; // look for next table constraint or end
-				}
-				else if (s.compare("REPLACE", Qt::CaseInsensitive) == 0)
-				{
-					state = 77; // look for next table constraint or end
-				}
-				else { break; } // not a valid create statement
+			case 63: // look for conflict action
+				if (s.compare("ROLLBACK", Qt::CaseInsensitive) == 0) {
+					state = 84; // look for next table constraint or end
+				} else if (s.compare("ABORT", Qt::CaseInsensitive) == 0) {
+					state = 84; // look for next table constraint or end
+				} else if (s.compare("FAIL", Qt::CaseInsensitive) == 0) {
+					state = 84; // look for next table constraint or end
+				} else if (s.compare("IGNORE", Qt::CaseInsensitive) == 0) {
+					state = 84; // look for next table constraint or end
+				} else if (s.compare("REPLACE", Qt::CaseInsensitive) == 0) {
+					state = 84; // look for next table constraint or end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 57: // look for bracketed expression
-				if (s.compare("(") == 0)
-				{
-					state = 58; // look for end of expression
+			case 64: // look for bracketed expression
+				if (t.type == tokenOpen) {
+					state = 65; // look for end of expression
 					++m_depth;
-				}
-				else { break; } // not a valid create statement
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 58: // look for end of expression
-				if (s.compare("(") == 0)
-				{
+			case 65: // look for end of expression
+				if (t.type == tokenOpen) {
 					++m_depth;
-				}
-				else if (s.compare(")") == 0)
-				{
-					if (--m_depth == 0) { state = 77; }
+				} else if (t.type == tokenClose) {
+					if (--m_depth == 0) { state = 84; }
 				}
 				m_tokens.removeFirst();
 				continue;
-			case 59: // look for KEY
-				if (s.compare("KEY", Qt::CaseInsensitive) == 0)
-				{
-					state = 60; // look for column list
-				}
+			case 66: // look for KEY
+				if (s.compare("KEY", Qt::CaseInsensitive) == 0) {
+					state = 67; // look for column list
+				} else { break; } // not a valid create statement
+				m_tokens.removeFirst();
+				continue;
+			case 67: // look for column list
+				if (t.type == tokenOpen) { state = 68; }
 				else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 60: // look for column list
-				if (s.compare("(") == 0)
-				{
-					state = 61; // look for next column in list
-				}
-				else { break; } // not a valid create statement
-				m_tokens.removeFirst();
-				continue;
-			case 61: // look for next column in list
+			case 68: // look for next column in list
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
 					|| (t.type == tokenSquareIdentifier)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-					state = 62; // look for , or )
-				}
-				else { break; } // not a valid create statement
+					state = 69; // look for , or )
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 62: // look for , or )
-				if (s.compare(",") == 0)
-				{
-					state = 61; // look for next column in list
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 63; // look for foreign key clause
-				}
-				else { break; } // not a valid create statement
+			case 69: // look for , or )
+				if (s.compare(",") == tokenComma) {
+					state = 68; // look for next column in list
+				} else if (s.compare(")") == tokenClose) {
+					state = 70; // look for foreign key clause
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 63: // look for foreign key clause
-				if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0)
-				{
-					state = 64; // look for table name
-				}
-				else { break; } // not a valid create statement
+			case 70: // look for foreign key clause
+				if (s.compare("REFERENCES", Qt::CaseInsensitive) == 0) {
+					state = 71; // look for table name
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 64: // look for table name
+			case 71: // look for table name
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
 					|| (t.type == tokenSquareIdentifier)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-					state = 65; // look for column list or rest of clause
-				}
-				else { break; } // not a valid create statement
+					state = 72; // look for column list or rest of clause
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 65: // look for column list or rest of clause
-				if (s.compare("(") == 0)
-				{
-					state = 66; // look for next column in list
-				}
-				else if (s.compare("ON", Qt::CaseInsensitive) == 0)
-				{
-					state = 69; // look for DELETE or UPDATE
-				}
-				else if (s.compare("MATCH", Qt::CaseInsensitive) == 0)
-				{
-					state = 73; // look for SIMPLE or PARTIAL or FULL
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 74; // look for DEFERRABLE
-				}
-				else if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0)
-				{
-					state = 75; // look for INITIALLY
-				}
-				else if (s.compare(",") == 0)
-				{
-					state = 78; // look for next table constraint
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 81; // check for WITHOUT ROWID or rubbish at end
-				}
-				else { break; } // not a valid create statement
+			case 72: // look for column list or rest of clause
+				if (t.type == tokenOpen) {
+					state = 73; // look for next column in list
+				} else if (s.compare("ON", Qt::CaseInsensitive) == 0) {
+					state = 76; // look for DELETE or UPDATE
+				} else if (s.compare("MATCH", Qt::CaseInsensitive) == 0) {
+					state = 80; // look for SIMPLE or PARTIAL or FULL
+				} else if (t.type == tokenNOT) {
+					state = 81; // look for DEFERRABLE
+				} else if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0) {
+					state = 82; // look for INITIALLY
+				} else if (t.type == tokenComma) {
+					state = 85; // look for next table constraint
+				} else if (t.type == tokenClose) {
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 66: // look for next column in list
+			case 73: // look for next column in list
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
 					|| (t.type == tokenSquareIdentifier)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
-					state = 67; // look for , or )
-				}
-				else { break; } // not a valid create statement
+					state = 74; // look for , or )
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 67:
-				if (s.compare(",") == 0)
-				{
-					state = 66; // look for next column in list
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 68; // look for rest of foreign key clause
-				}
-				else { break; } // not a valid create statement
+			case 74:
+				if (t.type == tokenComma) {
+					state = 73; // look for next column in list
+				} else if (t.type == tokenClose) {
+					state = 75; // look for rest of foreign key clause
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 68: // look for rest of foreign key clause
-				if (s.compare("ON", Qt::CaseInsensitive) == 0)
-				{
-					state = 69; // look for DELETE or UPDATE
-				}
-				else if (s.compare("MATCH", Qt::CaseInsensitive) == 0)
-				{
-					state = 73; // look for SIMPLE or PARTIAL or FULL
-				}
-				else if (s.compare("NOT", Qt::CaseInsensitive) == 0)
-				{
-					state = 74; // look for DEFERRABLE
-				}
-				else if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0)
-				{
-					state = 75; // look for INITIALLY
-				}
-				else if (s.compare(",") == 0)
-				{
-					state = 78; // look for next table constraint
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 81; // check for WITHOUT ROWID or rubbish at end
-				}
-				else { break; } // not a valid create statement
+			case 75: // look for rest of foreign key clause
+				if (s.compare("ON", Qt::CaseInsensitive) == 0) {
+					state = 76; // look for DELETE or UPDATE
+				} else if (s.compare("MATCH", Qt::CaseInsensitive) == 0) {
+					state = 80; // look for SIMPLE or PARTIAL or FULL
+				} else if (t.type == tokenNOT) {
+					state = 81; // look for DEFERRABLE
+				} else if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0) {
+					state = 82; // look for INITIALLY
+				} else if (t.type == tokenComma) {
+					state = 85; // look for next table constraint
+				} else if (t.type == tokenClose) {
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 69: // look for DELETE or UPDATE
-				if (s.compare("DELETE", Qt::CaseInsensitive) == 0)
-				{
-					state = 70; // look for foreign key action
-				}
-				else if (s.compare("UPDATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 70; // look for foreign key action
-				}
-				else { break; } // not a valid create statement
+			case 76: // look for DELETE or UPDATE
+				if (s.compare("DELETE", Qt::CaseInsensitive) == 0) {
+					state = 77; // look for foreign key action
+				} else if (s.compare("UPDATE", Qt::CaseInsensitive) == 0) {
+					state = 77; // look for foreign key action
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 70: // look for foreign key action
-				if (s.compare("SET", Qt::CaseInsensitive) == 0)
-				{
-					state = 71; // look for NULL or DEFAULT
-				}
-				else if (s.compare("CASCADE", Qt::CaseInsensitive) == 0)
-				{
-					state = 68; // look for rest of foreign key clause
-				}
-				else if (s.compare("RESTRICT", Qt::CaseInsensitive) == 0)
-				{
-					state = 68; // look for rest of foreign key clause
-				}
-				else if (s.compare("NO", Qt::CaseInsensitive) == 0)
-				{
-					state = 72; // look for ACTION
-				}
-				else { break; } // not a valid create statement
+			case 77: // look for foreign key action
+				if (s.compare("SET", Qt::CaseInsensitive) == 0) {
+					state = 78; // look for NULL or DEFAULT
+				} else if (s.compare("CASCADE", Qt::CaseInsensitive) == 0) {
+					state = 75; // look for rest of foreign key clause
+				} else if (s.compare("RESTRICT", Qt::CaseInsensitive) == 0) {
+					state = 75; // look for rest of foreign key clause
+				} else if (s.compare("NO", Qt::CaseInsensitive) == 0) {
+					state = 79; // look for ACTION
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 71: // look for NULL or DEFAULT
-				if (s.compare("NULL", Qt::CaseInsensitive) == 0)
-				{
-					state = 68; // look for rest of foreign key clause
-				}
-				else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0)
-				{
-					state = 68; // look for rest of foreign key clause
-				}
-				else { break; } // not a valid create statement
+			case 78: // look for NULL or DEFAULT
+				if (s.compare("NULL", Qt::CaseInsensitive) == 0) {
+					state = 75; // look for rest of foreign key clause
+				} else if (s.compare("DEFAULT", Qt::CaseInsensitive) == 0) {
+					state = 75; // look for rest of foreign key clause
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 72: // look for ACTION
-				if (s.compare("ACTION", Qt::CaseInsensitive) == 0)
-				{
-					state = 68; // look for rest of foreign key clause
-				}
-				else { break; } // not a valid create statement
+			case 79: // look for ACTION
+				if (s.compare("ACTION", Qt::CaseInsensitive) == 0) {
+					state = 75; // look for rest of foreign key clause
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 73: // look for SIMPLE or PARTIAL or FULL
-				if (s.compare("SIMPLE", Qt::CaseInsensitive) == 0)
-				{
-					state = 68; // look for rest of foreign key clause
-				}
-				else if (s.compare("PARTIAL", Qt::CaseInsensitive) == 0)
-				{
-					state = 68; // look for rest of foreign key clause
-				}
-				else if (s.compare("FULL", Qt::CaseInsensitive) == 0)
-				{
-					state = 68; // look for rest of foreign key clause
-				}
-				else { break; } // not a valid create statement
+			case 80: // look for SIMPLE or PARTIAL or FULL
+				if (s.compare("SIMPLE", Qt::CaseInsensitive) == 0) {
+					state = 75; // look for rest of foreign key clause
+				} else if (s.compare("PARTIAL", Qt::CaseInsensitive) == 0) {
+					state = 75; // look for rest of foreign key clause
+				} else if (s.compare("FULL", Qt::CaseInsensitive) == 0) {
+					state = 75; // look for rest of foreign key clause
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 74: // look for DEFERRABLE
-				if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0)
-				{
-					state = 75; // look for INITIALLY etc
-				}
-				else { break; } // not a valid create statement
+			case 81: // look for DEFERRABLE
+				if (s.compare("DEFERRABLE", Qt::CaseInsensitive) == 0) {
+					state = 82; // look for INITIALLY etc
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 75: // look for INITIALLY or next
-				if (s.compare("INITIALLY", Qt::CaseInsensitive) == 0)
-				{
-					state = 76; // look for DEFERRED or IMMEDIATE
-				}
-				else if (s.compare(",") == 0)
-				{
-					state = 78; // look for next table constraint
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 79; // check for WITHOUT ROWID or rubbish at end
-				}
-				else { break; } // not a valid create statement
+			case 82: // look for INITIALLY or next
+				if (s.compare("INITIALLY", Qt::CaseInsensitive) == 0) {
+					state = 83; // look for DEFERRED or IMMEDIATE
+				} else if (t.type == tokenComma) {
+					state = 85; // look for next table constraint
+				} else if (t.type == tokenClose) {
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 76: // look for DEFERRED or IMMEDIATE
-				if (s.compare("DEFERRED", Qt::CaseInsensitive) == 0)
-				{
-					state = 77; // look for next table constraint or end
-				}
-				else if (s.compare("IMMEDIATE", Qt::CaseInsensitive) == 0)
-				{
-					state = 77; // look for next table constraint or end
-				}
-				else { break; } // not a valid create statement
+			case 83: // look for DEFERRED or IMMEDIATE
+				if (s.compare("DEFERRED", Qt::CaseInsensitive) == 0) {
+					state = 84; // look for next table constraint or end
+				} else if (s.compare("IMMEDIATE", Qt::CaseInsensitive) == 0) {
+					state = 84; // look for next table constraint or end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 77: // look for next table constraint or end
-				if (s.compare(",") == 0)
-				{
-					state = 78; // look for next table constraint
-				}
-				else if (s.compare(")") == 0)
-				{
-					state = 79; // check for WITHOUT ROWID or rubbish at end
-				}
-				else { break; } // not a valid create statement
+			case 84: // look for next table constraint or end
+				if (t.type == tokenComma) {
+					state = 85; // look for next table constraint
+				} else if (t.type == tokenClose) {
+					state = 86; // check for WITHOUT ROWID or rubbish at end
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 78: // look for next table constraint
-				if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0)
-				{
-					state = 39; // look for table constraint name
-				}
-				else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0)
-				{
-					state = 41; // look for KEY
-				}
-				else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0)
-				{
-					state = 48; // look for columns and conflict clause
-				}
-				else if (s.compare("CHECK", Qt::CaseInsensitive) == 0)
-				{
-					state = 57; // look for bracketed expression
-				}
-				else if (s.compare("FOREIGN", Qt::CaseInsensitive) == 0)
-				{
-					state = 59; // look for KEY
-				}
-				else { break; } // not a valid create statement
+			case 85: // look for next table constraint
+				if (s.compare("CONSTRAINT", Qt::CaseInsensitive) == 0) {
+					state = 46; // look for table constraint name
+				} else if (s.compare("PRIMARY", Qt::CaseInsensitive) == 0) {
+					state = 48; // look for KEY
+				} else if (s.compare("UNIQUE", Qt::CaseInsensitive) == 0) {
+                    f.isUnique = true;
+					state = 55; // look for columns and conflict clause
+				} else if (s.compare("CHECK", Qt::CaseInsensitive) == 0) {
+					state = 64; // look for bracketed expression
+				} else if (s.compare("FOREIGN", Qt::CaseInsensitive) == 0) {
+					state = 66; // look for KEY
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 79: // check for WITHOUT ROWID or rubbish at end
-				if (s.compare("WITHOUT", Qt::CaseInsensitive) == 0)
-				{
-					state = 80; // seen WITHOUT
-				}
-				else { break; } // not a valid create statement
+			case 86: // check for WITHOUT ROWID or rubbish at end
+				if (s.compare("WITHOUT", Qt::CaseInsensitive) == 0) {
+					state = 87; // seen WITHOUT
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 80: // seen WITHOUT
-				if (s.compare("ROWID", Qt::CaseInsensitive) == 0)
-				{
-					state = 81; // seen ROWID
+			case 87: // seen WITHOUT
+				if (s.compare("ROWID", Qt::CaseInsensitive) == 0) {
+					state = 88; // seen ROWID
 					m_hasRowid = false;
-				}
-				else { break; } // not a valid create statement
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 81: // seen ROWID, anything after it is an error
+			case 88: // seen ROWID, anything after it is an error
 				break;
-			case 82: // CREATE UNIQUE
-				if (s.compare("INDEX", Qt::CaseInsensitive) == 0)
-				{
-					state = 83; // CREATE UNIQUE INDEX
-				}
-				else { break; } // not a valid create statement
+			case 89: // CREATE UNIQUE
+				if (s.compare("INDEX", Qt::CaseInsensitive) == 0) {
+					state = 90; // CREATE UNIQUE INDEX
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 83: // CREATE [UNIQUE] INDEX
+			case 90: // CREATE [UNIQUE] INDEX
 				// IF NOT EXISTS doesn't get copied to schema
 				// schema-name "." doesn't get copied to schema
 				m_type = createIndex;
@@ -2556,20 +2170,17 @@ SqlParser::SqlParser(QString input)
 					|| (t.type == tokenStringLiteral))
 				{
 					m_indexName = s;
-					state = 84; // had index name
-				}
-				else { break; } // not a valid create statement
+					state = 91; // had index name
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 84: // look for ON
-				if (s.compare("ON", Qt::CaseInsensitive) == 0)
-				{
-					state = 85; // look for table name
-				}
-				else { break; } // not a valid create statement
+			case 91: // look for ON
+				if (s.compare("ON", Qt::CaseInsensitive) == 0) {
+					state = 92; // look for table name
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 85: // look for table name
+			case 92: // look for table name
 				if (   (t.type == tokenIdentifier)
 					|| (t.type == tokenQuotedIdentifier)
 					|| (t.type == tokenSquareIdentifier)
@@ -2577,20 +2188,17 @@ SqlParser::SqlParser(QString input)
 					|| (t.type == tokenStringLiteral))
 				{
 					m_tableName = s;
-					state = 86; // look for indexed column list
-				}
-				else { break; } // not a valid create statement
+					state = 93; // look for indexed column list
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 86: // look for indexed column list
-				if (s.compare("(") == 0)
-				{
-					state = 87; // look for indexed column
-				}
-				else { break; } // not a valid create statement
+			case 93: // look for indexed column list
+				if (t.type == tokenOpen) {
+					state = 94; // look for indexed column
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 87: // look for indexed column
+			case 94: // look for indexed column
 			{ // look for arglist which is near enough
 				Expression * expr = internalParser(0, 1, QStringList());
 				if (   (expr == NULL) // invalid expression
@@ -2603,26 +2211,22 @@ SqlParser::SqlParser(QString input)
                     expr = expr->right;
                 }
                 m_columns.append(expr); // last column terminated by ')'
-                state = 88; // look for end or WHERE clause
+                state = 95; // look for end or WHERE clause
 				continue;
 			}
-			case 88: // look for end or WHERE clause
-				if (s.compare("WHERE", Qt::CaseInsensitive) == 0)
-				{
-					state = 89; // look for expression
-				}
-				else { break; } // not a valid create statement
+			case 95: // look for end or WHERE clause
+				if (s.compare("WHERE", Qt::CaseInsensitive) == 0) {
+					state = 96; // look for expression
+				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();
 				continue;
-			case 89: // look for expression
+			case 96: // look for expression
 				m_whereClause = internalParser(0, 0, QStringList());
-				if (m_whereClause == NULL)
-				{
-					state = 90; // look for rubbish after end
-				}
-				else { break; } // not a valid create statement
+				if (m_whereClause != NULL) {
+					state = 97; // look for rubbish after end
+				} else { break; } // not a valid create statement
 				continue;
-			case 90: // rubbish after end
+			case 97: // rubbish after end
 				break;
 		}
 		break;

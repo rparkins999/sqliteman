@@ -82,7 +82,9 @@
 		</p>
 	</div>
 	<p>Data changes are available only for tables (invoked in Schema Browser).
-		There is no way to edit the data returned by an SQL statement yet.
+		There is no way to edit the data returned by an SQL statement yet,
+		but for simple queries the <a href="ch07s13.html">Find Dialog</a>
+		may help you.
 	</p>
 	<p></p>
 	<div class="variablelist">
@@ -101,18 +103,8 @@
 						<p>
 							This button is enabled only when viewing a table. It
 							opens a dialog enabling you to search in the table.
-							The search conditions are similar to those for the
-							<a href="ch07s11.html">Query Builder</a>.
-							However the effect is different. You can find the
-							first or the next occurrence of a match in the
-							table. You can also find all matches.
-						</p>
-						<p>
-							Note however that "Find All" is slower than doing a
-							<a href="ch07s11.html">Query Builder</a>
-							query because it is done by reading each row and
-							checking if it satisfies the match conditions. This
-							does not make use of sqlite's internal optimisations.
+							for details see
+							the <a href="ch07s13.html">Find Dialog</a>.
 						</p>
 					 </span>
 				 </p>
@@ -126,29 +118,41 @@
 				</span>
 			</dt>
 			<dd>
-				<p>
-					<span class="action">
+				<span class="action">
+                    <p>
 						This button is enabled only when viewing a table. It
 						creates a new and empty row at the end of the table.
-						Default values are prefilled except for PRIMARY KEY
-						AUTOINCREMENT fields.
-						<a href="ch07s14.html#commit">Commit</a>
-						action is required to make this permanent. If a field
-						has a default of CURRENT_TIMESTAMP, CURRENT_DATE, or
-						CURRENT_TIME, it will be prefilled with the date and/or
-						time when the record is created, but if the field is
-						not modified it will be overwritten when changes are
-						committed with the date and/or time then. If the default
-						for a field is an sqlite expression, it will be
-						prefilled with the result of evaluating the expression:
-						since it is possible
+						Default values are prefilled. If the whole table has
+						not been read yet, inserting a row causes
+						the remainder of the table to be read into memory.
+					</p><p>
+						Any INTEGER PRIMARY KEY AUTOINCREMENT or INTEGER PRIMARY
+						KEY field is prefilled with the least integer not yet
+						used in the table. Note that this is not quite correct
+						if the number of distinct rows that have ever existed in
+						the table is more than 9223372036854775807 or in the
+						case of AUTOINCREMENT if the row with the largest key
+						has been removed.
+					</p><p>
+						If a field has a default of CURRENT_TIMESTAMP,
+						CURRENT_DATE, or CURRENT_TIME, it will be prefilled with
+						the date and/or time when the record is created, but if
+						the field is not modified it will be overwritten when
+						changes are committed with the date and/or time then.
+					</p><p>
+						If the default for a field is an sqlite expression, it
+						will be prefilled with the result of evaluating the
+						expression: since it is possible
 						<a href="apb.html"> (see appendix B) </a>
 						to constuct an sqlite constant expression with a
 						non-constant value using sqlite built-in functions, the
 						actual value when the changes are committed may be
 						different.
-					 </span>
-				 </p>
+					</p><p>
+						<a href="ch07s14.html#commit">Commit</a>
+						action is required to make this permanent.
+                    </p>
+				</span>
 			</dd>
 			<dt>
 				<span class="term">
@@ -159,20 +163,31 @@
 				</span>
 			</dt>
 			<dd>
-				<p>
-					<span class="action">
+				<span class="action">
+                    <p>
 						This button is enabled only when viewing a table and a
 						current row is selected. It creates a copy of the
 						current row at the end of the table (this can be useful
-						when creating rows which differ only in one field). Note
-						that the Qt SQL library gets confused
-						if the database contains multiple rows with the same
-						data fields: make sure to modify the copy before
-						committing.
+						when creating rows which differ only in one field).
+						If the whole table has not been read yet, copying a row
+						causes the remainder of the table to be read into
+						memory.
+					</p><p>
+						If the table contains a column which is an INTEGER
+						PRIMARY KEY or an INTEGER PRIMARY KEY AUTOINCREMENT,
+						in order to avoid a constraint violation that column
+						is prefilled as for a new row instead of being copied.
+					</p><p>
 						<a href="ch07s14.html#commit">Commit</a>
 						action is required to make this permanent.
-					</span>
-				</p>
+                    </p>
+				</span>
+				<div class="important"><p>
+                    The Qt SQL library gets confused if the database
+                    contains multiple rows with the same data fields:
+                    if there is no primary key make sure to modify the copy
+                    before committing.
+                </p></div>
 			</dd>
 			<dt>
 				<span class="term">

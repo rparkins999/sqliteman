@@ -49,12 +49,17 @@
 		The search conditions are specified similarly to the
 		<a href="ch07s11.html">Query Builder</a>
 		but they are interpreted internally to sqliteman instead of being used
-		to construct an SQL query. You can search for the first matching row,
-		the next matching row after the currently selected one, or all matching rows (with the non-matching rows hidden). The output looks a bit like
+		to construct an SQL query and there is no column selection or ordering
+		clause. You can search for the first matching row,
+		the next matching row after the currently selected one, or all matching rows. The output from Find All looks a bit like
 		the output from running a query, but it is actually the real table with
-		all the non-matching rows hidden. Since it's the real table, you can
-		edit the rows, which you can't do with output from the
+		all the non-matching rows hidden. Since it is the real table, you can
+		edit the rows, which you cannot do with output from the
 		<a href="ch07s11.html">Query Builder</a>.
+		Note however that making a
+		<a href="ch07s14.html#snapshot">Table Snapshot</a> will snapshot the
+		whole table, not just the non-hidden rows. This may change in some
+		future version of sqliteman.
 	</p>
 	<p>
 		The
@@ -92,7 +97,7 @@
 		<span class="guibutton">Finished</span>
 		button dismisses the dialog. Any rows hidden after a
 		<span class="guibutton">Find All</span>
-		are made visible again.
+		are made visible again. Closing the dialog box has the same effect.
 	</p>
 </div>
 <div class="navfooter">

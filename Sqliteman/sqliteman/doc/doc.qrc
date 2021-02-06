@@ -2,6 +2,7 @@
     <qresource prefix="/doc">
         <file>en/alterTable.png</file>
         <file>en/apa.html</file>
+        <file>en/apb.html</file>
         <file>en/apas02.html</file>
         <file>en/apas03.html</file>
         <file>en/apas04.html</file>
@@ -73,6 +74,7 @@
         <file>en/mainwindow-notes.png</file>
         <file>en/mainwindow.png</file>
         <file>en/populateTable.png</file>
+        <file>en/prefs.html</file>
         <file>en/preferences-desktop-display.png</file>
         <file>en/preferences-display.png</file>
         <file>en/preferences-editor.png</file>
