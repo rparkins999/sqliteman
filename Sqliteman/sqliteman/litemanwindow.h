@@ -52,6 +52,7 @@ class LiteManWindow : public QMainWindow
 		void checkForCatalogue();
 		void createViewFromSql(QString query);
 		void setTableModel(SqlQueryModel * model);
+        bool doExecSql(QString query, bool isBuilt);
 
 		QueryEditorDialog * queryEditor;
 
@@ -122,7 +123,6 @@ class LiteManWindow : public QMainWindow
 		void buildQuery();
 		void contextBuildQuery();
 		void execSql(QString query, bool isBuilt);
-		void execSqlFalse(QString query);
 		void exportSchema();
 		void dumpDatabase();
 

@@ -42,11 +42,6 @@ class SqlEditor : public QMainWindow
 		void setStatusMessage(const QString & message = 0);
 
    	signals:
-		/*! \brief This signal is emitted when user clicks on the one
-		of "run" actions. It's handled in main window later.
-		\param command current SQL statement in the editor.
-		*/
-		void showSqlResult(QString command);
 		//! \brief It's emitted when the script is started
 		void sqlScriptStart();
 		/*! \brief Emitted on demand in the script.

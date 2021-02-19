@@ -245,17 +245,17 @@ QString SqlEditor::prepareExec(toSQLParse::tokenizer &tokens, int line, int pos)
 	return t;
 }
 
-// FIXME sometimes errors are not reported
 void SqlEditor::action_Run_SQL_triggered()
 {
 	if (creator && creator->checkForPending())
 	{
 		QString sql(query());
-		emit showSqlResult(sql);
-		if (Utils::updateObjectTree(sql)) { emit buildTree(); }
-		if (Utils::updateTables(sql)) { emit refreshTable(); }
-	    appendHistory(sql);
-		creator->buildPragmasTree();
+        if (creator->doExecSql(sql, false)) {
+            if (Utils::updateObjectTree(sql)) { emit buildTree(); }
+            if (Utils::updateTables(sql)) { emit refreshTable(); }
+            appendHistory(sql);
+            creator->buildPragmasTree();
+        }
 	}
 }
 
@@ -263,7 +263,7 @@ void SqlEditor::actionRun_Explain_triggered()
 {
     QString s("explain query plan %1");
     s = s.arg(query());
-	emit showSqlResult(s);
+	(void)creator->doExecSql(s, false);
     appendHistory(s);
 }
 

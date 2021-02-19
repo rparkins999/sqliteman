@@ -210,8 +210,6 @@ void LiteManWindow::initUI()
 		SLOT(tableTree_currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)));
 
 	// sql editor
-	connect(sqlEditor, SIGNAL(showSqlResult(QString)),
-			this, SLOT(execSqlFalse(QString)));
 	connect(sqlEditor, SIGNAL(sqlScriptStart()),
 			dataViewer, SLOT(sqlScriptStart()));
 	connect(sqlEditor, SIGNAL(showSqlScriptResult(QString)),
@@ -857,57 +855,7 @@ void LiteManWindow::handleDataViewer()
 
 void LiteManWindow::execSql(QString query, bool isBuilt)
 {
-	if (query.isEmpty() || query.isNull())
-	{
-		QMessageBox::warning(this, tr("No SQL statement"), tr("You are trying to run an undefined SQL query. Hint: select your query in the editor"));
-		return;
-	}
-	dataViewer->setStatusText("");
-	if (!checkForPending()) { return; }
-
-	m_activeItem = 0;
-
-	sqlEditor->setStatusMessage();
-
-	QTime time;
-	time.start();
-
-	// Run query
-	SqlQueryModel * model = new SqlQueryModel(this);
-	model->setQuery(query, QSqlDatabase::database(SESSION_NAME));
-
-	if (!dataViewer->setTableModel(model, false))
-		return;
-
-	sqlEditor->setStatusMessage(tr("Duration: %1 seconds").arg(time.elapsed() / 1000.0));
-	
-	// Check For Error in the SQL
-	if(model->lastError().isValid())
-	{
-		dataViewer->setBuiltQuery(false);
-		dataViewer->setStatusText(
-			tr("Query Error: <span style=\" color:#ff0000;\">")
-			+ model->lastError().text()
-			+ "<br/></span>"
-			+ tr("using sql statement:")
-			+ "<br/><tt>"
-			+ query);
-	}
-	else
-	{
-		dataViewer->setBuiltQuery(isBuilt && (model->rowCount() != 0));
-		dataViewer->rowCountChanged();
-		if (Utils::updateObjectTree(query))
-		{
-			schemaBrowser->tableTree->buildTree();
-			queryEditor->treeChanged();
-		}
-	}
-}
-
-void LiteManWindow::execSqlFalse(QString query)
-{
-	execSql(query, false);
+    (void)doExecSql(query, isBuilt);
 }
 
 void LiteManWindow::exportSchema()
@@ -1189,6 +1137,58 @@ void LiteManWindow::createViewFromSql(QString query)
 void LiteManWindow::setTableModel(SqlQueryModel * model)
 {
 	dataViewer->setTableModel(model, false);
+}
+
+bool LiteManWindow::doExecSql(QString query, bool isBuilt)
+{
+	if (query.isEmpty() || query.isNull())
+	{
+		QMessageBox::warning(this, tr("No SQL statement"), tr("You are trying to run an undefined SQL query. Hint: select your query in the editor"));
+		return false;
+	}
+	dataViewer->setStatusText("");
+	if (!checkForPending()) { return false; }
+
+	m_activeItem = 0;
+
+	sqlEditor->setStatusMessage();
+
+	QTime time;
+	time.start();
+
+	// Run query
+	SqlQueryModel * model = new SqlQueryModel(this);
+	model->setQuery(query, QSqlDatabase::database(SESSION_NAME));
+
+	if (!dataViewer->setTableModel(model, false))
+		return false;
+
+	sqlEditor->setStatusMessage(tr("Duration: %1 seconds").arg(time.elapsed() / 1000.0));
+	
+	// Check For Error in the SQL
+	if(model->lastError().isValid())
+	{
+		dataViewer->setBuiltQuery(false);
+		dataViewer->setStatusText(
+			tr("Query Error: <span style=\" color:#ff0000;\">")
+			+ model->lastError().text()
+			+ "<br/></span>"
+			+ tr("using sql statement:")
+			+ "<br/><tt>"
+			+ query);
+        return false;
+	}
+	else
+	{
+		dataViewer->setBuiltQuery(isBuilt && (model->rowCount() != 0));
+		dataViewer->rowCountChanged();
+		if (Utils::updateObjectTree(query))
+		{
+			schemaBrowser->tableTree->buildTree();
+			queryEditor->treeChanged();
+		}
+		return true;
+	}
 }
 
 void LiteManWindow::alterView()
