@@ -35,6 +35,7 @@ SqlEditor::SqlEditor(LiteManWindow * parent)
    	  m_fileWatcher(0)
 {
 	creator = parent;
+    showingMessage = false;
 	ui.setupUi(this);
 
 #ifdef Q_WS_MAC
@@ -43,8 +44,6 @@ SqlEditor::SqlEditor(LiteManWindow * parent)
 
 
 	m_fileName = QString();
-
-	//m_fileWatcher = new QFileSystemWatcher(this);
 
 	ui.sqlTextEdit->prefsChanged();
     // addon run sql shortcut
@@ -481,6 +480,7 @@ void SqlEditor::action_New_triggered()
 	m_fileName = QString();
 	ui.sqlTextEdit->clear();
 	ui.sqlTextEdit->setModified(false);
+	if (m_fileWatcher) { m_fileWatcher->removePaths(m_fileWatcher->files()); }
 }
 
 void SqlEditor::actionSave_As_triggered()
@@ -505,16 +505,10 @@ void SqlEditor::saveFile()
 	}
 	else
 	{
-   	   	// required for Win 
-	   	delete(m_fileWatcher);
-		m_fileWatcher = 0;
-
 		QTextStream out(&f);
 		out << ui.sqlTextEdit->text();
 		f.close();
    	   	ui.sqlTextEdit->setModified(false);
-
-		setFileWatcher(m_fileName);
    	}
 }
 
@@ -622,13 +616,16 @@ void SqlEditor::findPrevious()
 
 void SqlEditor::externalFileChange(const QString & path)
 {
+    if (showingMessage) { return; }
+    showingMessage = true;
    	int b = QMessageBox::information(this, tr("SQL editor"),
 		tr("Your currently edited file has been changed outside " \
 		   "this application. Do you want to reload it?"),
 		QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
-	if (b != QMessageBox::Yes)
-		return;
-	open(path);
+	if (b == QMessageBox::Yes) { open(path); }
+    showingMessage = false;
+	return;
+	
 }
 
 void SqlEditor::setFileWatcher(const QString & newFileName)

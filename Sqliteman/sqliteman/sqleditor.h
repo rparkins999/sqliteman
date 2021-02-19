@@ -68,6 +68,7 @@ class SqlEditor : public QMainWindow
 		QLabel * changedLabel;
 		QLabel * cursorLabel;
 		QString cursorTemplate;
+        bool showingMessage;
 
 		//! \brief True when user cancel file opening
 		bool canceled;
