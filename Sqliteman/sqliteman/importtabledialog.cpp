@@ -549,7 +549,7 @@ void ImportTableDialog::setTablesForSchema(const QString & schema)
 	QString n;
 
 	tableComboBox->clear();
-    QList<QString> keys;
+    QList<QString> keys = Database::getObjects("table", schema).keys();
     QList<QString>::const_iterator it;
 	int i;
     for (it = keys.constBegin(), i = 0; it != keys.constEnd(); ++it, ++i) {
