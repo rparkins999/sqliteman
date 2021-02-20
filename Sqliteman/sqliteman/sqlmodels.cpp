@@ -662,17 +662,19 @@ QVariant SqlQueryModel::data(const QModelIndex & item, int role) const
 }
 
 void SqlQueryModel::initialRead() {
-	info = record(); // force column count to be set
-	if (columnCount() > 0)
-	{
-        int readRowsCount = rowsToRead();
-		while (   canFetchMore(QModelIndex())
-			   && (   (readRowsCount == 0)
-				   || (rowCount() < readRowsCount)))
-		{
-			fetchMore();
-		}
-	}
+    if (!lastError().isValid()) {
+        info = record(); // force column count to be set
+        if (columnCount() > 0)
+        {
+            int readRowsCount = rowsToRead();
+            while (   canFetchMore(QModelIndex())
+                && (   (readRowsCount == 0)
+                    || (rowCount() < readRowsCount)))
+            {
+                fetchMore();
+            }
+        }
+    }
 }
 
 void SqlQueryModel::setQuery ( const QSqlQuery & query )

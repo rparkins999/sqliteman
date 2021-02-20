@@ -1160,26 +1160,31 @@ bool LiteManWindow::doExecSql(QString query, bool isBuilt)
 	SqlQueryModel * model = new SqlQueryModel(this);
 	model->setQuery(query, QSqlDatabase::database(SESSION_NAME));
 
-	if (!dataViewer->setTableModel(model, false))
-		return false;
-
-	sqlEditor->setStatusMessage(tr("Duration: %1 seconds").arg(time.elapsed() / 1000.0));
+	sqlEditor->setStatusMessage(
+        tr("Duration: %1 seconds").arg(time.elapsed() / 1000.0));
 	
 	// Check For Error in the SQL
 	if(model->lastError().isValid())
 	{
+        QString s1(model->lastError().driverText());
+        QString s2(model->lastError().databaseText());
+        if (s1.size() > 0) {
+            if (s2.size() > 0) {
+                s1.append(" ").append(s2);
+            }
+        } else { s1 = s2; }
 		dataViewer->setBuiltQuery(false);
 		dataViewer->setStatusText(
 			tr("Query Error: <span style=\" color:#ff0000;\">")
-			+ model->lastError().text()
+			+ s1
 			+ "<br/></span>"
 			+ tr("using sql statement:")
 			+ "<br/><tt>"
 			+ query);
         return false;
-	}
-	else
-	{
+	} else if (!dataViewer->setTableModel(model, false)) {
+        return false;
+    } else {
 		dataViewer->setBuiltQuery(isBuilt && (model->rowCount() != 0));
 		dataViewer->rowCountChanged();
 		if (Utils::updateObjectTree(query))

@@ -320,11 +320,18 @@ void SqlEditor::actionRun_as_Script_triggered()
             appendHistory(sql);
 			if (mdl->lastError().isValid())
 			{
+                QString s1(mdl->lastError().driverText());
+                QString s2(mdl->lastError().databaseText());
+                if (s1.size() > 0) {
+                    if (s2.size() > 0) {
+                        s1.append(" ").append(s2);
+                    }
+                } else { s1 = s2; }
 				emit showSqlScriptResult(
 					"-- " + tr("Error: %1.").arg(mdl->lastError().text()));
 				int com = QMessageBox::question(this, tr("Run as Script"),
 						tr("This script contains the following error:\n")
-						+ mdl->lastError().text()
+						+ s1
 						+ tr("\nAt line: %1").arg(line),
 						QMessageBox::Ignore, QMessageBox::Abort);
 				if (com == QMessageBox::Abort)
