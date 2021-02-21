@@ -9,11 +9,13 @@ for which a new license (GPL+exception) is in place.
 #define SQLDELEGATE_H
 
 #include <QItemDelegate>
+#include <QTextLayout>
 #include "ui_sqldelegateui.h"
 
-class QStyleOptionViewItem;
 class QAbstractItemModel;
 class QModelIndex;
+class QStyleOptionViewItem;
+class QTextLayout;
 
 
 /*! \brief A special delegate for editation of database result cells.
@@ -35,10 +37,26 @@ class SqlDelegate : public QItemDelegate
 
 		void updateEditorGeometry(QWidget *editor,
 								  const QStyleOptionViewItem &option, const QModelIndex &index) const;
+        static QString replaceNewLine(QString text)
+        {
+            const QChar nl = QLatin1Char('\n');
+            for (int i = 0; i < text.count(); ++i)
+                if (text.at(i) == nl)
+                    text[i] = QChar::LineSeparator;
+            return text;
+        }
+        QSizeF doTextLayout(int lineWidth) const;
 
     signals:
         void dataChanged();
         void insertNull();
+
+    protected:
+        void drawDisplay(QPainter *painter, const QStyleOptionViewItem &option,
+                         const QRect &rect, const QString &text) const;
+
+    private:
+        mutable QTextLayout textLayout;
 
 	private slots:
 		void editor_closeEditor();

@@ -4,9 +4,19 @@ to the COPYING file provided with the program. Following this notice may exist
 a copyright and/or license notice that predates the release of Sqliteman
 for which a new license (GPL+exception) is in place.
 */
-#include <QToolButton>
-#include <QModelIndex>
+#include <QApplication>
 #include <QFocusEvent>
+#include <QModelIndex>
+#include <QPainter>
+#include <QPalette>
+#include <QRect>
+#include <QSize>
+#include <QSizeF>
+#include <QStyle>
+#include <QStyleOptionViewItemV4>
+#include <QTextOption>
+#include <QToolButton>
+#include <QVector>
 
 #include "sqldelegate.h"
 #include "utils.h"
@@ -59,6 +69,121 @@ void SqlDelegate::updateEditorGeometry(QWidget *editor,
 									   const QModelIndex &/* index */) const
 {
 	editor->setGeometry(option.rect);
+}
+
+QSizeF SqlDelegate::doTextLayout(int lineWidth) const
+{
+    qreal height = 0;
+    qreal widthUsed = 0;
+    textLayout.beginLayout();
+    while (true) {
+        QTextLine line = textLayout.createLine();
+        if (!line.isValid())
+            break;
+        line.setLineWidth(lineWidth);
+        line.setPosition(QPointF(0, height));
+        height += line.height();
+        widthUsed = qMax(widthUsed, line.naturalTextWidth());
+    }
+    textLayout.endLayout();
+    return QSizeF(widthUsed, height);
+}
+
+void SqlDelegate::drawDisplay(QPainter *painter,
+                              const QStyleOptionViewItem &option,
+                              const QRect &rect, const QString &text) const
+{
+    QTextOption textOption;
+    QPalette::ColorGroup cg = option.state & QStyle::State_Enabled
+                              ? QPalette::Normal : QPalette::Disabled;
+    if (cg == QPalette::Normal && !(option.state & QStyle::State_Active))
+        cg = QPalette::Inactive;
+    if (option.state & QStyle::State_Selected) {
+        painter->fillRect(rect, option.palette.brush(cg, QPalette::Highlight));
+        painter->setPen(option.palette.color(cg, QPalette::HighlightedText));
+    } else {
+        painter->setPen(option.palette.color(cg, QPalette::Text));
+    }
+
+    if (text.isEmpty())
+        return;
+
+    if (option.state & QStyle::State_Editing) {
+        painter->save();
+        painter->setPen(option.palette.color(cg, QPalette::Text));
+        painter->drawRect(rect.adjusted(0, 0, -1, -1));
+        painter->restore();
+    }
+
+    const QStyleOptionViewItemV4 opt = option;
+
+    const QWidget *widget;
+    QStyle *style;
+    if (const QStyleOptionViewItemV3 *v3 =
+        qstyleoption_cast<const QStyleOptionViewItemV3 *>(&option))
+    {
+        widget = v3->widget;
+        style = widget->style();
+    } else {
+        widget = 0;
+        style = QApplication::style();
+    }
+
+    const int textMargin =
+        style->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, widget) + 1;
+    QRect textRect = rect.adjusted(textMargin, 0, -textMargin, 0); // remove width padding
+    textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
+    textOption.setTextDirection(option.direction);
+    textOption.setAlignment(
+        QStyle::visualAlignment(option.direction, option.displayAlignment));
+    textLayout.setTextOption(textOption);
+    textLayout.setFont(option.font);
+    QString text1 = replaceNewLine(text);
+    textLayout.setText(text1);
+
+    qreal height = 0;
+    int lineCount = 0;
+    bool elide = false;
+    textLayout.beginLayout();
+    while (true) {
+        QTextLine line = textLayout.createLine();
+        if (!line.isValid())
+            break;
+        line.setLineWidth(textRect.width());
+        line.setPosition(QPointF(0, height));
+        height += line.height();
+        if (height > textRect.height()) {
+            elide = true;
+            break;
+        }
+        ++lineCount;
+    }
+    if (lineCount == 0) {
+        return; // Should never happen, but bail if it does.
+    }
+    if (elide) {
+        QTextLine lastLine = textLayout.lineAt(lineCount - 1);
+        int start = lastLine.textStart();
+        QString elided = option.fontMetrics.elidedText(
+            text1.mid(start), option.textElideMode, textRect.width());
+        textLayout.endLayout();
+        textLayout.setText(text1.left(start).append(elided));
+        textLayout.beginLayout();
+        height = 0;
+        while (true) {
+            QTextLine line = textLayout.createLine();
+            if (!line.isValid())
+                break;
+            line.setLineWidth(textRect.width());
+            line.setPosition(QPointF(0, height));
+            height += line.height();
+        }
+    }
+
+    const QSize layoutSize(textRect.width(),textRect.height());
+    const QRect layoutRect = QStyle::alignedRect(
+        option.direction, option.displayAlignment, layoutSize, textRect);
+    textLayout.draw(painter, layoutRect.topLeft(), QVector<QTextLayout::FormatRange>(), layoutRect);
 }
 
 void SqlDelegate::editor_closeEditor()
