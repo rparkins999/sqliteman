@@ -23,6 +23,7 @@ for which a new license (GPL+exception) is in place.
 #include "multieditdialog.h"
 #include "preferences.h"
 #include "database.h"
+#include <cmath>
 
 
 SqlDelegate::SqlDelegate(QObject * parent)
@@ -87,6 +88,56 @@ QSizeF SqlDelegate::doTextLayout(int lineWidth) const
     }
     textLayout.endLayout();
     return QSizeF(widthUsed, height);
+}
+
+// Use same algorithm as drawDisplay()
+QSize SqlDelegate::sizeHint(const QStyleOptionViewItem &option,
+                              const QModelIndex &index) const
+{
+    QVariant value = index.data(Qt::DisplayRole);
+    if (value.type() != QVariant::String) {
+        return QItemDelegate::sizeHint(option, index);
+    }
+    QString text = value.toString();
+    const QStyleOptionViewItemV4 opt = option;
+    const QWidget *widget;
+    QStyle *style;
+    if (const QStyleOptionViewItemV3 *v3 =
+        qstyleoption_cast<const QStyleOptionViewItemV3 *>(&option))
+    {
+        widget = v3->widget;
+        style = widget->style();
+    } else {
+        widget = 0;
+        style = QApplication::style();
+    }
+    const int textMargin =
+        style->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, widget) + 1;
+    QRect textRect = rect(option, index, Qt::DisplayRole)
+                        .adjusted(textMargin, 0, -textMargin, 0); 
+    QTextOption textOption;
+    textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
+    textOption.setTextDirection(option.direction);
+    textOption.setAlignment(
+        QStyle::visualAlignment(option.direction, option.displayAlignment));
+    textLayout.setTextOption(textOption);
+    textLayout.setFont(option.font);
+    QString text1 = replaceNewLine(text);
+    textLayout.setText(text1);
+
+    qreal height = 0;
+    textLayout.beginLayout();
+    while (true) {
+        QTextLine line = textLayout.createLine();
+        if (!line.isValid())
+            break;
+        line.setLineWidth(textRect.width());
+        height += line.height();
+    }
+    if (height == 0) { // Should never happen, but bail if it does.
+        return QItemDelegate::sizeHint(option, index);
+    }
+    return QSize(textRect.width(), (int)(ceil(height)));
 }
 
 void SqlDelegate::drawDisplay(QPainter *painter,
@@ -180,7 +231,7 @@ void SqlDelegate::drawDisplay(QPainter *painter,
         }
     }
 
-    const QSize layoutSize(textRect.width(),textRect.height());
+    const QSize layoutSize(textRect.width(), textRect.height());
     const QRect layoutRect = QStyle::alignedRect(
         option.direction, option.displayAlignment, layoutSize, textRect);
     textLayout.draw(painter, layoutRect.topLeft(), QVector<QTextLayout::FormatRange>(), layoutRect);

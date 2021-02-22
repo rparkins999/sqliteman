@@ -46,6 +46,8 @@ class SqlDelegate : public QItemDelegate
             return text;
         }
         QSizeF doTextLayout(int lineWidth) const;
+        QSize sizeHint(const QStyleOptionViewItem &option,
+                       const QModelIndex &index) const;
 
     signals:
         void dataChanged();
