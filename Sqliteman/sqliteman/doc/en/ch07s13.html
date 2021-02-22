@@ -43,62 +43,82 @@
 		or you open a non-table (a query or view) in the
 		<a href="ch07s14.html">Data Viewer</a>. If your window manager can find
 		space on the screen, the Find Dialog will be displayed without
-		overlapping the sqliteman main window.
+		overlapping the sqliteman main window.  You can search for the first matching row using
+		<a href="#findfirst">Find First</a>, the next matching row after
+		the currently selected one using
+		<a href="#findnext">Find Next</a>, or all matching rows using
+		<a href="#findall">Find All</a>.
 	</p>
 	<p>
 		The search conditions are specified similarly to the
 		<a href="ch07s11.html">Query Builder</a>
-		but they are interpreted internally to sqliteman instead of being used
-		to construct an SQL query and there is no column selection or ordering
-		clause. You can search for the first matching row,
-		the next matching row after the currently selected one, or all matching rows. The output from Find All looks a bit like
-		the output from running a query, but it is actually the real table with
-		all the non-matching rows hidden. Since it is the real table, you can
+		but they are interpreted internally to
+		<span class="application">sqliteman</span> which makes it slower than
+		running a <a href="ch07s11.html">Query Builder</a> because the sqlite
+		internal optimisations are not used. Also there is no column selection
+		or ordering clause.
+		The output from
+		<a href="#findall">Find All</a> looks like the output from running a
+		<a href="ch07s11.html">Query Builder</a>
+		query, but it is actually the real table with
+		all the non-matching rows hidden. so you can
 		edit the rows, which you cannot do with output from the
 		<a href="ch07s11.html">Query Builder</a>.
+    </p>
+    <p>
 		Note however that making a
 		<a href="ch07s14.html#snapshot">Table Snapshot</a> will snapshot the
 		whole table, not just the non-hidden rows. This may change in some
-		future version of sqliteman.
+		future version of <span class="application">sqliteman</span>.
 	</p>
-	<p>
-		The
-		<span class="guibutton">More</span>
-		button adds another match condition to the search and the
-		<span class="guibutton">Less</span>
-		button deletes the last match condition. If you add several conditions
-		you can choose whether the search finds rows which match all of them or
-		match any of them. 
-	</p>
-	<p>
-		The
-		<span class="guibutton">Find First</span>
-		button finds the first matching row in the table and selects the first
-		field as if you had clicked on it. If there is no matching row, the
-		Error Log will show "Not found".
-	</p>
-	<p>
-		The
-		<span class="guibutton">Find Next</span>
-		button finds the next matching row in the table after the row currently
-		selected and selects the first field as if you had clicked on it. If
-		there is no matching row, the Error Log will show "Not found".
-	</p>
-	<p>
-		The
-		<span class="guibutton">Find All</span>
-		button hides all rows in the table which do not match the search
-		conditions, so that you can easily examine and edit those which do
-		match. If there are no matching rows, the whole table is shown and the
-		Error Log will show "No match found".
-	</p>
-	<p>
-		The
-		<span class="guibutton">Finished</span>
-		button dismisses the dialog. Any rows hidden after a
-		<span class="guibutton">Find All</span>
-		are made visible again. Closing the dialog box has the same effect.
-	</p>
+	<dl>
+        <dt>
+            <span class="term"><dfn id ="More"></dfn>More</span>
+        </dt>
+        <dd>
+            This button adds another match condition to the search.
+            If you add several conditions you can choose whether the search finds rows which match all of them or match any of them.
+        </dd>
+        <dt>
+            <span class="term"><dfn id ="Less"></dfn>Less</span>
+        </dt>
+        <dd>
+            This button deletes the last match condition.
+        </dd>
+        <dt>
+            <span class="term"><dfn id ="findfirst"></dfn>Find First</span>
+        </dt>
+        <dd>
+            This button finds the first matching row in the table and selects
+            the first field as if you had clicked on it. If there is no matching
+            row, the Error Log will show "Not found".
+        </dd>
+        <dt>
+            <span class="term"><dfn id ="findnext"></dfn>Find Next</span>
+        </dt>
+        <dd>
+            This button finds the next matching row in the table after the row
+            currently selected and selects the first field as if you had
+            clicked on it. If there is no matching row, the Error Log will show
+            "Not found".
+        </dd>
+        <dt>
+            <span class="term"><dfn id ="findall"></dfn>Find All</span>
+        </dt>
+        <dd>
+            This button hides all rows in the table which do not match the
+            search conditions, so that you can easily examine and edit those which do match. If there are no matching rows, the whole table is
+            shown and the Error Log will show "No match found".
+        </dd>
+        <dt>
+            <span class="term"><dfn id ="Finished"></dfn>Finished</span>
+        </dt>
+        <dd>
+            This button dismisses the dialog. Any rows hidden after a
+            <a href="#findall">Find All</a> are made visible again.
+            Closing the dialog box has the same effect.
+        </dd>
+	</dl>
 </div>
 <div class="navfooter">
 	<hr>
