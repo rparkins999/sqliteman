@@ -277,23 +277,19 @@ void SqlEditor::actionRun_as_Script_triggered()
 	toSQLParse::editorTokenizer tokens(ui.sqlTextEdit);
 	int cpos, cline;
 	ui.sqlTextEdit->getCursorPosition(&cline, &cpos);
-
+	QString sql;
+	int line;
+	int pos;
 	QProgressDialog * dialog =
 		new QProgressDialog(tr("Executing all statements"),
 			tr("Cancel"), 0, ui.sqlTextEdit->lines(), this);
 	connect(dialog, SIGNAL(canceled()), this, SLOT(scriptCancelled()));
-
-	int line;
-	int pos;
-	bool ignore = true;
-
-	QSqlQuery query(QSqlDatabase::database(SESSION_NAME));
-	QString sql;
-	bool isError = false;
-
 	emit sqlScriptStart();
 	emit showSqlScriptResult("-- " + tr("Script started"));
-	do {
+	QSqlQuery query(QSqlDatabase::database(SESSION_NAME));
+	bool isError = false;
+	do
+	{
 		line = tokens.line();
 		pos = tokens.offset();
 		dialog->setValue(line);
@@ -301,59 +297,48 @@ void SqlEditor::actionRun_as_Script_triggered()
 		if (m_scriptCancelled)
 			break;
 		toSQLParse::parseStatement(tokens);
-
-		if (ignore && (tokens.line() > cline ||
-				  (tokens.line() == cline &&
-				  tokens.offset() >= cpos)))
-		{
-			ignore = false;
-			cline = line;
-			cpos = pos;
-		}
-
-		if (tokens.line() < ui.sqlTextEdit->lines() && !ignore)
-		{
-			sql = prepareExec(tokens, line, pos);
-			emit showSqlScriptResult(sql);
-			SqlQueryModel * mdl = new SqlQueryModel(creator);
-			mdl->setQuery(sql, QSqlDatabase::database(SESSION_NAME));
-            appendHistory(sql);
-			if (mdl->lastError().isValid())
-			{
-                QString s1(mdl->lastError().driverText());
-                QString s2(mdl->lastError().databaseText());
-                if (s1.size() > 0) {
-                    if (s2.size() > 0) {
-                        s1.append(" ").append(s2);
-                    }
-                } else { s1 = s2; }
-				emit showSqlScriptResult(
-					"-- " + tr("Error: %1.").arg(mdl->lastError().text()));
-				int com = QMessageBox::question(this, tr("Run as Script"),
-						tr("This script contains the following error:\n")
-						+ s1
-						+ tr("\nAt line: %1").arg(line),
-						QMessageBox::Ignore, QMessageBox::Abort);
-				if (com == QMessageBox::Abort)
-				{
-					scriptCancelled();
-					isError = true;
-					break;
-				}
-			}
-			else
-			{
-				if (Utils::updateObjectTree(sql)) { rebuildTree = true; }
-				if (Utils::updateTables(sql)) { updateTable = true; }
-				emit showSqlScriptResult("-- " + tr("No error"));
-				if (mdl->rowCount() > 0) { model = mdl; }
-				else delete mdl;
-			}
-			emit showSqlScriptResult("--");
-		}
-	}
-	while (tokens.line() < ui.sqlTextEdit->lines());
-
+        if (   tokens.line() < cline
+            || (tokens.line() == cline && tokens.offset() < cpos))
+        { continue; }
+        sql = prepareExec(tokens, line, pos);
+        if (sql.isEmpty()) { continue; }
+        emit showSqlScriptResult(sql);
+        SqlQueryModel * mdl = new SqlQueryModel(creator);
+        mdl->setQuery(sql, QSqlDatabase::database(SESSION_NAME));
+        appendHistory(sql);
+        if (mdl->lastError().isValid())
+        {
+            QString s1(mdl->lastError().driverText());
+            QString s2(mdl->lastError().databaseText());
+            if (s1.size() > 0) {
+                if (s2.size() > 0) {
+                    s1.append(" ").append(s2);
+                }
+            } else { s1 = s2; }
+            emit showSqlScriptResult(
+                "-- " + tr("Error: %1.").arg(mdl->lastError().text()));
+            int com = QMessageBox::question(this, tr("Run as Script"),
+                    tr("This script contains the following error:\n")
+                    + s1
+                    + tr("\nAt line: %1").arg(line),
+                    QMessageBox::Ignore, QMessageBox::Abort);
+            if (com == QMessageBox::Abort)
+            {
+                scriptCancelled();
+                isError = true;
+                break;
+            }
+        }
+        else
+        {
+            if (Utils::updateObjectTree(sql)) { rebuildTree = true; }
+            if (Utils::updateTables(sql)) { updateTable = true; }
+            emit showSqlScriptResult("-- " + tr("No error"));
+            if (mdl->rowCount() > 0) { model = mdl; }
+            else delete mdl;
+        }
+        emit showSqlScriptResult("--");
+	} while (tokens.line() < ui.sqlTextEdit->lines());
 	delete dialog;
 	ui.sqlTextEdit->setSelection(cline, cpos, tokens.line(), tokens.offset());
 	if (!isError)
