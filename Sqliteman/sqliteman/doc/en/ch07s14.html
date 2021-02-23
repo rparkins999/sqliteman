@@ -60,27 +60,26 @@
 		</span>
 		button to discard them.
 	</p>
-	<div class="important" style="margin-left: 0.5in; margin-right: 0.5in;">
-		<h3 class="title">Important</h3>
-		<p>Transactions in the Data Viewer are separate from transactions
-			in the SQL Editor. You cannot commit your Data Viewer changes by a
-			<span><strong class="command">COMMIT</strong></span>
-			in the SQL Editor. However if you have a pending transaction
-			(unclosed
-			<span><strong class="command">BEGIN TRANSACTION</strong></span>
-			or
-			<span><strong class="command">SAVEPOINT</strong></span>)
-			from the SQL editor you have to close that as well after using the
-			<span class="guibutton"><a href="ch07s14.html#commit">Commit</a>
-			</span>
-			button in order for your changes to become permanent in the
-			database. See
-			<a href="ch07s01.html">
-				Auto Commit and Transaction Pending modes
-			</a>
-			for further details.
-		</p>
-	</div>
+    <h3 class="important">Important</h3>
+    <div class="indent">
+        Transactions in the Data Viewer are separate from transactions
+        in the SQL Editor. You cannot commit your Data Viewer changes by a
+        <span><strong class="command">COMMIT</strong></span>
+        in the SQL Editor. However if you have a pending transaction
+        (unclosed
+        <span><strong class="command">BEGIN TRANSACTION</strong></span>
+        or
+        <span><strong class="command">SAVEPOINT</strong></span>)
+        from the SQL editor you have to close that as well after using the
+        <span class="guibutton"><a href="ch07s14.html#commit">Commit</a>
+        </span>
+        button in order for your changes to become permanent in the
+        database. See
+        <a href="ch07s01.html">
+            Auto Commit and Transaction Pending modes
+        </a>
+        for further details.
+    </div>
 	<p>Data changes are available only for tables (invoked in Schema Browser).
 		There is no way to edit the data returned by an SQL statement yet,
 		but for simple queries the <a href="ch07s13.html">Find Dialog</a>
@@ -118,41 +117,73 @@
 				</span>
 			</dt>
 			<dd>
-				<span class="action">
-                    <p>
-						This button is enabled only when viewing a table. It
-						creates a new and empty row at the end of the table.
-						Default values are prefilled. If the whole table has
-						not been read yet, inserting a row causes
-						the remainder of the table to be read into memory.
-					</p><p>
-						Any INTEGER PRIMARY KEY AUTOINCREMENT or INTEGER PRIMARY
-						KEY field is prefilled with the least integer not yet
-						used in the table. Note that this is not quite correct
-						if the number of distinct rows that have ever existed in
-						the table is more than 9223372036854775807 or in the
-						case of AUTOINCREMENT if the row with the largest key
-						has been removed.
-					</p><p>
-						If a field has a default of CURRENT_TIMESTAMP,
-						CURRENT_DATE, or CURRENT_TIME, it will be prefilled with
-						the date and/or time when the record is created, but if
-						the field is not modified it will be overwritten when
-						changes are committed with the date and/or time then.
-					</p><p>
-						If the default for a field is an sqlite expression, it
-						will be prefilled with the result of evaluating the
-						expression: since it is possible
-						<a href="apb.html"> (see appendix B) </a>
-						to constuct an sqlite constant expression with a
-						non-constant value using sqlite built-in functions, the
-						actual value when the changes are committed may be
-						different.
-					</p><p>
-						<a href="ch07s14.html#commit">Commit</a>
-						action is required to make this permanent.
-                    </p>
-				</span>
+                <p>
+                    <span class="action">
+                        <p>
+                            This button is enabled only when viewing a table. It
+                            creates a new row and displays it at the end of the
+                            table. If preference
+                            <a href="prefs.html#prefillrows"> Prefill new rows
+                            </a> is not set, all fields are set to NULL.
+                            If this preference is set, default values are
+                            prefilled, and fields with no default are still
+                            set to NULL.
+                        </p><p>
+                            An INTEGER PRIMARY KEY AUTOINCREMENT field is
+                            prefilled with a value one higher than the highest
+                            value which has ever been used in the table
+                            including new rows which have not yet been
+                            committed. The prefilled value, or any modified
+                            value that you insert, is used when the new row is
+                            committed. If row 9223372036854775807 has ever
+                            existed in the table, this does not produce the
+                            same result as directly inserting a row with an
+                            <span class="application">sqlite</span> statement,
+                            which would fail with error SQLITE_FULL.
+                        </p><p>
+                            An INTEGER PRIMARY DESC field is not prefilled by
+                            <span class="application">sqliteman</span>.
+                        </p><p>
+                            An ordinary INTEGER PRIMARY (not AUTOINCREMENT or
+                            DESC) field is prefilled with a value one higher
+                            than the highest value <i> currently </i> used in
+                            the table again including new rows which have not
+                            yet been committed. The prefilled value, or any
+                            modified value that you insert, is used when the
+                            new row is committed. If row 9223372036854775807
+                            currently exists in the table, this does not
+                            produce the same result as directly inserting a row
+                            with an <span class="application">sqlite</span>
+                            statement, which would either insert a random
+                            previously unused value or fail with error
+                            SQLITE_FULL.
+                        </p><p>
+                            If a field has a default of CURRENT_TIMESTAMP,
+                            CURRENT_DATE, or CURRENT_TIME, it will be prefilled
+                            with the date and/or time when the record is
+                            created, but if the field is not modified it will
+                            be overwritten when changes are committed with the
+                            date and/or time at that moment.
+                        </p><p>
+                            If the default for a field is an sqlite expression,
+                            it will be prefilled with the result of evaluating
+                            the expression: since it is possible
+                            <a href="apb.html"> (see appendix B) </a>
+                            to constuct an
+                            <span class="application">sqlite</span> constant
+                            expression with a non-constant value using
+                            <span class="application">sqlite</span>
+                            built-in functions, the actual value when the
+                            changes are committed may be different.
+                        </p><p>
+                            If the whole table has not been read yet, inserting
+                            a row causes the remainder of the table to be read into memory.
+                        </p><p>
+                            <a href="ch07s14.html#commit">Commit</a>
+                            action is required to make this permanent.
+                        </p>
+                    </span>
+                </p>
 			</dd>
 			<dt>
 				<span class="term">
@@ -163,32 +194,38 @@
 				</span>
 			</dt>
 			<dd>
-				<span class="action">
-                    <p>
-						This button is enabled only when viewing a table and a
-						current row is selected. It creates a copy of the
-						current row at the end of the table (this can be useful
-						when creating rows which differ only in one field).
-						If the whole table has not been read yet, copying a row
-						causes the remainder of the table to be read into
-						memory.
-					</p><p>
-						If the table contains a column which is an INTEGER
-						PRIMARY KEY or an INTEGER PRIMARY KEY AUTOINCREMENT,
-						in order to avoid a constraint violation that column
-						is prefilled as for a new row instead of being copied.
-					</p><p>
-						<a href="ch07s14.html#commit">Commit</a>
-						action is required to make this permanent.
-                    </p>
-				</span>
-				<div class="important"><p>
+				<p>
+                    <span class="action">
+                        <p>
+                            This button is enabled only when viewing a table
+                            and a current row is selected. It creates a copy of
+                            the current row and displays it at the end of the
+                            table (this can be useful when creating rows which
+                            differ only in a few fields).
+                        </p><p>
+                            If the whole table has not been read yet,
+                            copying a row causes the remainder of the table to
+                            be read into memory.
+                        </p><p>
+                            If the table contains a field which is an INTEGER
+                            PRIMARY KEY (not DECR) or an INTEGER PRIMARY KEY
+                            AUTOINCREMENT, in order to avoid a constraint
+                            violation that field is prefilled as for a new row
+                            instead of being copied.
+                        </p><p>
+                            <a href="ch07s14.html#commit">Commit</a>
+                            action is required to make this permanent.
+                        </p>
+                    </span>
+                </p>
+				<h3 class="important">Important</h3>
+				<div class= "indent">
                     The Qt SQL library gets confused if the database
                     contains multiple rows with the same data fields:
                     if there is no primary key make sure to modify the copy
                     before committing.
-                </p></div>
-			</dd>
+                </div>
+            </dd>
 			<dt>
 				<span class="term">
 					<span class="guiicon">
@@ -250,10 +287,21 @@
 			<dd>
 				<p>
 					<span class="action">
-						This button is enabled only when changes have been made
-						in the DataViewer. It promotes the changes into the
-						database.
-					</span>
+                        <p>
+                            This button is enabled only when changes have been
+                            made in the DataViewer. It promotes the changes
+                            into the database.
+                        </p><p>
+                            <span class="application">Sqlite</span>
+                            does not define where a new row is inserted
+                            into the table, or the order in which table rows
+                            are displayed. Current versions display rows in the
+                            order of the Primary Key, which will be the rowid
+                            except in the case of a WITHOUT ROWID table. This 
+                            means that when committing a new or copied row its
+                            apparent position in the table may change.
+                        </p>
+                     </span>
 				</p>
 			</dd>
 			<dt>
@@ -306,7 +354,7 @@
 					<span class="action">
 						Open the Data Export dialog. You can export currently
 						selected data in various formats.
-						<a href="ch07s14.html" title="Export Data">
+						<a href="ch07s15.html" title="Export Data">
 							See Data Export documentation</a>.
 					</span>
 				</p>
@@ -724,13 +772,10 @@
 						A helper wizard for storing date and time in string
 						values.
 					</p>
-					<div class="important" style=
-						"margin-left: 0.5in; margin-right: 0.5in;">
-						<h3 class="title">Important</h3>
-						<p>
-							Consult the Sqlite manual for date and time issues.
-						</p>
-					</div>
+                    <h3 class="important">Important</h3>
+                    <div class = "indent">
+                        Consult the Sqlite manual for date and time issues.
+                    </div>
 					<p>
 						The
 						<span class="guilabel">Date</span>
@@ -793,14 +838,14 @@
 		A message in the error log widget will inform you:
 	</p>
 	<p>
-		<span class="guilabel">
+		<dl><dd>
 			More rows can be fetched. Scroll the result set for more rows and/or
 			read the documentation.
-		</span>
+		</dd></dl>
 	</p>
 	<p>
 		Alternatively you can set a
-		<a href="ch07.html#preferences">preference</a>
+		<a href="prefs.html#rowstoread">preference</a>
 		to read all of a table when opening it: this can be more convenient on a
 		fast computer with plenty of memory.
 	</p>
@@ -815,12 +860,12 @@
 	<p>
 		If you select a column by clicking on the column name at the top, and
 		then type characters,
-		<span class="application">Sqliteman</span>
+		<span class="application">sqliteman</span>
 		will do an incremental search on the data in the selected column. The
 		view will be scrolled so that the first matching row is visible, at the
 		top of the window unless there are not enough rows below it to fill the
 		window. This works best with a sorted column, but
-		<span class="application">Sqliteman</span>
+		<span class="application">sqliteman</span>
 		will do the search anyway.
 	</p>
 </div>

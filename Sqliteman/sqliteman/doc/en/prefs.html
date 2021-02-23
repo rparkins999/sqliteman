@@ -25,7 +25,8 @@
                 <a accesskey="n" href="ch07s00.html">Next</a>
             </td></tr>
         </table>
-    <hr></div>
+        <hr>
+    </div>
     <div class="chapter" lang="en">
         <div class="sect1" lang="en">
             <div class="titlepage">
@@ -78,23 +79,21 @@
                         Allows you to choose one of the translations for
                         the user interface.
                     </p>
-                    <div class="caution"
-                        style="margin-left: 0.5in; margin-right: 0.5in;">
-                        <h3 class="title">Caution</h3>
-                        <p>
-                            Remember that translations are provided by a group
-                            of volunteers (not by the
-                            <span class="application">sqliteman</span>
-                            developers). It's better
-                            <a href="ch09.html"
-                                title="Chapter 9. Credits and License">
-                                to contact translation authors
-                            </a> in the case of any errors.
-                        </p><p>
-                            In this version, translations are not currently
-                            being updated.
-                            Volunteers to update them are welcome.
-                        </p>
+                    <h3 class="caution">Caution</h3>
+                    <div class="indent">
+                        Remember that translations are provided by a group
+                        of volunteers (not by the
+                        <span class="application">sqliteman</span>
+                        developers). It's better
+                        <a href="ch09.html"
+                            title="Chapter 9. Credits and License">
+                            to contact translation authors
+                        </a> in the case of any errors.
+                    </div>
+                    <br>
+                        In this version, translations are not currently
+                        being updated.
+                        Volunteers to update them are welcome.
                     </div>
                 </dd>
                 <dt>
@@ -121,10 +120,11 @@
                 <dd>
                     <p>
                         Specify the number of items in the
-                        <span class="guimenu">File</span>-&gt;<span
-                            class="guimenuitem">Recent Databases
-                        </span>
+                        <a href="ch06.html#recent">
+                            File-&gt;Recent Databases
+                        </a>
                         menu.
+                        </a>
                     </p>
                 </dd>
                 <dt>
@@ -150,7 +150,11 @@
                     </p>
                 </dd>
                 <dt>
-                    <span class="term">Rows to read from tables:</span>
+                    <span class="term">
+                        <dfn.normal id = "rowstoread">
+                            Rows to read from tables:
+                        </dfn>
+                    </span>
                 </dt>
                 <dd>
                     <p>
@@ -176,7 +180,11 @@
                         <a href="ch07s14.html#itemview">Item View.</a>
                     </p>
                 </dd>
-                <dt><span class="term">Prefill new rows</span></dt>
+                <dt><span class="term">
+                    <dfn.normal id="prefillrows">
+                        Prefill new rows
+                    </dfn>
+                </span></dt>
                 <dd>
                     <p>
                         If this box is not checked, all fields of a new row
@@ -187,13 +195,14 @@
                         you commit the new or copied row into the database, and
                         committing changes may cause uniqueness constraint
                         violations. Additionally
+                        <span class="application">sqlite</span>
+                        allows a field with a UNIQUE constraint or which is a
+                        PRIMARY KEY (which implies a UNIQUE constraint) to be
+                        NULL in multiple rows without violating the constraint.
+                        This behaviour is supported by
                         <span class="application">sqliteman</span>
-                        allows a field with a UNIQUE constraint or which
-                        is a PRIMARY KEY (which implies a UNIQUE constraint)
-                        to be NULL in multiple rows without violating the
-                        constraint. This behaviour is supported for legacy
-                        compatibility reasons and is probably not what you want
-                        when creating a new row.
+                        for legacy compatibility reasons and is probably not
+                        what you want when creating a new row.
                     </p>
                     <p>
                         If this box is checked, when creating a new row
@@ -202,7 +211,7 @@
                         copied rows,
                         <span class="application">sqliteman</span>
                         will calculate a value for any field which is an
-                        INTEGER PRIMARY KEY alias for the rowid,
+                        INTEGER PRIMARY KEY (but not DECR) alias for the rowid,
                         force an empty string into any field which would
                         otherwise violate a NOT NULL constraint, and overwrite
                         default or copied values if necessary to make UNIQUE
@@ -223,13 +232,11 @@
                         <span class="application">sqlite</span>
                         built-in functions can
                         produce different values at different times.
-                        Rowid aliases can also differ, if some other process
-                        inserts or deletes rows, or if you delete some rows
-                        and then insert others before committing, or if the
-                        maximum possible rowid number (9223372036854775807)
-                        has been used. If another process inserts rows,
-                        uniqueness contraints can still be violated when you
-                        commit your changes.
+                        Rowid aliases can also differ if some other process
+                        inserts or deletes rows, or if the maximum possible
+                        rowid number (9223372036854775807) has been used.
+                        If another process inserts rows, uniqueness contraints
+                        can still be violated when you commit your changes.
                     </p>
                 </dd>
             </dl>
