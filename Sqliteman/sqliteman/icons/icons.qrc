@@ -15,13 +15,14 @@
         <file>document-open.png</file>
         <file>document-save-as.png</file>
         <file>document-save.png</file>
+        <file>explain.png</file>
         <file>go-next.png</file>
         <file>go-next-use.png</file>
         <file>go-previous.png</file>
         <file>index.png</file>
         <file>insert_table_row.png</file>
         <file>key.png</file>
-        <file>runexplain.png</file>
+        <file>queryplan.png</file>
         <file>runscript.png</file>
         <file>runsql.png</file>
         <file>sqliteman.png</file>

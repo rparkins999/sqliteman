@@ -25,6 +25,7 @@ document-save-as.png
 document-save.png
 duplicate_table_row.png
 edit.png
+explain.png
 extensions.png
 go-next.png
 go-next-use.png
@@ -36,7 +37,7 @@ key.png
 move-down.png
 move-up.png
 preferences-desktop-display.png
-runexplain.png
+queryplan.png
 runscript.png
 runsql.png
 setnull.png
