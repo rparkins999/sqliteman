@@ -55,6 +55,8 @@ class LiteManWindow : public QMainWindow
         bool doExecSql(QString query, bool isBuilt);
 
 		QueryEditorDialog * queryEditor;
+        QAction * actToggleSqlEditorToolBar;
+        QAction * actToggleDataViewerToolBar;
 
 	signals:
 		void prefsChanged();

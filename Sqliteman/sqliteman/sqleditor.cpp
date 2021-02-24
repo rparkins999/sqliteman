@@ -96,7 +96,7 @@ SqlEditor::SqlEditor(LiteManWindow * parent)
 			this, SLOT(actionRun_SQL_triggered()));
     // alternative run action for Ctrl+Enter
     connect(alternativeSQLRun, SIGNAL(activated()),
-            this, SLOT(action_Run_SQL_triggered()));
+            this, SLOT(actionRun_SQL_triggered()));
 	connect(ui.actionRun_ExplainQueryPlan, SIGNAL(triggered()),
 			this, SLOT(actionRun_ExplainQueryPlan_triggered()));
 	connect(ui.actionRun_Explain, SIGNAL(triggered()),
@@ -121,12 +121,17 @@ SqlEditor::SqlEditor(LiteManWindow * parent)
 			ui.sqlTextEdit, SLOT(prefsChanged()));
 
 	// search
-	connect(ui.actionSearch, SIGNAL(triggered()), this, SLOT(actionSearch_triggered()));
+	connect(ui.actionSearch, SIGNAL(triggered()),
+            this, SLOT(actionSearch_triggered()));
 	connect(ui.searchEdit, SIGNAL(textChanged(const QString &)),
 			this, SLOT(searchEdit_textChanged(const QString &)));
-	connect(ui.previousToolButton, SIGNAL(clicked()), this, SLOT(findPrevious()));
+	connect(ui.previousToolButton, SIGNAL(clicked()),
+            this, SLOT(findPrevious()));
 	connect(ui.nextToolButton, SIGNAL(clicked()), this, SLOT(findNext()));
 	connect(ui.searchEdit, SIGNAL(returnPressed()), this, SLOT(findNext()));
+
+    connect(ui.toolBar, SIGNAL(visibilityChanged(bool)),
+            this, SLOT(updateVisibility()));
 }
 
 SqlEditor::~SqlEditor()
@@ -367,11 +372,6 @@ void SqlEditor::actionCreateView_triggered()
 {
 	emit showSqlScriptResult("");
 	creator->createViewFromSql(query());
-}
-
-void SqlEditor::showEvent(QShowEvent * event)
-{
-	ui.sqlTextEdit->setFocus();
 }
 
 void SqlEditor::action_Open_triggered()
@@ -649,4 +649,22 @@ void SqlEditor::scriptCancelled()
 {
 	emit showSqlScriptResult("-- " + tr("Script was cancelled by user"));
 	m_scriptCancelled = true;
+}
+
+void SqlEditor::updateVisibility()
+{
+    creator->actToggleSqlEditorToolBar->setChecked(ui.toolBar->isVisible());
+}
+
+void SqlEditor::handleToolBar()
+{
+    ui.toolBar->setVisible(!ui.toolBar->isVisible());
+    updateVisibility();
+}
+
+void SqlEditor::showEvent(QShowEvent * event)
+{
+    QMainWindow::showEvent(event);
+	ui.sqlTextEdit->setFocus();
+    updateVisibility();
 }

@@ -78,7 +78,6 @@ class SqlEditor : public QMainWindow
 
         void appendHistory(const QString & sql);
 
-		void showEvent(QShowEvent * event);
 		bool changedConfirm();
 		void saveFile();
 		void open(const QString & newFile);
@@ -123,6 +122,12 @@ class SqlEditor : public QMainWindow
 		void externalFileChange(const QString & path);
 		//
 		void scriptCancelled();
+    public slots:
+        void updateVisibility();
+        void handleToolBar();
+
+    protected:
+        void showEvent(QShowEvent * event);
 };
 
 #endif

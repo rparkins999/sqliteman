@@ -11,6 +11,7 @@ for which a new license (GPL+exception) is in place.
 #include <QMainWindow>
 
 #include "finddialog.h"
+#include "litemanwindow.h"
 #include "sqlmodels.h"
 #include "ui_dataviewer.h"
 
@@ -126,7 +127,7 @@ class DataViewer : public QMainWindow
 		int columnSelected;
 		bool haveBuiltQuery;
 
-		DataViewer(QWidget * parent = 0);
+		DataViewer(LiteManWindow * parent = 0);
 		~DataViewer();
 
 		void setNotPending();
@@ -155,6 +156,7 @@ class DataViewer : public QMainWindow
 
 		QByteArray saveSplitter() { return ui.splitter->saveState(); };
 		void restoreSplitter(QByteArray state) { ui.splitter->restoreState(state); };
+		LiteManWindow * creator;
 
 	signals:
 		void tableUpdated();
@@ -166,6 +168,11 @@ class DataViewer : public QMainWindow
 		//! \brief Clean the "Script Result" report
 		void sqlScriptStart();
 		void rowCountChanged();
+        void updateVisibility();
+        void handleToolBar();
+
+    protected:
+        void showEvent(QShowEvent * event);
 };
 
 

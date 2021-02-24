@@ -263,15 +263,27 @@ void LiteManWindow::initActions()
 	execSqlAct->setCheckable(true);
 	connect(execSqlAct, SIGNAL(triggered()), this, SLOT(handleSqlEditor()));
 
+    actToggleSqlEditorToolBar = new QAction(tr("SQL Editor toolbar"), this);
+    actToggleSqlEditorToolBar->setCheckable(true);
+    connect(actToggleSqlEditorToolBar, SIGNAL(triggered()),
+            sqlEditor, SLOT(handleToolBar()));
+
 	schemaBrowserAct = new QAction(tr("Schema &Browser"), this);
 	schemaBrowserAct->setShortcut(tr("Ctrl+B"));
 	schemaBrowserAct->setCheckable(true);
-	connect(schemaBrowserAct, SIGNAL(triggered()), this, SLOT(handleSchemaBrowser()));
+	connect(schemaBrowserAct, SIGNAL(triggered()),
+            this, SLOT(handleSchemaBrowser()));
 
 	dataViewerAct = new QAction(tr("Data Vie&wer"), this);
 	dataViewerAct->setShortcut(tr("Ctrl+D"));
 	dataViewerAct->setCheckable(true);
-	connect(dataViewerAct, SIGNAL(triggered()), this, SLOT(handleDataViewer()));
+	connect(dataViewerAct, SIGNAL(triggered()),
+            this, SLOT(handleDataViewer()));
+
+    actToggleDataViewerToolBar = new QAction(tr("Data Viewer toolbar"), this);
+	actToggleDataViewerToolBar->setCheckable(true);
+    connect(actToggleDataViewerToolBar, SIGNAL(triggered()),
+            dataViewer, SLOT(handleToolBar()));
 
 	buildQueryAct = new QAction(tr("&Build Query..."), this);
 	buildQueryAct->setShortcut(tr("Ctrl+R"));
@@ -396,8 +408,10 @@ void LiteManWindow::initMenus()
 	databaseMenu->addSeparator();
 	databaseMenu->addAction(buildQueryAct);
 	databaseMenu->addAction(execSqlAct);
+	databaseMenu->addAction(actToggleSqlEditorToolBar);
 	databaseMenu->addAction(schemaBrowserAct);
 	databaseMenu->addAction(dataViewerAct);
+	databaseMenu->addAction(actToggleDataViewerToolBar);
 	databaseMenu->addSeparator();
 	databaseMenu->addAction(exportSchemaAct);
 	databaseMenu->addAction(dumpDatabaseAct);

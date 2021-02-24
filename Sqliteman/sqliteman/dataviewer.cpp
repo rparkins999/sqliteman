@@ -139,14 +139,6 @@ void DataViewer::updateButtons()
 	ui.tabWidget->setTabEnabled(2, ui.scriptEdit->lines() > 1);
 	
 	if (m_finder) { m_finder->updateButtons(); }
-
-	// Sometimes the main toolbar doesn't get displayed. Inserting this line
-	// causes it to reappear. Removing the line again does nothing until I've
-	// rebuilt the program some indeterminate number of times, and then the
-	// main toolbar vanishes again. This is some strange Qt weirdness.
-	// End users of the compiled code can't insert the line, rebuild, and
-	// remove it again, so it's left in.
-	ui.mainToolBar->show();
 }
 
 void DataViewer::unFindAll()
@@ -560,7 +552,7 @@ void DataViewer::openStandaloneWindow()
     // win windows are always top when there is this parent
     DataViewer *w = new DataViewer(0);
 #else
-    DataViewer *w = new DataViewer(this);
+    DataViewer *w = new DataViewer(creator);
 #endif
 	SqlQueryModel *qm = new SqlQueryModel(w);
 	w->setAttribute(Qt::WA_DeleteOnClose);
@@ -810,10 +802,11 @@ void DataViewer::doPasteOver()
 
 // public methods
 
-DataViewer::DataViewer(QWidget * parent)
+DataViewer::DataViewer(LiteManWindow * parent)
 	: QMainWindow(parent),
 	  dataResized(true)
 {
+    creator = parent;
 	ui.setupUi(this);
 	m_finder = 0;
 	canFetchMore = tr("(More rows can be fetched. "
@@ -891,7 +884,8 @@ DataViewer::DataViewer(QWidget * parent)
 		this, SLOT(actInsertNull_triggered()));
 
 	// workaround for Ctrl+C
-	DataViewerTools::KeyPressEater *keyPressEater = new DataViewerTools::KeyPressEater(this);
+	DataViewerTools::KeyPressEater *keyPressEater =
+        new DataViewerTools::KeyPressEater(this);
 	ui.tableView->installEventFilter(keyPressEater);
 
 	connect(ui.actionFind, SIGNAL(triggered()),
@@ -921,9 +915,11 @@ DataViewer::DataViewer(QWidget * parent)
 			this, SLOT(handleBlobPreview(bool)));
 	connect(ui.tabWidget, SIGNAL(currentChanged(int)),
 			this, SLOT(tabWidget_currentChanged(int)));
-	connect(ui.tableView->horizontalHeader(), SIGNAL(sectionResized(int, int, int)),
+	connect(ui.tableView->horizontalHeader(),
+            SIGNAL(sectionResized(int, int, int)),
 			this, SLOT(tableView_dataResized(int, int, int)));
-	connect(ui.tableView->verticalHeader(), SIGNAL(sectionResized(int, int, int)),
+	connect(ui.tableView->verticalHeader(),
+            SIGNAL(sectionResized(int, int, int)),
 			this, SLOT(tableView_dataResized(int, int, int)));
 	connect(ui.tableView->verticalHeader(), SIGNAL(sectionDoubleClicked(int)),
 			this, SLOT(rowDoubleClicked(int)));
@@ -933,6 +929,10 @@ DataViewer::DataViewer(QWidget * parent)
 			this, SLOT(columnClicked(int)));
 	connect(ui.tableView, SIGNAL(clicked(const QModelIndex &)),
 			this, SLOT(nonColumnClicked()));
+    connect(ui.mainToolBar, SIGNAL(visibilityChanged(bool)),
+            this, SLOT(updateVisibility()));
+    connect(ui.exportToolBar, SIGNAL(visibilityChanged(bool)),
+            this, SLOT(updateVisibility()));
 
 	activeRow = -1;
 	columnSelected = -1;
@@ -1248,6 +1248,28 @@ void DataViewer::rowCountChanged()
 	else { showStatusText(false); }
 }
 
+void DataViewer::updateVisibility()
+{
+    bool visible =    ui.mainToolBar->isVisible()
+                   || ui.exportToolBar->isVisible();
+    creator->actToggleDataViewerToolBar->setChecked(visible);
+}
+
+void DataViewer::handleToolBar()
+{
+    bool visible =    ui.mainToolBar->isVisible()
+                   || ui.exportToolBar->isVisible();
+    ui.mainToolBar->setHidden(visible);
+    ui.exportToolBar->setHidden(visible);
+    updateVisibility();
+}
+
+void DataViewer::showEvent(QShowEvent * event)
+{
+    QMainWindow::showEvent(event);
+    updateVisibility();
+}
+
 /* Tools *************************************************** */
 
 bool DataViewerTools::KeyPressEater::eventFilter(QObject *obj, QEvent *event)
@@ -1272,5 +1294,3 @@ bool DataViewerTools::KeyPressEater::eventFilter(QObject *obj, QEvent *event)
 		return QObject::eventFilter(obj, event);
 	}
 }
-
-
