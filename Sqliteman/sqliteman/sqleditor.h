@@ -100,8 +100,9 @@ class SqlEditor : public QMainWindow
 		LiteManWindow * creator;
 
 	private slots:
-		void action_Run_SQL_triggered();
+		void actionRun_SQL_triggered();
 		void actionRun_Explain_triggered();
+		void actionRun_ExplainQueryPlan_triggered();
 		void actionRun_as_Script_triggered();
 		void action_Open_triggered();
 		void action_Save_triggered();

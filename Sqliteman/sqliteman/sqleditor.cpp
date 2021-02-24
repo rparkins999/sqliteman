@@ -71,8 +71,9 @@ SqlEditor::SqlEditor(LiteManWindow * parent)
 
 	ui.previousToolButton->setIcon(Utils::getIcon("go-previous.png"));
 	ui.nextToolButton->setIcon(Utils::getIcon("go-next.png"));
-	ui.action_Run_SQL->setIcon(Utils::getIcon("runsql.png"));
-	ui.actionRun_Explain->setIcon(Utils::getIcon("runexplain.png"));
+	ui.actionRun_SQL->setIcon(Utils::getIcon("runsql.png"));
+	ui.actionRun_Explain->setIcon(Utils::getIcon("explain.png"));
+	ui.actionRun_ExplainQueryPlan->setIcon(Utils::getIcon("queryplan.png"));
 	ui.actionRun_as_Script->setIcon(Utils::getIcon("runscript.png"));
 	ui.action_Open->setIcon(Utils::getIcon("document-open.png"));
 	ui.action_Save->setIcon(Utils::getIcon("document-save.png"));
@@ -91,11 +92,13 @@ SqlEditor::SqlEditor(LiteManWindow * parent)
             this, SLOT(actionShow_History_triggered()));
     actionShow_History_triggered();
 
-	connect(ui.action_Run_SQL, SIGNAL(triggered()),
-			this, SLOT(action_Run_SQL_triggered()));
+	connect(ui.actionRun_SQL, SIGNAL(triggered()),
+			this, SLOT(actionRun_SQL_triggered()));
     // alternative run action for Ctrl+Enter
     connect(alternativeSQLRun, SIGNAL(activated()),
             this, SLOT(action_Run_SQL_triggered()));
+	connect(ui.actionRun_ExplainQueryPlan, SIGNAL(triggered()),
+			this, SLOT(actionRun_ExplainQueryPlan_triggered()));
 	connect(ui.actionRun_Explain, SIGNAL(triggered()),
 			this, SLOT(actionRun_Explain_triggered()));
 	connect(ui.actionRun_as_Script, SIGNAL(triggered()),
@@ -245,7 +248,7 @@ QString SqlEditor::prepareExec(toSQLParse::tokenizer &tokens, int line, int pos)
 	return t;
 }
 
-void SqlEditor::action_Run_SQL_triggered()
+void SqlEditor::actionRun_SQL_triggered()
 {
 	if (creator && creator->checkForPending())
 	{
@@ -260,6 +263,14 @@ void SqlEditor::action_Run_SQL_triggered()
 }
 
 void SqlEditor::actionRun_Explain_triggered()
+{
+    QString s("explain %1");
+    s = s.arg(query());
+	(void)creator->doExecSql(s, false);
+    appendHistory(s);
+}
+
+void SqlEditor::actionRun_ExplainQueryPlan_triggered()
 {
     QString s("explain query plan %1");
     s = s.arg(query());

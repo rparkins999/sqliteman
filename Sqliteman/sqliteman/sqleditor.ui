@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>692</width>
+    <width>1224</width>
     <height>431</height>
    </rect>
   </property>
@@ -23,7 +23,7 @@
       <property name="childrenCollapsible">
        <bool>false</bool>
       </property>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout">
         <property name="spacing">
          <number>1</number>
@@ -156,7 +156,8 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="action_Run_SQL"/>
+   <addaction name="actionRun_SQL"/>
+   <addaction name="actionRun_ExplainQueryPlan"/>
    <addaction name="actionRun_Explain"/>
    <addaction name="actionRun_as_Script"/>
    <addaction name="separator"/>
@@ -171,7 +172,7 @@
    <addaction name="actionShow_History"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="action_Run_SQL">
+  <action name="actionRun_SQL">
    <property name="text">
     <string>&amp;Run SQL</string>
    </property>
@@ -191,6 +192,17 @@
    </property>
    <property name="shortcut">
     <string>F6</string>
+   </property>
+  </action>
+  <action name="actionRun_ExplainQueryPlan">
+   <property name="text">
+    <string>Run Explain &amp;Query Plan</string>
+   </property>
+   <property name="toolTip">
+    <string>Run Explain Query Plan (F7)</string>
+   </property>
+   <property name="shortcut">
+    <string>F7</string>
    </property>
   </action>
   <action name="action_Open">
