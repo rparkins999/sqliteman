@@ -550,13 +550,16 @@ void LiteManWindow::open(const QString & file)
 	QString fileName;
 
 	// If no file name was provided, open dialog
-	if(!file.isNull())
+	if(!file.isNull()) {
 		fileName = file;
-	else
+    } else {
+        QString filetypes = tr(
+            "Sqlite database(*.sqlite);;All files(*.*)");
 		fileName = QFileDialog::getOpenFileName(this,
 								tr("Open Database"),
 								QDir::currentPath(),
-								tr("SQLite database (*)"));
+								filetypes);
+    }
 
 	if(fileName.isNull()) { return; }
 	if (QFile::exists(fileName))
