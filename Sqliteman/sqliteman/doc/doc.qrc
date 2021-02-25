@@ -28,6 +28,7 @@
         <file>en/document-save-as.png</file>
         <file>en/document-save.png</file>
         <file>en/edit.png</file>
+        <file>en/explain.png</file>
         <file>en/extensionmanager.png</file>
         <file>en/fdl-license.html</file>
         <file>en/go-next.png</file>
@@ -80,10 +81,10 @@
         <file>en/preferences-editor.png</file>
         <file>en/preferences-lnf.png</file>
         <file>en/preferences-shortcuts.png</file>
+        <file>en/queryplan.png</file>
         <file>en/queryFields.png</file>
         <file>en/queryOrder.png</file>
         <file>en/queryTerms.png</file>
-        <file>en/runexplain.png</file>
         <file>en/runscript.png</file>
         <file>en/runsql.png</file>
         <file>en/setnull.png</file>

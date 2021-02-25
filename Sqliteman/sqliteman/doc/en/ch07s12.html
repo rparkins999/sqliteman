@@ -57,13 +57,33 @@
         </div>
     </div>
     <br>
+    <br>
+    Several of the following actions act on the current SQL statement.
+    If the cursor is at the start of the editing window, the current SQL
+    statement is the first one in the window; otherwise if the character to
+    the left of the cursor is whitespace outside of any SQL statement, the
+    current SQL statement is the next one to the right of the cursor if there
+    are any, or no statement at all if not; otherwise the current SQL statement
+    is the one containing the character to the left of the cursor.
+    Note that in the case of
+    <br>
+    <span class="application"> statement1;statement2; </span>
+    <br>
+    with the cursor, and no space, between the semicolon and
+    <span class="application">statement2</span>,
+    <span class="application">statement1</span> is the current one.
+    This may not be what you expected: this author did not write
+    the parser and it is difficult to modify. If your scripts start each
+    SQL statement on a new line, putting the cursor at the beginning of an
+    SQL statement will make it the current one.
+    <br>
     <div class="variablelist">
         <dl>
             <dt>
                 <span class="term">
                     <span class="guiicon">
                         <img src="runsql.png">
-                        &nbsp;&nbsp;Run current statement
+                        &nbsp;&nbsp;Run Current Statement
                     </span>
                     <span><strong class="shortcut">
                         <span><strong class="keycap">F9</strong></span>
@@ -77,15 +97,12 @@
             </dt>
             <dd>
                 <p><span class="action">
-                    The text selected in the editor or, if there is nothing
-                    selected, the text from the cursor to the end of the
-                    statement, is run as an SQL statement. If the selected text
-                    is not a complete statement this will result in an error.
+                    The current SQL statement is run.
                 </span></p>
-                </dd>
+            </dd>
             <dt><span class="term">
                 <span class="guiicon">
-                    <img src="runexplain.png">
+                    <img src="queryplan.png">
                     &nbsp;&nbsp;Explain Query Plan
                 </span>
                 <span><strong class="shortcut">
@@ -94,11 +111,29 @@
             </span></dt>
             <dd>
                 <p><span class="action">
-                    The text selected in the editor or, if there is nothing
-                    selected, the text from the cursor to the end of the
-                    statement, preceded by EXPLAIN QUERY PLAN, is run as an
-                    SQL statement. If the selected text is not a complete
-                    statement this will result in an error.
+                    The current SQL statement is run, preceded by
+                    EXPLAIN QUERY PLAN. This will show a table of the high
+                    level operations which would be run by
+                    <span class="application">sqlite</span>
+                    to execute the statement.
+                </span></p>
+            </dd>
+            <dt><span class="term">
+                <span class="guiicon">
+                    <img src="explain.png">
+                    &nbsp;&nbsp;Explain
+                </span>
+                <span><strong class="shortcut">
+                    <span><strong class="keycap">F6</strong></span>
+                </strong></span>
+            </span></dt>
+            <dd>
+                <p><span class="action">
+                    The current SQL statement is run, preceded by EXPLAIN.
+                    This will show a table of the low level operations
+                    which would be run by
+                    <span class="application">sqlite</span>
+                    to execute the statement.
                 </span></p>
             </dd>
             <dt><span class="term">
@@ -107,13 +142,13 @@
                     &nbsp;&nbsp;Run Multiple Statements
                 </span>
                 <span><strong class="shortcut">
-                    <span><strong class="keycap">F5</strong></span>
+                    <span><strong class="keycap">F6</strong></span>
                 </strong></span>
             </span></dt>
             <dd>
                 <p><span class="action">
-                    Everything from the statement containing the cursor to the end of the whole script is run as a sequence of SQL
-                    statements.
+                    Everything from the current SQL statement to the end of
+                    the whole script is run as a sequence of SQL statements.
                 </span></p>
                 <p><span class="action">
                     This "Start from cursor" feature is useful when your script
@@ -129,15 +164,15 @@
             </span></dt>
             <dd>
                 <p><span class="action">
-                    Create a view from the current statement. The
+                    Create a view. The
                     <a href="ch07s06.html" title="View related dialogs">
                         Create View Dialog
                     </a>
                     will be shown with the
                     <span class="guibutton">Edit SQL</span>
                     tab chosen and the SQL panel filled with the selected
-                    text, or if there is no selected text the statement
-                    containing the cursor.
+                    text, or if there is no selected text the current
+                    SQL statement.
                 </span></p>
             </dd>
             <dt><span class="term">
