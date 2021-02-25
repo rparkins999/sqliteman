@@ -85,7 +85,7 @@ class SqlEditor : public QMainWindow
 		/*! \brief Get requested SQL statement from editor.
 		\TODO: Implement a clever sql selecting like TOra/Toad etc.
 		*/
-		QString query();
+		QString query(bool creatingView);
 		//! \brief From TOra
 		QString prepareExec(toSQLParse::tokenizer &tokens, int line, int pos);
 

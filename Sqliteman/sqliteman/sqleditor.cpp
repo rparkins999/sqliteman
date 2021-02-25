@@ -147,18 +147,8 @@ void SqlEditor::setStatusMessage(const QString & message)
 	ui.statusBar->showMessage(message);
 }
 
-QString SqlEditor::query()
+QString SqlEditor::query(bool creatingView)
 {
-	if (ui.sqlTextEdit->hasSelectedText())
-	{
-		// test the real selection. Qscintilla does not
-		// reset selection after file reopening.
-		int f1, f2, t1, t2;
-		ui.sqlTextEdit->getSelection(&f1, &f2, &t1, &t2);
-		if (f1 > 0 || f2 > 0 || t1 > 0 || t2 > 0)
-			return ui.sqlTextEdit->selectedText();
-	}
-	
 	toSQLParse::editorTokenizer tokens(ui.sqlTextEdit);
 
 	int cpos, cline;
@@ -172,10 +162,22 @@ QString SqlEditor::query()
 		pos = tokens.offset();
 		toSQLParse::parseStatement(tokens);
 	}
-	while (tokens.line() < cline ||
-			  (tokens.line() == cline && tokens.offset() < cpos));
+	while (   (tokens.line() < cline)
+           || ((tokens.line() == cline && tokens.offset() < cpos)));
 
-	return prepareExec(tokens, line, pos);
+	QString result(prepareExec(tokens, line, pos));
+    if (result.isNull() || result.trimmed().isEmpty()) {
+        if (creatingView) {
+            QMessageBox::warning(this, tr("Nothing selected"), tr("No text selected to pass to CREATE VIEW"));
+        } else {
+            QMessageBox::warning(this, tr("No SQL statement"), tr("You are trying to run an empty SQL statement. Hint: select your statement in the editor"));
+        }
+        return NULL;
+    } else if (creator && creator->checkForPending()) {
+        return result;
+    } else {
+        return NULL;
+    }
 }
 
 QString SqlEditor::prepareExec(toSQLParse::tokenizer &tokens, int line, int pos)
@@ -255,32 +257,35 @@ QString SqlEditor::prepareExec(toSQLParse::tokenizer &tokens, int line, int pos)
 
 void SqlEditor::actionRun_SQL_triggered()
 {
-	if (creator && creator->checkForPending())
-	{
-		QString sql(query());
+    QString sql(query(false));
+    if (!sql.isNull()) {
         if (creator->doExecSql(sql, false)) {
             if (Utils::updateObjectTree(sql)) { emit buildTree(); }
             if (Utils::updateTables(sql)) { emit refreshTable(); }
             appendHistory(sql);
             creator->buildPragmasTree();
         }
-	}
+    }
 }
 
 void SqlEditor::actionRun_Explain_triggered()
 {
-    QString s("explain %1");
-    s = s.arg(query());
-	(void)creator->doExecSql(s, false);
-    appendHistory(s);
+    QString q(query(false));
+    if (!q.isNull()) {
+        QString s("explain " + q);
+        (void)creator->doExecSql(s, false);
+        appendHistory(s);
+    }
 }
 
 void SqlEditor::actionRun_ExplainQueryPlan_triggered()
 {
-    QString s("explain query plan %1");
-    s = s.arg(query());
-	(void)creator->doExecSql(s, false);
-    appendHistory(s);
+    QString q(query(false));
+    if (!q.isNull()) {
+        QString s("explain query plan " + q);
+        (void)creator->doExecSql(s, false);
+        appendHistory(s);
+    }
 }
 
 void SqlEditor::actionRun_as_Script_triggered()
@@ -296,19 +301,13 @@ void SqlEditor::actionRun_as_Script_triggered()
 	QString sql;
 	int line;
 	int pos;
-	QProgressDialog * dialog =
-		new QProgressDialog(tr("Executing all statements"),
-			tr("Cancel"), 0, ui.sqlTextEdit->lines(), this);
-	connect(dialog, SIGNAL(canceled()), this, SLOT(scriptCancelled()));
-	emit sqlScriptStart();
-	emit showSqlScriptResult("-- " + tr("Script started"));
+	QProgressDialog * dialog = 0;
 	QSqlQuery query(QSqlDatabase::database(SESSION_NAME));
 	bool isError = false;
 	do
 	{
 		line = tokens.line();
 		pos = tokens.offset();
-		dialog->setValue(line);
 		qApp->processEvents();
 		if (m_scriptCancelled)
 			break;
@@ -317,7 +316,15 @@ void SqlEditor::actionRun_as_Script_triggered()
             || (tokens.line() == cline && tokens.offset() < cpos))
         { continue; }
         sql = prepareExec(tokens, line, pos);
-        if (sql.isEmpty()) { continue; }
+        if (sql.trimmed().isEmpty()) { continue; }
+        if (dialog == 0) {
+            dialog = new QProgressDialog(tr("Executing all statements"),
+                         tr("Cancel"), 0, ui.sqlTextEdit->lines(), this);
+            dialog->setValue(line);
+            connect(dialog, SIGNAL(canceled()), this, SLOT(scriptCancelled()));
+            emit sqlScriptStart();
+            emit showSqlScriptResult("-- " + tr("Script started"));
+        }
         emit showSqlScriptResult(sql);
         SqlQueryModel * mdl = new SqlQueryModel(creator);
         mdl->setQuery(sql, QSqlDatabase::database(SESSION_NAME));
@@ -355,23 +362,40 @@ void SqlEditor::actionRun_as_Script_triggered()
         }
         emit showSqlScriptResult("--");
 	} while (tokens.line() < ui.sqlTextEdit->lines());
-	delete dialog;
 	ui.sqlTextEdit->setSelection(cline, cpos, tokens.line(), tokens.offset());
-	if (!isError)
-		emit showSqlScriptResult("-- " + tr("Script finished"));
-	if (rebuildTree) { emit buildTree(); }
-	if (updateTable) { emit refreshTable(); }
-	if (model)
-	{
-		creator->setTableModel(model);
-	}
-	creator->buildPragmasTree();
+    if (dialog == 0) {
+        QMessageBox::warning(this, tr("No SQL statement"),
+            tr("There are no SQL statments to execute after the cursor"));
+    } else {
+        delete dialog;
+        if (!isError)
+            emit showSqlScriptResult("-- " + tr("Script finished"));
+        if (rebuildTree) { emit buildTree(); }
+        if (updateTable) { emit refreshTable(); }
+        if (model)
+        {
+            creator->setTableModel(model);
+        }
+        creator->buildPragmasTree();
+    }
 }
 
 void SqlEditor::actionCreateView_triggered()
 {
+	if (ui.sqlTextEdit->hasSelectedText())
+	{
+		// test the real selection. Qscintilla does not
+		// reset selection after file reopening.
+		int f1, f2, t1, t2;
+		ui.sqlTextEdit->getSelection(&f1, &f2, &t1, &t2);
+		if (f1 > 0 || f2 > 0 || t1 > 0 || t2 > 0) {
+            emit showSqlScriptResult("");
+			creator->createViewFromSql(ui.sqlTextEdit->selectedText());
+            return;
+        }
+	}
 	emit showSqlScriptResult("");
-	creator->createViewFromSql(query());
+	creator->createViewFromSql(query(true));
 }
 
 void SqlEditor::action_Open_triggered()
