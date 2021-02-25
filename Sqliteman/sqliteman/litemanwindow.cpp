@@ -1158,9 +1158,9 @@ void LiteManWindow::setTableModel(SqlQueryModel * model)
 
 bool LiteManWindow::doExecSql(QString query, bool isBuilt)
 {
-	if (query.isEmpty() || query.isNull())
+	if (query.isNull() || query.trimmed().isEmpty())
 	{
-		QMessageBox::warning(this, tr("No SQL statement"), tr("You are trying to run an undefined SQL query. Hint: select your query in the editor"));
+		QMessageBox::warning(this, tr("No SQL statement"), tr("You are trying to run an empty SQL query. Hint: select your query in the editor"));
 		return false;
 	}
 	dataViewer->setStatusText("");
