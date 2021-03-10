@@ -119,6 +119,9 @@ class AlterTableDialog : public TableEditorDialog
         // does the internals of alterButton_clicked()
         bool doit(QString newTableName);
 
+    signals:
+		void rebuildTableTree(QString schema, QString name);
+
 	private slots:
 		void cellClicked(int, int);
 		void alterButton_clicked();

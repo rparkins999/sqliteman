@@ -142,6 +142,9 @@ AlterTableDialog::AlterTableDialog(LiteManWindow * parent,
 	ui.tabWidget->setCornerWidget(resetButton, Qt::TopRightCorner);
 
 	// item must be valid and a table, otherwise we don't get called
+    m_originalName = Utils::q(m_item->text(1))
+		   + "."
+		   + Utils::q(m_item->text(0));
 	ui.nameEdit->setText(m_item->text(0));
 	int i = ui.databaseCombo->findText(m_item->text(1),
 		Qt::MatchFixedString | Qt::MatchCaseSensitive);
@@ -882,6 +885,8 @@ void AlterTableDialog::alterButton_clicked()
     } else {
         updated = true;
         m_item->setText(0, m_tableName);
+        emit rebuildTableTree(ui.databaseCombo->currentText(),
+						 ui.nameEdit->text());
     }
 }
 

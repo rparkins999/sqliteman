@@ -46,6 +46,7 @@ CreateViewDialog::CreateViewDialog(LiteManWindow * parent,
 	}
 	connect(ui.databaseCombo, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(databaseChanged(int)));
+    m_originalName = QString();
 
 	ui.tabWidget->setCurrentIndex(1);
 	ui.tabWidget->removeTab(0);
@@ -110,7 +111,7 @@ bool CreateViewDialog::checkColumn(int i, QString cname,
 
 void CreateViewDialog::checkChanges()
 {
-	m_createButton->setEnabled(!ui.nameEdit->text().isEmpty());
+	m_createButton->setEnabled(checkOk(ui.nameEdit->text()));
 }
 
 void CreateViewDialog::databaseChanged(int index)

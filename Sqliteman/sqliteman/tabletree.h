@@ -63,6 +63,7 @@ class TableTree : public QTreeWidget
 	public slots:
 		void buildTree();
 		void buildViewTree(QString schema, QString name);
+		void buildTableTree(QString schema, QString name);
 
 	private:
 		void deleteChildren(QTreeWidgetItem * item);

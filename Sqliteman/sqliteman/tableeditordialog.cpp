@@ -9,6 +9,8 @@ for which a new license (GPL+exception) is in place.
 #include <QMessageBox>
 #include <QPalette>
 #include <QSettings>
+#include <QSqlQuery>
+#include <QSqlError>
 #include <QTableWidget>
 
 #include "mylineedit.h"
@@ -239,6 +241,31 @@ void TableEditorDialog::fieldSelected()
 bool TableEditorDialog::checkOk(QString newName)
 {
 	bool ok = !newName.isEmpty();
+    QString databaseName(Utils::q(ui.databaseCombo->currentText()));
+    QString tableName(Utils::q(newName));
+    QString fullname = databaseName + "." + tableName;
+    if (   m_originalName.isNull()
+        || (m_originalName.compare(fullname, Qt::CaseInsensitive) != 0))
+    { // creating table or view with new name
+        QString sql = "SELECT type FROM " + databaseName + "."
+                    + "sqlite_master WHERE "
+                    + "(type IS 'table' OR type is 'view' OR type is 'index')"
+                    + " AND lower(name) IS lower(" + tableName + ");";
+        QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
+        if (query.lastError().isValid())
+        {
+            QString errtext = tr("Cannot read schema for ")
+                            + ui.databaseCombo->currentText()
+                            + ":<br/><span style=\" color:#ff0000;\">"
+                            + query.lastError().text()
+                            + "<br/></span>" + tr("using sql statement:")
+                            + "<br/><tt>" + sql;
+            resultAppend(errtext);
+        } else if (query.first()) {
+            ok = false; // new name is already a table or view or index
+        }
+        query.clear();
+    }
 	if (ui.tabWidget->currentWidget() == ui.designTab)
 	{
 		int pkCount = 0;

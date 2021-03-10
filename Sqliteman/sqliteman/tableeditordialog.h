@@ -55,6 +55,7 @@ class TableEditorDialog : public QDialog
 		void paintEvent(QPaintEvent * event);
 		void resizeEvent(QResizeEvent * event);
 		QString m_tableOrView;
+        QString m_originalName; // NULL except in Alter Table Dialog
 		int m_tabWidgetIndex;
 		bool m_dirty; // SQL has been edited
 		bool m_dubious; // some column has an empty name
@@ -74,4 +75,4 @@ class TableEditorDialog : public QDialog
 		virtual void checkChanges() = 0;
 };
 
-#endif
+#endif // TABLEEDITORDIALOG_H

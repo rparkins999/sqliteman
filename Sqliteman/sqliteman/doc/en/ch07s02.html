@@ -75,7 +75,9 @@
 <dd><p>Press this button to create the table.
 When the <a href="ch07s02.html#id2015101">(columns)</a> tab is selected,
 the Create button is only enabled when the new table name is nonempty,
-and all column names are different,
+and the table name is not the same (ignoring case) at the name of any
+index, view, or table,
+and all column names are different (ignoring case),
 and if there is an AUTOINCREMENT column its type is INTEGER
 and no other column is a PRIMARY KEY,
 and if Without rowid is checked there is at least one PRIMARY KEY column,

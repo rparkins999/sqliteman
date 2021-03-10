@@ -47,6 +47,7 @@ CreateTableDialog::CreateTableDialog(LiteManWindow * parent,
 		}
 	}
 	m_tabWidgetIndex = ui.tabWidget->currentIndex();
+    m_originalName = QString();
 
 	ui.textEdit->setText("");
 	ui.queryEditor->setItem(0);
@@ -91,6 +92,8 @@ void CreateTableDialog::createButton_clicked()
 		return;
 	}
 	updated = true;
+	emit rebuildTableTree(ui.databaseCombo->currentText(),
+						 ui.nameEdit->text());
 	resultAppend(tr("Table created successfully"));
 }
 

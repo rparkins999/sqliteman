@@ -242,12 +242,23 @@ QList<QTreeWidgetItem*> TableTree::searchMask(const QString & trStr)
 
 void TableTree::buildViewTree(QString schema, QString name)
 {
-    QList<QTreeWidgetItem*> l;
+    QList<QTreeWidgetItem*> l = searchMask(trViews);
     QList<QTreeWidgetItem*>::const_iterator i;
     for (i = l.constBegin(); i != l.constEnd(); ++i) {
         QTreeWidgetItem* item = *i;
 		if (item->text(1) == schema && item->type() == ViewsItemType)
 			buildViews(item, schema);
+	}
+}
+
+void TableTree::buildTableTree(QString schema, QString name)
+{
+    QList<QTreeWidgetItem*> l = searchMask(trTables);
+    QList<QTreeWidgetItem*>::const_iterator i;
+    for (i = l.constBegin(); i != l.constEnd(); ++i) {
+        QTreeWidgetItem* item = *i;
+		if (item->text(1) == schema && item->type() == TablesItemType)
+			buildTables(item, schema);
 	}
 }
 

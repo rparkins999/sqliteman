@@ -917,6 +917,8 @@ void LiteManWindow::createTable()
 	}
 	dataViewer->removeErrorMessage();
 	CreateTableDialog dlg(this, item);
+	connect(&dlg, SIGNAL(rebuildTableTree(QString, QString)),
+			schemaBrowser->tableTree, SLOT(buildTableTree(QString, QString)));
 	dlg.exec();
 	if (dlg.updated)
 	{
@@ -929,7 +931,6 @@ void LiteManWindow::createTable()
 			if (   (p->type() == TableTree::TablesItemType)
 				&& (p->text(1) == dlg.schema()))
 			{
-				schemaBrowser->tableTree->buildTables(p, p->text(1));
 				if (m_activeItem && (item != NULL))
 				{
 					// item recreated but should still be current
@@ -949,6 +950,8 @@ void LiteManWindow::createTable()
 		checkForCatalogue();
 		queryEditor->treeChanged();
 	}
+	disconnect(&dlg, SIGNAL(rebuildTableTree(QString, QString)),
+			schemaBrowser->tableTree, SLOT(buildTableTree(QString, QString)));
 }
 
 void LiteManWindow::alterTable()
@@ -962,6 +965,8 @@ void LiteManWindow::alterTable()
 	bool isActive = m_activeItem == item;
 	dataViewer->saveSelection();
 	AlterTableDialog dlg(this, item, isActive);
+	connect(&dlg, SIGNAL(rebuildTableTree(QString, QString)),
+			schemaBrowser->tableTree, SLOT(buildTableTree(QString, QString)));
 	dlg.exec();
 	if (dlg.updated)
 	{
@@ -976,6 +981,8 @@ void LiteManWindow::alterTable()
 		dataViewer->setBuiltQuery(false);
 		queryEditor->tableAltered(oldName, item);
 	}
+	disconnect(&dlg, SIGNAL(rebuildTableTree(QString, QString)),
+			schemaBrowser->tableTree, SLOT(buildTableTree(QString, QString)));
 }
 
 void LiteManWindow::populateTable()
