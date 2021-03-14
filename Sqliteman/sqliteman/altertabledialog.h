@@ -64,6 +64,8 @@ class AlterTableDialog : public TableEditorDialog
         // Some bad errors may lead to the table being left with a temporary
         // name.
         QString m_tableName;
+        QString m_dbName;
+        LiteManWindow * m_creator;
 
 		/*! \brief Execute statement, handle errors,
 		and output message to the GUI.
@@ -120,7 +122,7 @@ class AlterTableDialog : public TableEditorDialog
         bool doit(QString newTableName);
 
     signals:
-		void rebuildTableTree(QString schema, QString name);
+		void rebuildTableTree(QString schema);
 
 	private slots:
 		void cellClicked(int, int);

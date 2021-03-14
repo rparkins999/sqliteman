@@ -35,7 +35,7 @@ class CreateTableDialog : public TableEditorDialog
 		QPushButton * m_createButton;
 
     signals:
-		void rebuildTableTree(QString schema, QString name);
+		void rebuildTableTree(QString schema);
 
 	private slots:
 		void createButton_clicked();

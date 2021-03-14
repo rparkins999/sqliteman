@@ -61,6 +61,7 @@ class TableEditorDialog : public QDialog
 		bool m_dubious; // some column has an empty name
 		QWidget * m_oldWidget; // widget from which we got SQL
 		bool resizeWanted;
+        bool addedTemp;
 
 		// We ought to be able use use parent() for this, but for some reason
 		// qobject_cast<LiteManWindow*>(parent()) doesn't work

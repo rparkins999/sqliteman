@@ -53,6 +53,8 @@ class LiteManWindow : public QMainWindow
 		void createViewFromSql(QString query);
 		void setTableModel(SqlQueryModel * model);
         bool doExecSql(QString query, bool isBuilt);
+        QStringList visibleDatabases();
+        QTreeWidgetItem * findTreeItem(QString database, QString table);
 
 		QueryEditorDialog * queryEditor;
         QAction * actToggleSqlEditorToolBar;
@@ -80,8 +82,6 @@ class LiteManWindow : public QMainWindow
 		position, size and splitter position - to the settings, so it could be saved over sessions.
 		*/
 		void writeSettings();
-
-// 		void runQuery(QString statement);
 
 		void updateRecent(QString fn);
 		void removeRecent(QString fn);
@@ -123,7 +123,6 @@ class LiteManWindow : public QMainWindow
 		void preferences();
 
 		void buildQuery();
-		void contextBuildQuery();
 		void execSql(QString query, bool isBuilt);
 		void exportSchema();
 		void dumpDatabase();
@@ -148,10 +147,9 @@ class LiteManWindow : public QMainWindow
 		void describeIndex();
 		void reindex();
 
-		void treeItemActivated(QTreeWidgetItem * item);
+		void treeItemActivated(QTreeWidgetItem * item, int column);
 		void updateContextMenu();
 		void treeContextMenuOpened(const QPoint & pos);
-		void tableTree_currentItemChanged(QTreeWidgetItem* cur, QTreeWidgetItem* prev);
 
 		void handleSqlEditor();
 		void handleSchemaBrowser();
@@ -171,6 +169,7 @@ class LiteManWindow : public QMainWindow
 
 		void refreshTable();
 		void doMultipleDeletion();
+        void tableTreeSelectionChanged();
 
 	private:
 		QStringList recentDocs;
@@ -180,6 +179,7 @@ class LiteManWindow : public QMainWindow
 		QString m_appName;
 		QString m_lang;
 		QTreeWidgetItem * m_activeItem;
+		QTreeWidgetItem * m_currentItem;
 		QLabel * m_sqliteVersionLabel;
 		bool tableTreeTouched;
 

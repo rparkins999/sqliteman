@@ -41,7 +41,9 @@ CreateViewDialog::CreateViewDialog(LiteManWindow * parent,
 		if (i >= 0)
 		{
 			ui.databaseCombo->setCurrentIndex(i);
-			ui.databaseCombo->setDisabled(true);
+            if (!addedTemp) {
+                ui.databaseCombo->setDisabled(true);
+            }
 		}
 	}
 	connect(ui.databaseCombo, SIGNAL(currentIndexChanged(int)),
@@ -53,7 +55,11 @@ CreateViewDialog::CreateViewDialog(LiteManWindow * parent,
 	m_tabWidgetIndex = ui.tabWidget->currentIndex();
 
 	ui.textEdit->setText("");
-	ui.queryEditor->setItem(0);
+	if (item && (item->type() == TableTree::TableType)) {
+        ui.queryEditor->setItem(item);
+    } else {
+        ui.queryEditor->setItem(0);
+    }
 }
 
 void CreateViewDialog::setText(QString query)

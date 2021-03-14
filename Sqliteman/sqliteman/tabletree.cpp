@@ -42,6 +42,7 @@ void TableTree::buildTree()
     for (i = databases.constBegin(); i != databases.constEnd(); ++i) {
 		buildDatabase(*i);
 	}
+	setSelection(QRect(0, 0, 0, 0), QItemSelectionModel::Clear);
 }
 
 void TableTree::buildDatabase(QTreeWidgetItem * dbItem, const QString & schema)
@@ -57,17 +58,17 @@ void TableTree::buildDatabase(const QString & schema)
 	dbItem->setText(0, schema);
 	dbItem->setText(1, schema);
 
-	QTreeWidgetItem * tablesItem = new QTreeWidgetItem(dbItem, TablesItemType);
-	tablesItem->setIcon(0, Utils::getIcon("table.png"));
+	lastTablesItem = new QTreeWidgetItem(dbItem, TablesItemType);
+	lastTablesItem->setIcon(0, Utils::getIcon("table.png"));
 
-	QTreeWidgetItem * viewsItem = new QTreeWidgetItem(dbItem, ViewsItemType);
-	viewsItem->setIcon(0, Utils::getIcon("view.png"));
+	lastViewsItem = new QTreeWidgetItem(dbItem, ViewsItemType);
+	lastViewsItem->setIcon(0, Utils::getIcon("view.png"));
 
 	QTreeWidgetItem * systemItem = new QTreeWidgetItem(dbItem, SystemItemType);
 	systemItem->setIcon(0, Utils::getIcon("system.png"));
 
-	buildTables(tablesItem, schema);
-	buildViews(viewsItem, schema);
+	buildTables(lastTablesItem, schema, false);
+	buildViews(lastViewsItem, schema);
 	buildCatalogue(systemItem, schema);
 
 	dbItem->setExpanded(true);
@@ -93,21 +94,23 @@ void TableTree::buildTableItem(QTreeWidgetItem * tableItem, bool rebuild)
 	buildTriggers(triggersItem, schema, table);
 }
 
-void TableTree::buildTables(QTreeWidgetItem * tablesItem, const QString & schema)
+void TableTree::buildTables(QTreeWidgetItem * tablesItem,
+                            const QString & schema, bool expand)
 {
-	deleteChildren(tablesItem);
+    deleteChildren(tablesItem);
 
-	QStringList tables = Database::getObjects("table", schema).keys();
-	tablesItem->setText(0, trLabel(trTables).arg(tables.size()));
-	tablesItem->setText(1, schema);
+    QStringList tables = Database::getObjects("table", schema).keys();
+    tablesItem->setText(0, trLabel(trTables).arg(tables.size()));
+    tablesItem->setText(1, schema);
     QStringList::const_iterator i;
     for (i = tables.constBegin(); i != tables.constEnd(); ++i) {
-		QTreeWidgetItem * tableItem =
+        QTreeWidgetItem * tableItem =
             new QTreeWidgetItem(tablesItem, TableType);
-		tableItem->setText(0, *i);
-		tableItem->setText(1, schema);
-		buildTableItem(tableItem, false);
-	}
+        tableItem->setText(0, *i);
+        tableItem->setText(1, schema);
+        buildTableItem(tableItem, false);
+    }
+    if (expand) { tablesItem->setExpanded(true); }
 }
 
 void TableTree::buildIndexes(QTreeWidgetItem *indexesItem, const QString & schema, const QString & table)
@@ -242,23 +245,58 @@ QList<QTreeWidgetItem*> TableTree::searchMask(const QString & trStr)
 
 void TableTree::buildViewTree(QString schema, QString name)
 {
+    if (schema == "temp") {
+        /* Handle the special case where we created a temp view
+         * and the temp database was not previously shown. */
+        QStringList databases(Database::getDatabases().keys());
+        QList<QTreeWidgetItem *> schemas =
+            findItems("temp", Qt::MatchFixedString);
+        if (   databases.contains("temp", Qt::CaseInsensitive)
+            && schemas.isEmpty())
+        {
+            buildDatabase("temp");
+            lastViewsItem->setExpanded(true);
+            return;
+        }
+    }
     QList<QTreeWidgetItem*> l = searchMask(trViews);
     QList<QTreeWidgetItem*>::const_iterator i;
     for (i = l.constBegin(); i != l.constEnd(); ++i) {
         QTreeWidgetItem* item = *i;
 		if (item->text(1) == schema && item->type() == ViewsItemType)
+        {
 			buildViews(item, schema);
+            item->setExpanded(true);
+            break;
+        }
 	}
 }
 
-void TableTree::buildTableTree(QString schema, QString name)
+void TableTree::buildTableTree(QString schema)
 {
+    if (schema == "temp") {
+        /* Handle the special case where we created a temp table
+         * and the temp database was not previously shown. */
+        QStringList databases(Database::getDatabases().keys());
+        QList<QTreeWidgetItem *> schemas =
+            findItems("temp", Qt::MatchFixedString);
+        if (   databases.contains("temp", Qt::CaseInsensitive)
+            && schemas.isEmpty())
+        {
+            buildDatabase("temp");
+            lastTablesItem->setExpanded(true);
+            return;
+        }
+    }
     QList<QTreeWidgetItem*> l = searchMask(trTables);
     QList<QTreeWidgetItem*>::const_iterator i;
     for (i = l.constBegin(); i != l.constEnd(); ++i) {
         QTreeWidgetItem* item = *i;
-		if (item->text(1) == schema && item->type() == TablesItemType)
-			buildTables(item, schema);
+		if (item->text(1) == schema && item->type() == TablesItemType) {
+			buildTables(item, schema, true);
+            item->setExpanded(true);
+            break;
+        }
 	}
 }
 
@@ -269,32 +307,31 @@ void TableTree::mousePressEvent(QMouseEvent *event)
 	QTreeWidget::mousePressEvent(event);
 }
 
- void TableTree::mouseMoveEvent(QMouseEvent *event)
+// If we drag an item from the schema browser,
+// we can drop its name anywhere that text is acceptable.
+void TableTree::mouseMoveEvent(QMouseEvent *event)
 {
-	if (!(event->buttons() & Qt::LeftButton))
-		return;
-	if ((event->pos() - m_dragStartPosition).manhattanLength()
-			< QApplication::startDragDistance())
-		return;
-
-	if (!currentItem()) { return; }
-	if (currentItem()->type() != TableTree::TableType &&
-		   currentItem()->type() != TableTree::ViewType &&
-		   currentItem()->type() != TableTree::DatabaseItemType &&
-		   currentItem()->type() != TableTree::IndexType &&
-		   currentItem()->type() != TableTree::TriggerType &&
-		   currentItem()->type() != TableTree::SystemType &&
-		   currentItem()->type() != TableTree::ColumnType)
-		return;
-
 #if QT_VERSION >= 0x040300
-	QDrag *drag = new QDrag(this);
-	QMimeData *mimeData = new QMimeData;
+	if (!(event->buttons() & Qt::LeftButton)) { ; /*do nothing*/ }
+	else if ((event->pos() - m_dragStartPosition).manhattanLength()
+			< QApplication::startDragDistance())
+    { ; /*do nothing*/ }
+	else if (!currentItem()) { ; /*do nothing*/ }
+	else if (   (currentItem()->type() == TableTree::TableType)
+             || (currentItem()->type() == TableTree::ViewType)
+             || (currentItem()->type() == TableTree::DatabaseItemType)
+             || (currentItem()->type() != TableTree::IndexType)
+             || (currentItem()->type() != TableTree::TriggerType)
+             || (currentItem()->type() != TableTree::SystemType)
+             || (currentItem()->type() != TableTree::ColumnType))
+    {
+        QDrag *drag = new QDrag(this);
+        QMimeData *mimeData = new QMimeData;
 
-	mimeData->setText(currentItem()->text(0));
-	drag->setMimeData(mimeData);
-	drag->exec(Qt::CopyAction);
+        mimeData->setText(currentItem()->text(0));
+        drag->setMimeData(mimeData);
+        drag->exec(Qt::CopyAction);
+    }
 #endif
-
 	QTreeWidget::mouseMoveEvent(event);
 }

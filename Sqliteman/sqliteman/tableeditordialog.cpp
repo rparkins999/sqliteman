@@ -13,6 +13,7 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlError>
 #include <QTableWidget>
 
+#include "litemanwindow.h"
 #include "mylineedit.h"
 #include "sqlparser.h"
 #include "tableeditordialog.h"
@@ -30,7 +31,11 @@ TableEditorDialog::TableEditorDialog(LiteManWindow * parent)
 	resize(ww, hh);
 	m_prefs = Preferences::instance();
 
-	ui.databaseCombo->addItems(Database::getDatabases().keys());
+	ui.databaseCombo->addItems(creator->visibleDatabases());
+    if (ui.databaseCombo->findText("temp",Qt::MatchFixedString) < 0) {
+        ui.databaseCombo->addItem("temp");
+        addedTemp = true;
+    } else { addedTemp = false; }
 	m_dirty = false;
 
 	connect(ui.columnTable, SIGNAL(itemSelectionChanged()),

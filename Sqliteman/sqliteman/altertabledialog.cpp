@@ -69,6 +69,12 @@ void AlterTableDialog::addField()
 
 void AlterTableDialog::resetClicked()
 {
+    ui.resultEdit->clear();
+    if (m_item == NULL) {
+        // we've done a rebuildTableTree(), find the item again
+        m_item = m_creator->findTreeItem(m_dbName, m_tableName);
+        if (m_item == NULL) { reject(); } // can't continue this dialog
+    }
 	// Initialize fields
 	SqlParser * parsed = Database::parseTable(m_item->text(0), m_item->text(1));
 	m_fields = parsed->m_fields;
@@ -122,7 +128,7 @@ AlterTableDialog::AlterTableDialog(LiteManWindow * parent,
 								   QTreeWidgetItem * item,
 								   const bool isActive)
 	: TableEditorDialog(parent),
-	m_item(item)
+	m_item(item), m_creator(parent)
 {
 	m_alteringActive = isActive;
 	ui.removeButton->setEnabled(false);
@@ -131,6 +137,7 @@ AlterTableDialog::AlterTableDialog(LiteManWindow * parent,
 	m_tableOrView = "TABLE";
 	m_dubious = false;
 	m_oldWidget = ui.designTab;
+    m_tableName = m_item->text(0);
 
 	m_alterButton =
 		ui.buttonBox->addButton("Alte&r", QDialogButtonBox::ApplyRole);
@@ -142,11 +149,11 @@ AlterTableDialog::AlterTableDialog(LiteManWindow * parent,
 	ui.tabWidget->setCornerWidget(resetButton, Qt::TopRightCorner);
 
 	// item must be valid and a table, otherwise we don't get called
-    m_originalName = Utils::q(m_item->text(1))
+    m_originalName = Utils::q(m_tableName)
 		   + "."
 		   + Utils::q(m_item->text(0));
 	ui.nameEdit->setText(m_item->text(0));
-	int i = ui.databaseCombo->findText(m_item->text(1),
+	int i = ui.databaseCombo->findText(m_tableName,
 		Qt::MatchFixedString | Qt::MatchCaseSensitive);
 	if (i >= 0)
 	{
@@ -772,6 +779,7 @@ bool AlterTableDialog::doit(QString newTableName) {
 // FIXME Use ALTER TABLE REANME COLUMN where appropriate
 void AlterTableDialog::alterButton_clicked()
 {
+    ui.resultEdit->clear();
     // If we're altering the active table and there are unsaved changes,
     // invite the user to save, discard, or abandon the alter table action.
 	if (m_alteringActive && !(creator && creator->checkForPending()))
@@ -779,8 +787,14 @@ void AlterTableDialog::alterButton_clicked()
 		return;
 	}
 
+    if (m_item == NULL) {
+        // we've done a rebuildTableTree(), find the item again
+        m_item = m_creator->findTreeItem(m_dbName, m_tableName);
+        if (m_item == NULL) { reject(); } // can't continue this dialog
+    }
 	QString newTableName(ui.nameEdit->text());
 	m_tableName = m_item->text(0);
+    m_dbName = m_item->text(1);
 	if (m_dubious)
 	{
 		int ret = QMessageBox::question(this, "Sqliteman",
@@ -842,6 +856,8 @@ void AlterTableDialog::alterButton_clicked()
         // if there is nothing else to do, we're done.
 		if (!m_altered) {
             m_item->setText(0, newTableName);
+            checkChanges();
+            resultAppend(tr("Table successfully altered"));
             return;
         }
 	}
@@ -885,9 +901,11 @@ void AlterTableDialog::alterButton_clicked()
     } else {
         updated = true;
         m_item->setText(0, m_tableName);
-        emit rebuildTableTree(ui.databaseCombo->currentText(),
-						 ui.nameEdit->text());
+        emit rebuildTableTree(ui.databaseCombo->currentText());
+        m_item = NULL;
     }
+    checkChanges();
+    resultAppend(tr("Table successfully altered"));
 }
 
 void AlterTableDialog::checkChanges()
@@ -896,8 +914,9 @@ void AlterTableDialog::checkChanges()
 	QString newName(ui.nameEdit->text());
 	m_altered = m_hadRowid == ui.withoutRowid->isChecked();
 	m_altered |= m_dropped;
-	bool ok = checkOk(newName); // side-effect on m_altered
+	bool ok = checkOk(newName); // side-effect on m_dubious
 	m_alterButton->setEnabled(   ok
 							  && (   m_altered
-								  || (newName != m_item->text(0))));
+								  || (newName != m_tableName)));
+    ui.resultEdit->clear();
 }

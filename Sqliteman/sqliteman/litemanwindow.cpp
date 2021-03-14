@@ -78,6 +78,7 @@ LiteManWindow::LiteManWindow(
 	}
 #endif
 
+    m_currentItem = NULL;
 	tableTreeTouched = false;
 	recentDocs.clear();
 	initUI();
@@ -198,17 +199,16 @@ void LiteManWindow::initUI()
 	sqlEditor->setEnabled(false);
 	sqlEditor->hide();
 
+    // schema browser
 	connect(schemaBrowser->tableTree,
 			SIGNAL(itemActivated(QTreeWidgetItem *, int)),
-			this, SLOT(treeItemActivated(QTreeWidgetItem *)));
+			this, SLOT(treeItemActivated(QTreeWidgetItem *, int)));
 	connect(schemaBrowser->tableTree,
 			SIGNAL(customContextMenuRequested(const QPoint &)),
 			this, SLOT(treeContextMenuOpened(const QPoint &)));
-	connect(schemaBrowser->tableTree,
-		SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)),
-		this,
-		SLOT(tableTree_currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)));
-
+    connect(schemaBrowser->tableTree,
+            SIGNAL(itemSelectionChanged()),
+            this, SLOT(tableTreeSelectionChanged()));
 	// sql editor
 	connect(sqlEditor, SIGNAL(sqlScriptStart()),
 			dataViewer, SLOT(sqlScriptStart()));
@@ -218,7 +218,6 @@ void LiteManWindow::initUI()
 			schemaBrowser->tableTree, SLOT(buildTree()));
 	connect(sqlEditor, SIGNAL(refreshTable()),
 			this, SLOT(refreshTable()));
-
 	connect(dataViewer, SIGNAL(tableUpdated()),
 			this, SLOT(updateContextMenu()));
 	connect(dataViewer, SIGNAL(deleteMultiple()),
@@ -288,10 +287,6 @@ void LiteManWindow::initActions()
 	buildQueryAct = new QAction(tr("&Build Query..."), this);
 	buildQueryAct->setShortcut(tr("Ctrl+R"));
 	connect(buildQueryAct, SIGNAL(triggered()), this, SLOT(buildQuery()));
-
-	contextBuildQueryAct = new QAction(tr("&Build Query..."), this);
-	connect(contextBuildQueryAct, SIGNAL(triggered()),
-			this, SLOT(contextBuildQuery()));
 
 	exportSchemaAct = new QAction(tr("&Export Schema..."), this);
 	connect(exportSchemaAct, SIGNAL(triggered()), this, SLOT(exportSchema()));
@@ -532,8 +527,8 @@ void LiteManWindow::writeSettings()
 
 void LiteManWindow::newDB()
 {
-	// Creating a database is virtually the same as opening an existing one. SQLite simply creates
-	// a database which doesn't already exist
+	// Creating a database is virtually the same as opening an existing one.
+    // SQLite simply creates a database which doesn't already exist
 	QString fileName = QFileDialog::getSaveFileName(this, tr("New Database"), QDir::currentPath(), tr("SQLite database (*)"));
 
 	if(fileName.isNull())
@@ -618,7 +613,7 @@ void LiteManWindow::openDatabase(const QString & fileName)
 		return;
 	}
 	/* Qt database open() (exactly the sqlite API sqlite3_open16())
-	   method does not check if it is really database. So the dummy
+	   method does not check if it is really a database. So the dummy
 	   select statement should perform a real "is it a database" check
 	   for us. */
 	QSqlQuery q("select 1 from sqlite_master where 1=2", db);
@@ -729,20 +724,13 @@ void LiteManWindow::setActiveItem(QTreeWidgetItem * item)
 	// used when the item was already active but has been recreated
 	disconnect(schemaBrowser->tableTree,
 			   SIGNAL(itemActivated(QTreeWidgetItem *, int)),
-			   this, SLOT(treeItemActivated(QTreeWidgetItem *)));
-	disconnect(schemaBrowser->tableTree,
-		SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)),
-		this,
-		SLOT(tableTree_currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)));
+			   this, SLOT(treeItemActivated(QTreeWidgetItem *, int)));
+	schemaBrowser->tableTree->setCurrentItem(item);
 	connect(schemaBrowser->tableTree,
 			SIGNAL(itemActivated(QTreeWidgetItem *, int)),
-			this, SLOT(treeItemActivated(QTreeWidgetItem *)));
-	schemaBrowser->tableTree->setCurrentItem(item);
+			this, SLOT(treeItemActivated(QTreeWidgetItem *, int)));
 	m_activeItem = item;
-	connect(schemaBrowser->tableTree,
-		SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)),
-		this,
-		SLOT(tableTree_currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)));
+    m_currentItem = item;
 }
 
 void LiteManWindow::checkForCatalogue()
@@ -752,9 +740,8 @@ void LiteManWindow::checkForCatalogue()
 		// We are displaying a system item, probably the catalogue,
 		// and we've changed something invalidating the catalogue
 		dataViewer->saveSelection();
-		QTreeWidgetItem * item = m_activeItem;
 		m_activeItem = 0;
-		treeItemActivated(item);
+		treeItemActivated(m_activeItem, -1);
 		dataViewer->reSelect();
 	}
 }
@@ -762,12 +749,11 @@ void LiteManWindow::checkForCatalogue()
 void LiteManWindow::openRecent()
 {
 	QAction *action = qobject_cast<QAction *>(sender());
-	if (action)
-		open(action->data().toString());
+	if (action) { open(action->data().toString()); }
 }
 
 QString LiteManWindow::getOSName()
-    {
+{
     QProcess p;
     QString result;
 #if defined Q_OS_LINUX
@@ -794,7 +780,6 @@ QString LiteManWindow::getOSName()
 
 void LiteManWindow::about()
 {
-
 	dataViewer->removeErrorMessage();
     dataViewer->setStatusText(
         tr("sqliteman Version ")
@@ -805,7 +790,7 @@ void LiteManWindow::about()
         + tr("Parts")
         + "(c) 2007 Petr Vanek, "
         + tr("Parts")
-        + "(c) 2020 Richard Parkins<br/>");
+        + "(c) 2021 Richard Parkins<br/>");
 }
 
 void LiteManWindow::aboutQt()
@@ -817,35 +802,18 @@ void LiteManWindow::aboutQt()
 void LiteManWindow::help()
 {
 	dataViewer->removeErrorMessage();
-	if (!helpBrowser)
-		helpBrowser = new HelpBrowser(m_lang, this);
+	if (!helpBrowser) {helpBrowser = new HelpBrowser(m_lang, this); }
 	helpBrowser->show();
 }
 
 void LiteManWindow::buildQuery()
 {
 	dataViewer->removeErrorMessage();
-
-	queryEditor->setItem(0);
+    // OK if m_currentItem is NULL
+	queryEditor->setItem(m_currentItem);
 	int ret = queryEditor->exec();
 
 	if (ret == QDialog::Accepted)
-	{
-		/*runQuery*/
-		execSql(queryEditor->statement(), true);
-	}
-}
-
-void LiteManWindow::contextBuildQuery()
-{
-	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-	if (!item) { return; }
-
-	queryEditor->setItem(item);
-	int ret = queryEditor->exec();
-
-	if(ret == QDialog::Accepted)
 	{
 		/*runQuery*/
 		execSql(queryEditor->statement(), true);
@@ -905,21 +873,20 @@ void LiteManWindow::dumpDatabase()
 	}
 }
 
-// FIXME allow create temporary table here
 void LiteManWindow::createTable()
 {
-	QTreeWidgetItem * item = NULL;
 	QTreeWidgetItem old;
-	if (tableTreeTouched)
+	if (m_currentItem != NULL)
 	{
-		item = schemaBrowser->tableTree->currentItem();
-		old = QTreeWidgetItem(*item);
+		old = QTreeWidgetItem(*m_currentItem);
 	}
 	dataViewer->removeErrorMessage();
-	CreateTableDialog dlg(this, item);
-	connect(&dlg, SIGNAL(rebuildTableTree(QString, QString)),
-			schemaBrowser->tableTree, SLOT(buildTableTree(QString, QString)));
+	CreateTableDialog dlg(this, m_currentItem);
+	connect(&dlg, SIGNAL(rebuildTableTree(QString)),
+			schemaBrowser->tableTree, SLOT(buildTableTree(QString)));
 	dlg.exec();
+	disconnect(&dlg, SIGNAL(rebuildTableTree(QString)),
+			schemaBrowser->tableTree, SLOT(buildTableTree(QString)));
 	if (dlg.updated)
 	{
         QList<QTreeWidgetItem*> l =
@@ -931,7 +898,7 @@ void LiteManWindow::createTable()
 			if (   (p->type() == TableTree::TablesItemType)
 				&& (p->text(1) == dlg.schema()))
 			{
-				if (m_activeItem && (item != NULL))
+				if (m_activeItem && (m_currentItem != NULL))
 				{
 					// item recreated but should still be current
 					if (dlg.schema() == old.text(1))
@@ -950,55 +917,59 @@ void LiteManWindow::createTable()
 		checkForCatalogue();
 		queryEditor->treeChanged();
 	}
-	disconnect(&dlg, SIGNAL(rebuildTableTree(QString, QString)),
-			schemaBrowser->tableTree, SLOT(buildTableTree(QString, QString)));
 }
 
 void LiteManWindow::alterTable()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
+	if (   (!m_currentItem)
+        || (m_currentItem->type() != TableTree::TableType))
+    {
+        return;
+    }
 
-	if (!item) { return; }
-
-	QString oldName = item->text(0);
-	bool isActive = m_activeItem == item;
+	QString oldName = m_currentItem->text(0);
+	bool isActive = m_activeItem == m_currentItem;
 	dataViewer->saveSelection();
-	AlterTableDialog dlg(this, item, isActive);
-	connect(&dlg, SIGNAL(rebuildTableTree(QString, QString)),
-			schemaBrowser->tableTree, SLOT(buildTableTree(QString, QString)));
+    // checkForPending() is done in the dialog
+	AlterTableDialog dlg(this, m_currentItem, isActive);
+	connect(&dlg, SIGNAL(rebuildTableTree(QString)),
+			schemaBrowser->tableTree, SLOT(buildTableTree(QString)));
 	dlg.exec();
 	if (dlg.updated)
 	{
-		schemaBrowser->tableTree->buildTableItem(item, true);
+		schemaBrowser->tableTree->buildTableItem(m_currentItem, true);
 		checkForCatalogue();
 		if (isActive)
 		{
 			m_activeItem = 0; // we've changed it
-			treeItemActivated(item);
+			treeItemActivated(m_currentItem, -1);
 			dataViewer->reSelect();
 		}
 		dataViewer->setBuiltQuery(false);
-		queryEditor->tableAltered(oldName, item);
+		queryEditor->tableAltered(oldName, m_currentItem);
 	}
-	disconnect(&dlg, SIGNAL(rebuildTableTree(QString, QString)),
-			schemaBrowser->tableTree, SLOT(buildTableTree(QString, QString)));
+	disconnect(&dlg, SIGNAL(rebuildTableTree(QString)),
+			schemaBrowser->tableTree, SLOT(buildTableTree(QString)));
 }
 
 void LiteManWindow::populateTable()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-	if (!item) { return; }
+	if (   (!m_currentItem)
+        || (m_currentItem->type() != TableTree::TableType))
+    {
+        return;
+    }
 	
-	bool isActive = m_activeItem == item;
+	bool isActive = m_activeItem == m_currentItem;
 	if (isActive && !checkForPending()) { return; }
-	PopulatorDialog dlg(this, item->text(0), item->text(1));
+	PopulatorDialog dlg(this, m_currentItem->text(0), m_currentItem->text(1));
 	dlg.exec();
 	if (isActive && dlg.updated) {
 		dataViewer->saveSelection();
 		m_activeItem = 0; // we've changed it
-		treeItemActivated(item);
+		treeItemActivated(m_currentItem, -1);
 		dataViewer->reSelect();
 	}
 }
@@ -1006,19 +977,22 @@ void LiteManWindow::populateTable()
 void LiteManWindow::importTable()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
+	QString tableName =
+        m_currentItem ? (m_currentItem->type() == TableTree::TableType
+                            ? m_currentItem->text(0) : "")
+                      : "";
 
-	bool isActive = m_activeItem == item;
-	if (item && isActive && !checkForPending()) { return; }
-	ImportTableDialog dlg(this, item ? item->text(0) : "",
-							    item ? item->text(1) : "main");
+	bool isActive = m_activeItem == m_currentItem;
+	if (isActive && !checkForPending()) { return; }
+	ImportTableDialog dlg(
+        this, tableName, m_currentItem ? m_currentItem->text(1) : "main");
 	if (dlg.exec() == QDialog::Accepted)
 	{
 		dataViewer->saveSelection();
 		if (isActive)
 		{
 			m_activeItem = 0; // we've changed it
-			treeItemActivated(item);
+			treeItemActivated(m_currentItem, -1);
 			dataViewer->reSelect();
 		}
 		updateContextMenu();
@@ -1028,32 +1002,33 @@ void LiteManWindow::importTable()
 void LiteManWindow::dropTable()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
+	if (   (!m_currentItem)
+        || (m_currentItem->type() != TableTree::TableType))
+    {
+        return;
+    }
 
-	if(!item)
-		return;
-
-	bool isActive = m_activeItem == item;
+	bool isActive = m_activeItem == m_currentItem;
 
 	int ret = QMessageBox::question(this, m_appName,
 					tr("Are you sure that you wish to drop the table \"%1\"?")
-					.arg(item->text(0)),
+					.arg(m_currentItem->text(0)),
 					QMessageBox::Yes, QMessageBox::No);
 
 	if(ret == QMessageBox::Yes)
 	{
 		// don't check for pending, we're dropping it anyway
 		QString sql = QString("DROP TABLE")
-					  + Utils::q(item->text(1))
+					  + Utils::q(m_currentItem->text(1))
 					  + "."
-					  + Utils::q(item->text(0))
+					  + Utils::q(m_currentItem->text(0))
 					  + ";";
 		QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
 		if (query.lastError().isValid())
 		{
 			dataViewer->setStatusText(
 				tr("Cannot drop table ")
-				+ item->text(1) + tr(".") + item->text(0)
+				+ m_currentItem->text(1) + tr(".") + m_currentItem->text(0)
 				+ ":<br/><span style=\" color:#ff0000;\">"
 				+ query.lastError().text()
 				+ "<br/></span>" + tr("using sql statement:")
@@ -1061,8 +1036,8 @@ void LiteManWindow::dropTable()
 		}
 		else
 		{
-			schemaBrowser->tableTree->buildTables(item->parent(),
-												  item->text(1));
+			schemaBrowser->tableTree->buildTables(
+                m_currentItem->parent(), m_currentItem->text(1), false);
 			queryEditor->treeChanged();
 			checkForCatalogue();
 			dataViewer->setBuiltQuery(false);
@@ -1080,32 +1055,33 @@ void LiteManWindow::dropTable()
 void LiteManWindow::emptyTable()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
+	if (   (!m_currentItem)
+        || (m_currentItem->type() != TableTree::TableType))
+    {
+        return;
+    }
 
-	if(!item)
-		return;
-
-	bool isActive = m_activeItem == item;
+	bool isActive = m_activeItem == m_currentItem;
 
 	int ret = QMessageBox::question(this, m_appName,
 					tr("Are you sure you want to remove all records from the"
-					   " table  \"%1\"?").arg(item->text(0)),
+					   " table  \"%1\"?").arg(m_currentItem->text(0)),
 					QMessageBox::Yes, QMessageBox::No);
 
-	if(ret == QMessageBox::Yes)
+	if (ret == QMessageBox::Yes)
 	{
 		// don't check for pending, we're dropping it anyway
 		QString sql = QString("DELETE FROM ")
-					  + Utils::q(item->text(1))
+					  + Utils::q(m_currentItem->text(1))
 					  + "."
-					  + Utils::q(item->text(0))
+					  + Utils::q(m_currentItem->text(0))
 					  + ";";
 		QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
 		if (query.lastError().isValid())
 		{
 			dataViewer->setStatusText(
 				tr("Cannot empty table ")
-				+ item->text(1) + tr(".") + item->text(0)
+				+ m_currentItem->text(1) + tr(".") + m_currentItem->text(0)
 				+ ":<br/><span style=\" color:#ff0000;\">"
 				+ query.lastError().text()
 				+ "<br/></span>" + tr("using sql statement:")
@@ -1118,7 +1094,7 @@ void LiteManWindow::emptyTable()
 			{
 				dataViewer->setNotPending();
 				m_activeItem = 0;
-				treeItemActivated(item);
+				treeItemActivated(m_currentItem, -1);
 			}
 			updateContextMenu();
 		}
@@ -1128,8 +1104,8 @@ void LiteManWindow::emptyTable()
 void LiteManWindow::createView()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-	CreateViewDialog dlg(this, item);
+    // OK if m_currentItem is NULL
+	CreateViewDialog dlg(this, m_currentItem);
 	connect(&dlg, SIGNAL(rebuildViewTree(QString, QString)),
 			schemaBrowser->tableTree, SLOT(buildViewTree(QString, QString)));
 	dlg.exec();
@@ -1149,13 +1125,13 @@ void LiteManWindow::createViewFromSql(QString query)
 			schemaBrowser->tableTree, SLOT(buildViewTree(QString, QString)));
 	dlg.setSql(query);
 	dlg.exec();
+	disconnect(&dlg, SIGNAL(rebuildViewTree(QString, QString)),
+			schemaBrowser->tableTree, SLOT(buildViewTree(QString, QString)));
 	if (dlg.updated)
 	{
 		checkForCatalogue();
 		queryEditor->treeChanged();
 	}
-	disconnect(&dlg, SIGNAL(rebuildViewTree(QString, QString)),
-			schemaBrowser->tableTree, SLOT(buildViewTree(QString, QString)));
 }
 
 void LiteManWindow::setTableModel(SqlQueryModel * model)
@@ -1220,30 +1196,69 @@ bool LiteManWindow::doExecSql(QString query, bool isBuilt)
 	}
 }
 
+QStringList LiteManWindow::visibleDatabases()
+{
+    QStringList result;
+    QList<QTreeWidgetItem *> schemas =
+        schemaBrowser->tableTree->findItems("*", Qt::MatchWildcard);
+    QList<QTreeWidgetItem*>::const_iterator i;
+    for (i = schemas.constBegin(); i != schemas.constEnd(); ++i) {
+        result.append((*i)->text(0));
+    }
+    return result;
+}
+
+QTreeWidgetItem * LiteManWindow::findTreeItem(QString database, QString table)
+{
+    QList<QTreeWidgetItem*> l =
+        schemaBrowser->tableTree->searchMask(
+            schemaBrowser->tableTree->trTables);
+    QList<QTreeWidgetItem*>::const_iterator it;
+    for (it = l.constBegin(); it != l.constEnd(); ++it) {
+        QTreeWidgetItem* p = *it;
+        if (p->text(1) == database) {
+            int count = p->childCount();
+            for (int i = 0; i < count; ++i) {
+                QTreeWidgetItem* q = p->child(i);
+                if (q->text(0) == table) { return q; }
+            }
+        }
+    }
+    QMessageBox::critical(
+        this, tr("sqliteman internal error"),
+        tr("Please report to maintainer\ndatabase %s table %s not found in tree")
+            .arg(database).arg(table));
+    return NULL;
+}
+
 void LiteManWindow::alterView()
 {
 	//FIXME allow Alter View to change name like Alter Table
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-	bool isActive = m_activeItem == item;
+	if (   (!m_currentItem)
+        || (m_currentItem->type() != TableTree::ViewType))
+    {
+        return;
+    }
+	bool isActive = m_activeItem == m_currentItem;
 	// Can't have pending update on a view, so no checkForPending() here
 	// This might change if we allow editing on views with triggers
-	AlterViewDialog dia(item->text(0), item->text(1), this);
+	AlterViewDialog dia(m_currentItem->text(0), m_currentItem->text(1), this);
 	dia.exec();
 	if (dia.update)
 	{
-		QTreeWidgetItem * triggers = item->child(0);
+		QTreeWidgetItem * triggers = m_currentItem->child(0);
 		if (triggers)
 		{
-			schemaBrowser->tableTree->buildTriggers(triggers, item->text(1),
-													item->text(0));
+			schemaBrowser->tableTree->buildTriggers(
+                triggers, m_currentItem->text(1), m_currentItem->text(0));
 		}
 		checkForCatalogue();
 		if (isActive)
 		{
 			dataViewer->saveSelection();
 			m_activeItem = 0; // we've changed it
-			treeItemActivated(item);
+			treeItemActivated(m_currentItem, -1);
 			dataViewer->reSelect();
 		}
 	}
@@ -1252,31 +1267,32 @@ void LiteManWindow::alterView()
 void LiteManWindow::dropView()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-
-	if(!item)
-		return;
-	bool isActive = m_activeItem == item;
+	if (   (!m_currentItem)
+        || (m_currentItem->type() != TableTree::ViewType))
+    {
+        return;
+    }
+	bool isActive = m_activeItem == m_currentItem;
 	// Can't have pending update on a view, so no checkForPending() here
 	// Ask the user for confirmation
 	int ret = QMessageBox::question(this, m_appName,
 					tr("Are you sure that you wish to drop the view \"%1\"?")
-					.arg(item->text(0)),
+					.arg(m_currentItem->text(0)),
 					QMessageBox::Yes, QMessageBox::No);
 
 	if(ret == QMessageBox::Yes)
 	{
 		QString sql = QString("DROP VIEW")
-					  + Utils::q(item->text(1))
+					  + Utils::q(m_currentItem->text(1))
 					  + "."
-					  + Utils::q(item->text(0))
+					  + Utils::q(m_currentItem->text(0))
 					  + ";";
 		QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
 		if (query.lastError().isValid())
 		{
 			dataViewer->setStatusText(
 				tr("Cannot drop view ")
-				+ item->text(1) + tr(".") + item->text(0)
+				+ m_currentItem->text(1) + tr(".") + m_currentItem->text(0)
 				+ ":<br/><span style=\" color:#ff0000;\">"
 				+ query.lastError().text()
 				+ "<br/></span>" + tr("using sql statement:")
@@ -1284,7 +1300,8 @@ void LiteManWindow::dropView()
 		}
 		else
 		{
-			schemaBrowser->tableTree->buildViews(item->parent(), item->text(1));
+			schemaBrowser->tableTree->buildViews(
+                m_currentItem->parent(), m_currentItem->text(1));
 			queryEditor->treeChanged();
 			checkForCatalogue();
 			if (isActive)
@@ -1299,18 +1316,26 @@ void LiteManWindow::dropView()
 void LiteManWindow::createIndex()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-	if (item->type() == TableTree::IndexesItemType)
+	if (!m_currentItem) { return; }
+	if (m_currentItem->type() == TableTree::IndexType)
 	{
-		item = item->parent();
+		m_currentItem = m_currentItem->parent();
 	}
-	QString table(item->text(0));
-	QString schema(item->text(1));
+	if (m_currentItem->type() == TableTree::IndexesItemType)
+	{
+		m_currentItem = m_currentItem->parent();
+	}
+	if (m_currentItem->type() != TableTree::TableType)
+	{
+		return;
+	}
+	QString table(m_currentItem->text(0));
+	QString schema(m_currentItem->text(1));
 	CreateIndexDialog dia(table, schema, this);
 	dia.exec();
 	if (dia.update)
 	{
-		schemaBrowser->tableTree->buildIndexes(item, schema, table);
+		schemaBrowser->tableTree->buildIndexes(m_currentItem, schema, table);
 		checkForCatalogue();
 	}
 }
@@ -1318,30 +1343,31 @@ void LiteManWindow::createIndex()
 void LiteManWindow::dropIndex()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-
-	if(!item)
-		return;
+	if (   (!m_currentItem)
+        || (m_currentItem->type() != TableTree::IndexType))
+    {
+        return;
+    }
 
 	// Ask the user for confirmation
 	int ret = QMessageBox::question(this, m_appName,
 					tr("Are you sure that you wish to drop the index \"%1\"?")
-					.arg(item->text(0)),
+					.arg(m_currentItem->text(0)),
 					QMessageBox::Yes, QMessageBox::No);
 
 	if(ret == QMessageBox::Yes)
 	{
 		QString sql = QString("DROP INDEX")
-					  + Utils::q(item->text(1))
+					  + Utils::q(m_currentItem->text(1))
 					  + "."
-					  + Utils::q(item->text(0))
+					  + Utils::q(m_currentItem->text(0))
 					  + ";";
 		QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
 		if (query.lastError().isValid())
 		{
 			dataViewer->setStatusText(
 				tr("Cannot drop index ")
-				+ item->text(1) + tr(".") + item->text(0)
+				+ m_currentItem->text(1) + tr(".") + m_currentItem->text(0)
 				+ ":<br/><span style=\" color:#ff0000;\">"
 				+ query.lastError().text()
 				+ "<br/></span>" + tr("using sql statement:")
@@ -1350,85 +1376,93 @@ void LiteManWindow::dropIndex()
 		else
 		{
 			schemaBrowser->tableTree->buildIndexes(
-				item->parent(), item->text(1),
-				item->parent()->parent()->text(0));
+				m_currentItem->parent(), m_currentItem->text(1),
+				m_currentItem->parent()->parent()->text(0));
 			checkForCatalogue();
 		}
 	}
 }
 
-void LiteManWindow::describeTable() { describeObject("table"); }
-void LiteManWindow::describeTrigger() { describeObject("trigger"); }
-void LiteManWindow::describeView() { describeObject("view"); }
-void LiteManWindow::describeIndex() { describeObject("index"); }
-
-void LiteManWindow::treeItemActivated(QTreeWidgetItem * item)
+void LiteManWindow::treeItemActivated(QTreeWidgetItem * item, int column)
 {
 	dataViewer->removeErrorMessage();
 	if (   (!item)
-		|| (m_activeItem == item)
-		|| !checkForPending())
+		|| (m_activeItem == item))
 	{
 		return;
 	}
-
-	if (item->type() == TableTree::TableType || item->type() == TableTree::ViewType
-		|| item->type() == TableTree::SystemType)
-	{
+	
+	if (item->type() == TableTree::TableType) {
+        if (!checkForPending()) { return; }
 		dataViewer->freeResources(dataViewer->tableData());
-		if (item->type() == TableTree::ViewType || item->type() == TableTree::SystemType)
-		{
-			SqlQueryModel * model = new SqlQueryModel(0);
-			model->setQuery(QString("select * from ")
-							+ Utils::q(item->text(1))
-							+ "."
-							+ Utils::q(item->text(0)),
-							QSqlDatabase::database(SESSION_NAME));
-			dataViewer->setBuiltQuery(false);
-			dataViewer->setTableModel(model, false);
-		}
-		else
-		{
-			SqlTableModel * model = new SqlTableModel(0, QSqlDatabase::database(SESSION_NAME));
-			model->setSchema(item->text(1));
-			model->setTable(item->text(0));
-			model->select();
-			model->setEditStrategy(SqlTableModel::OnManualSubmit);
-			dataViewer->setBuiltQuery(false);
-			dataViewer->setTableModel(model, true);
-		}
+        SqlTableModel * model = new SqlTableModel(
+            0, QSqlDatabase::database(SESSION_NAME));
+        model->setSchema(item->text(1));
+        model->setTable(item->text(0));
+        model->select();
+        model->setEditStrategy(SqlTableModel::OnManualSubmit);
+        dataViewer->setBuiltQuery(false);
+        dataViewer->setTableModel(model, true);
+		m_activeItem = item;
+    } else if (   (item->type() == TableTree::ViewType)
+               || (item->type() == TableTree::SystemType))
+	{
+        if (!checkForPending()) { return; }
+		dataViewer->freeResources(dataViewer->tableData());
+        SqlQueryModel * model = new SqlQueryModel(0);
+        model->setQuery(QString("select * from ")
+                        + Utils::q(item->text(1))
+                        + "."
+                        + Utils::q(item->text(0)),
+                        QSqlDatabase::database(SESSION_NAME));
+        dataViewer->setBuiltQuery(false);
+        dataViewer->setTableModel(model, false);
 		m_activeItem = item;
 	}
 }
 
-void LiteManWindow::updateContextMenu()
-{
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-	updateContextMenu(item);
-}
-
-void LiteManWindow::tableTree_currentItemChanged(QTreeWidgetItem* cur, QTreeWidgetItem* /*prev*/)
-{
-	tableTreeTouched = (cur != NULL);
-	dataViewer->removeErrorMessage();
-	updateContextMenu(cur);
-}
-
-
 void LiteManWindow::treeContextMenuOpened(const QPoint & pos)
 {
-	if (contextMenu->actions().count() != 0)
-		contextMenu->exec(schemaBrowser->tableTree->viewport()->mapToGlobal(pos));
+	if (contextMenu->actions().count() != 0) {
+		contextMenu->exec(
+            schemaBrowser->tableTree->viewport()->mapToGlobal(pos));
+    }
 }
 
 void LiteManWindow::describeObject(QString type)
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-	QString desc(Database::describeObject(item->text(0), item->text(1), type));
+    if (!m_currentItem) { return; }
+	QString desc(Database::describeObject(
+        m_currentItem->text(0), m_currentItem->text(1), type));
 	dataViewer->sqlScriptStart();
-	dataViewer->showSqlScriptResult("-- " + tr("Describe %1").arg(item->text(0).toUpper()));
+	dataViewer->showSqlScriptResult(
+        "-- " + tr("Describe %1").arg(m_currentItem->text(0).toUpper()));
 	dataViewer->showSqlScriptResult(desc);
+}
+
+void LiteManWindow::describeTable() {
+    if (m_currentItem && (m_currentItem->type() == TableTree::TableType)) {
+        describeObject("table");
+    }
+}
+
+void LiteManWindow::describeTrigger() {
+    if (m_currentItem && (m_currentItem->type() == TableTree::TriggerType)) {
+        describeObject("trigger");
+    }
+}
+
+void LiteManWindow::describeView() {
+    if (m_currentItem && (m_currentItem->type() == TableTree::ViewType)) {
+        describeObject("view");
+    }
+}
+
+void LiteManWindow::describeIndex() {
+    if (m_currentItem && (m_currentItem->type() == TableTree::IndexType)) {
+        describeObject("index");
+    }
 }
 
 void LiteManWindow::updateContextMenu(QTreeWidgetItem * cur)
@@ -1438,15 +1472,21 @@ void LiteManWindow::updateContextMenu(QTreeWidgetItem * cur)
 
 	switch(cur->type())
 	{
+		case TableTree::DatabaseItemType:
+			contextMenu->addAction(refreshTreeAct);
+			if ((cur->text(0) != "main") && (cur->text(0) != "temp"))
+				contextMenu->addAction(detachAct);
+			contextMenu->addAction(createTableAct);
+			contextMenu->addAction(createViewAct);
+			break;
+
 		case TableTree::TablesItemType:
 			contextMenu->addAction(createTableAct);
 			break;
 
-		case TableTree::ViewsItemType:
-			contextMenu->addAction(createViewAct);
-			break;
-
 		case TableTree::TableType:
+			contextMenu->addAction(createTableAct);
+			contextMenu->addAction(createViewAct);
 			contextMenu->addAction(describeTableAct);
 			contextMenu->addAction(alterTableAct);
 			contextMenu->addAction(dropTableAct);
@@ -1460,7 +1500,7 @@ void LiteManWindow::updateContextMenu(QTreeWidgetItem * cur)
 				if (model.rowCount() > 0)
 					{ contextMenu->addAction(emptyTableAct); }
 			}
-			contextMenu->addAction(contextBuildQueryAct);
+			contextMenu->addAction(buildQueryAct);
 			contextMenu->addAction(createIndexAct);
 			contextMenu->addAction(reindexAct);
 			contextMenu->addSeparator();
@@ -1469,29 +1509,27 @@ void LiteManWindow::updateContextMenu(QTreeWidgetItem * cur)
 			contextMenu->addAction(createTriggerAct);
 			break;
 
+		case TableTree::ViewsItemType:
+			contextMenu->addAction(createViewAct);
+			break;
+
 		case TableTree::ViewType:
+			contextMenu->addAction(createViewAct);
 			contextMenu->addAction(describeViewAct);
 			contextMenu->addAction(alterViewAct);
 			contextMenu->addAction(dropViewAct);
 			contextMenu->addAction(createTriggerAct);
 			break;
 
-		case TableTree::IndexType:
-			contextMenu->addAction(describeIndexAct);
-			contextMenu->addAction(dropIndexAct);
-			contextMenu->addAction(reindexAct);
-			break;
-
 		case TableTree::IndexesItemType:
 			contextMenu->addAction(createIndexAct);
 			break;
 
-		case TableTree::DatabaseItemType:
-			contextMenu->addAction(refreshTreeAct);
-			if ((cur->text(0) != "main") && (cur->text(0) != "temp"))
-				contextMenu->addAction(detachAct);
-			contextMenu->addAction(createTableAct);
-			contextMenu->addAction(createViewAct);
+		case TableTree::IndexType:
+			contextMenu->addAction(createIndexAct);
+			contextMenu->addAction(describeIndexAct);
+			contextMenu->addAction(dropIndexAct);
+			contextMenu->addAction(reindexAct);
 			break;
 
 		case TableTree::TriggersItemType:
@@ -1501,12 +1539,18 @@ void LiteManWindow::updateContextMenu(QTreeWidgetItem * cur)
 			break;
 
 		case TableTree::TriggerType:
+			contextMenu->addAction(createTriggerAct);
 			contextMenu->addAction(describeTriggerAct);
 			contextMenu->addAction(alterTriggerAct);
 			contextMenu->addAction(dropTriggerAct);
 			break;
 	}
 	contextMenu->setDisabled(contextMenu->actions().count() == 0);
+}
+
+void LiteManWindow::updateContextMenu()
+{
+	updateContextMenu(m_currentItem);
 }
 
 void LiteManWindow::analyzeDialog()
@@ -1629,7 +1673,13 @@ void LiteManWindow::attachDatabase()
 void LiteManWindow::detachDatabase()
 {
 	dataViewer->removeErrorMessage();
-	QString dbname(schemaBrowser->tableTree->currentItem()->text(0));
+    if (   (!m_currentItem)
+        || (m_currentItem->type() != TableTree::DatabaseItemType))
+    {
+        return;
+    }
+    if ((m_activeItem == m_currentItem) && !checkForPending()) { return; }
+	QString dbname(m_currentItem->text(0));
 	removeRef(dbname);
 	QString sql = QString("DETACH DATABASE ")
 				  + Utils::q(dbname)
@@ -1649,7 +1699,8 @@ void LiteManWindow::detachDatabase()
 	else
 	{
 		// this removes the item from the tree as well as deleting it
-		delete schemaBrowser->tableTree->currentItem();
+		delete m_currentItem;
+        m_currentItem = NULL;
 		queryEditor->treeChanged();
 		dataViewer->setBuiltQuery(false);
 	}
@@ -1678,44 +1729,52 @@ void LiteManWindow::loadExtension()
 
 void LiteManWindow::createTrigger()
 {
+    if (!m_currentItem) { return; }
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-	QTreeWidgetItem * triggers;
-	if (item->type() == TableTree::TriggersItemType)
+	QTreeWidgetItem * triggers = NULL;
+	if (m_currentItem->type() == TableTree::TriggerType)
 	{
-		triggers = item;
-		item = item->parent();
+		m_currentItem = m_currentItem->parent();
+	}
+	if (m_currentItem->type() == TableTree::TriggersItemType)
+	{
+		triggers = m_currentItem;
+		m_currentItem = m_currentItem->parent();
 	}
 	else
 	{
-		for (int i = 0; i < item->childCount(); ++i)
+		for (int i = 0; i < m_currentItem->childCount(); ++i)
 		{
-			if (item->child(i)->type() == TableTree::TriggersItemType)
+			if (m_currentItem->child(i)->type() == TableTree::TriggersItemType)
 			{
-				triggers = item->child(i);
+				triggers = m_currentItem->child(i);
 				break;
 			}
 		}
 	}
-	CreateTriggerDialog *dia = new CreateTriggerDialog(item, this);
+	if (!triggers) { return; }
+	CreateTriggerDialog *dia = new CreateTriggerDialog(m_currentItem, this);
 	dia->exec();
 	if (dia->update)
 	{
-		schemaBrowser->tableTree->buildTriggers(triggers, triggers->text(1),
-												item->text(0));
+		schemaBrowser->tableTree->buildTriggers(
+            triggers, triggers->text(1), m_currentItem->text(0));
 		checkForCatalogue();
 	}
-	delete dia;
 }
 
 void LiteManWindow::alterTrigger()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-	QTreeWidgetItem * triglist = item->parent();
-	QString trigger(item->text(0));
+    if (   (!m_currentItem)
+        || (m_currentItem->type() != TableTree::TriggerType))
+    {
+        return;
+    }
+	QTreeWidgetItem * triglist = m_currentItem->parent();
+	QString trigger(m_currentItem->text(0));
 	QString table(triglist->parent()->text(0));
-	QString schema(item->text(1));
+	QString schema(m_currentItem->text(1));
 	AlterTriggerDialog *dia =
 		new AlterTriggerDialog(trigger, schema, this);
 	dia->exec();
@@ -1724,37 +1783,37 @@ void LiteManWindow::alterTrigger()
 		schemaBrowser->tableTree->buildTriggers(triglist, schema, table);
 		checkForCatalogue();
 	}
-	delete dia;
 }
 
 
 void LiteManWindow::dropTrigger()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-
-	if(!item)
-		return;
+    if (   (!m_currentItem)
+        || (m_currentItem->type() != TableTree::TriggerType))
+    {
+        return;
+    }
 
 	// Ask the user for confirmation
 	int ret = QMessageBox::question(this, m_appName,
 					tr("Are you sure that you wish to drop the trigger \"%1\"?")
-					.arg(item->text(0)),
+					.arg(m_currentItem->text(0)),
 					QMessageBox::Yes, QMessageBox::No);
 
-	if(ret == QMessageBox::Yes)
+	if (ret == QMessageBox::Yes)
 	{
 		QString sql = QString("DROP TRIGGER ")
-					  + Utils::q(item->text(1))
+					  + Utils::q(m_currentItem->text(1))
 					  + "."
-					  + Utils::q(item->text(0))
+					  + Utils::q(m_currentItem->text(0))
 					  + ";";
 		QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
 		if (query.lastError().isValid())
 		{
 			dataViewer->setStatusText(
 				tr("Cannot drop trigger ")
-				+ item->text(1) + tr(".") + item->text(0)
+				+ m_currentItem->text(1) + tr(".") + m_currentItem->text(0)
 				+ ":<br/><span style=\" color:#ff0000;\">"
 				+ query.lastError().text()
 				+ "<br/></span>" + tr("using sql statement:")
@@ -1763,8 +1822,8 @@ void LiteManWindow::dropTrigger()
 		else
 		{
 			schemaBrowser->tableTree->buildTriggers(
-				item->parent(), item->text(1),
-				item->parent()->parent()->text(0));
+				m_currentItem->parent(), m_currentItem->text(1),
+				m_currentItem->parent()->parent()->text(0));
 			checkForCatalogue();
 		}
 	}
@@ -1773,14 +1832,19 @@ void LiteManWindow::dropTrigger()
 void LiteManWindow::constraintTriggers()
 {
 	dataViewer->removeErrorMessage();
-	QString table(schemaBrowser->tableTree->currentItem()->parent()->text(0));
-	QString schema(schemaBrowser->tableTree->currentItem()->parent()->text(1));
+    if (   (!m_currentItem)
+        || (m_currentItem->type() != TableTree::TriggerType)
+        || (m_currentItem->parent()->type() != TableTree::ViewType))
+    {
+        return;
+    }
+	QString table(m_currentItem->parent()->text(0));
+	QString schema(m_currentItem->parent()->text(1));
 	ConstraintsDialog dia(table, schema, this);
 	dia.exec();
 	if (dia.update)
 	{
-		schemaBrowser->tableTree->buildTriggers(
-			schemaBrowser->tableTree->currentItem(), schema, table);
+		schemaBrowser->tableTree->buildTriggers(m_currentItem, schema, table);
 		checkForCatalogue();
 	}
 }
@@ -1788,32 +1852,34 @@ void LiteManWindow::constraintTriggers()
 void LiteManWindow::reindex()
 {
 	dataViewer->removeErrorMessage();
-	QTreeWidgetItem * item = schemaBrowser->tableTree->currentItem();
-	if (item)
-	{
-		QString sql(QString("REINDEX ")
-					+ Utils::q(item->text(1))
-					+ "."
-					+ Utils::q(item->text(0))
-					+ ";");
-		QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
-		if (query.lastError().isValid())
-		{
-			dataViewer->setStatusText(
-				tr("Cannot reindex ")
-				+ item->text(1) + tr(".") + item->text(0)
-				+ ":<br/><span style=\" color:#ff0000;\">"
-				+ query.lastError().text()
-				+ "<br/></span>" + tr("using sql statement:")
-				+ "<br/><tt>" + sql);
-		}
-	}
+    if (   (!m_currentItem)
+        || (   (m_currentItem->type() != TableTree::TableType)
+            && (m_currentItem->type() != TableTree::IndexType)))
+    {
+        return;
+    }
+    QString sql(QString("REINDEX ")
+                + Utils::q(m_currentItem->text(1))
+                + "."
+                + Utils::q(m_currentItem->text(0))
+                + ";");
+    QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
+    if (query.lastError().isValid())
+    {
+        dataViewer->setStatusText(
+            tr("Cannot reindex ")
+            + m_currentItem->text(1) + tr(".") + m_currentItem->text(0)
+            + ":<br/><span style=\" color:#ff0000;\">"
+            + query.lastError().text()
+            + "<br/></span>" + tr("using sql statement:")
+            + "<br/><tt>" + sql);
+    }
 }
 
 void LiteManWindow::refreshTable()
 {
-	/* SQL code in the SQL editor may have modified or even removed the current
-	 * table.
+	/* SQL code in the SQL editor may have modified or even removed
+     * the current table.
 	 */
 	dataViewer->setTableModel(new QSqlQueryModel(), false);
 	updateContextMenu();
@@ -1854,4 +1920,17 @@ void LiteManWindow::preferences()
 			handleExtensions(Preferences::instance()->allowExtensionLoading());
 #endif
 		}
+}
+
+void LiteManWindow::tableTreeSelectionChanged() {
+    QList<QTreeWidgetItem *> selection(
+        schemaBrowser->tableTree->selectedItems());
+    if (selection.isEmpty()) {
+        m_currentItem = NULL;
+    } else {
+        m_currentItem = selection.first();
+        QTreeWidgetItem * currentitem =
+            schemaBrowser->tableTree->currentItem();
+        updateContextMenu(currentitem);
+    }
 }

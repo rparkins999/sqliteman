@@ -13,6 +13,7 @@ for which a new license (GPL+exception) is in place.
 #include "queryeditorwidget.h"
 #include "querystringmodel.h"
 #include "sqlparser.h"
+#include "tabletree.h"
 #include "utils.h"
 #include "ui_termstabwidget.h"
 
@@ -151,6 +152,8 @@ void QueryEditorWidget::setItem(QTreeWidgetItem * item)
 		resetSchemaList();
 		initialised = true;
 	}
+    schemaList->setEnabled(true);
+    tableList->setEnabled(true);
 	if (item)
 	{
 		// invoked from context menu
@@ -161,6 +164,7 @@ void QueryEditorWidget::setItem(QTreeWidgetItem * item)
 			{
 				schemaList->setCurrentIndex(i);
 				found = true;
+                schemaList->setEnabled(false);
 				break;
 			}
 		}
@@ -175,15 +179,18 @@ void QueryEditorWidget::setItem(QTreeWidgetItem * item)
 			m_table = QString();
 		}
 		found = false;
-		for (int i = 0; i < tableList->count(); ++i)
-		{
-			if (tableList->itemText(i) == item->text(0))
-			{
-				tableList->setCurrentIndex(i);
-				found = true;
-				break;
-			}
-		}
+        if (item->type() == TableTree::TableType) {
+            for (int i = 0; i < tableList->count(); ++i)
+            {
+                if (tableList->itemText(i) == item->text(0))
+                {
+                    tableList->setCurrentIndex(i);
+                    found = true;
+                    tableList->setEnabled(false);
+                    break;
+                }
+            }
+        }
 		if (!found)
 		{
 			tableList->setCurrentIndex(0);
@@ -192,14 +199,6 @@ void QueryEditorWidget::setItem(QTreeWidgetItem * item)
 		{
 			tableSelected(tableList->currentText());
 		}
-		schemaList->setEnabled(false);
-		tableList->setEnabled(false);
-	}
-	else
-	{
-		// invoked from database menu
-		schemaList->setEnabled(true);
-		tableList->setEnabled(true);
 	}
 	resizeWanted = true;
 }
@@ -595,9 +594,18 @@ void QueryEditorWidget::tableAltered(QString oldName, QTreeWidgetItem * item)
 
 void QueryEditorWidget::fixSchema(const QString & schema)
 {
-	schemaList->setCurrentIndex(schemaList->findText(schema));
-	schemaSelected(schema);
-	schemaList->setDisabled(true);
+    int index = schemaList->findText(schema, Qt::MatchExactly);
+    if (index < 0) {
+        index = schemaList->count();
+        schemaList->addItem(schema);
+    }
+    if (schema == "temp") {
+        schemaList->setDisabled(false);
+    } else {
+        schemaList->setCurrentIndex(index);
+        schemaList->setDisabled(true);
+        schemaSelected(schema);
+    }
 }
 
 void QueryEditorWidget::resizeEvent(QResizeEvent * event)

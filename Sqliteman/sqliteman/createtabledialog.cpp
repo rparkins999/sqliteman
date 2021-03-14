@@ -35,6 +35,7 @@ CreateTableDialog::CreateTableDialog(LiteManWindow * parent,
 	connect(m_createButton, SIGNAL(clicked(bool)),
 			this, SLOT(createButton_clicked()));
 
+	ui.databaseCombo->setCurrentIndex(0);
 	if (item && (   (item->type() == TableTree::DatabaseItemType)
 				 || (item->type() == TableTree::TablesItemType)))
 	{
@@ -43,7 +44,9 @@ CreateTableDialog::CreateTableDialog(LiteManWindow * parent,
 		if (i >= 0)
 		{
 			ui.databaseCombo->setCurrentIndex(i);
-			ui.databaseCombo->setDisabled(true);
+            if (!addedTemp) {
+                ui.databaseCombo->setDisabled(true);
+            }
 		}
 	}
 	m_tabWidgetIndex = ui.tabWidget->currentIndex();
@@ -92,8 +95,7 @@ void CreateTableDialog::createButton_clicked()
 		return;
 	}
 	updated = true;
-	emit rebuildTableTree(ui.databaseCombo->currentText(),
-						 ui.nameEdit->text());
+	emit rebuildTableTree(ui.databaseCombo->currentText());
 	resultAppend(tr("Table created successfully"));
 }
 

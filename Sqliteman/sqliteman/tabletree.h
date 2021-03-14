@@ -41,7 +41,8 @@ class TableTree : public QTreeWidget
 		void buildDatabase(QTreeWidgetItem * dbItem, const QString & schema);
 		void buildDatabase(const QString & schema);
 		void buildTableItem(QTreeWidgetItem * tableItem, bool rebuild);
-		void buildTables(QTreeWidgetItem * tablesItem, const QString & schema);
+		void buildTables(QTreeWidgetItem * tablesItem,
+                         const QString & schema, bool expand);
 		void buildIndexes(QTreeWidgetItem *indexesItem, const QString & schema, const QString & table);
 		void buildColumns(QTreeWidgetItem * columnsItem, const QString & schema, const QString & table);
 		void buildSysIndexes(QTreeWidgetItem *indexesItem, const QString & schema, const QString & table);
@@ -63,7 +64,7 @@ class TableTree : public QTreeWidget
 	public slots:
 		void buildTree();
 		void buildViewTree(QString schema, QString name);
-		void buildTableTree(QString schema, QString name);
+		void buildTableTree(QString schema);
 
 	private:
 		void deleteChildren(QTreeWidgetItem * item);
@@ -73,6 +74,10 @@ class TableTree : public QTreeWidget
 
 		void mousePressEvent(QMouseEvent *event);
 		void mouseMoveEvent(QMouseEvent *event);
+
+        // these are only valid immediately after a call to buildDatabase()
+        QTreeWidgetItem * lastTablesItem;
+        QTreeWidgetItem * lastViewsItem;
 };
 
 #endif
