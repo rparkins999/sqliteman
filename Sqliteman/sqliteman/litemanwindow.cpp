@@ -22,7 +22,6 @@ for which a new license (GPL+exception) is in place.
 
 #include <QCoreApplication>
 #include <QCloseEvent>
-#include <QSettings>
 #include <QFileInfo>
 #include <QAction>
 #include <QFile>
@@ -64,9 +63,7 @@ LiteManWindow::LiteManWindow(
     const QString & fileToOpen, const QString & scriptToOpen)
 	: QMainWindow(),
 	m_lastDB(""),
-	m_lastSqlFile(scriptToOpen),
-	m_appName("Sqliteman"),
-	helpBrowser(0)
+	m_lastSqlFile(scriptToOpen)
 {
 #if QT_VERSION < 0x040300
 	if (Preferences::instance()->checkQtVersion())
@@ -89,15 +86,10 @@ LiteManWindow::LiteManWindow(
 	m_sqliteVersionLabel = new QLabel(this);
 	m_activeItem = 0;
 	statusBar()->addPermanentWidget(m_sqliteVersionLabel);
-
-	queryEditor =  new QueryEditorDialog(this);
-
 	readSettings();
-
 	// Check command line
-	qDebug() << "Initial DB: " << fileToOpen;
-	if (!fileToOpen.isNull() && !fileToOpen.isEmpty())
-		open(fileToOpen);
+	if (!fileToOpen.isEmpty()) { open(fileToOpen); }
+	queryEditor =  new QueryEditorDialog(this);
 }
 
 LiteManWindow::~LiteManWindow()
@@ -479,50 +471,45 @@ void LiteManWindow::rebuildRecentFileMenu()
 
 void LiteManWindow::readSettings()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->litemanwindowWidth(), prefs->litemanwindowHeight());
+	splitter->restoreState(prefs->litemansplitter());
+	splitterSql->restoreState(prefs->sqlsplitter());
 
-	int hh = settings.value("litemanwindow/height", QVariant(600)).toInt();
-	int ww = settings.value("litemanwindow/width", QVariant(800)).toInt();
-	resize(ww, hh);
-	QByteArray splitterData = settings.value("window/splitter").toByteArray();
-
-	splitter->restoreState(splitterData);
-	splitterSql->restoreState(settings.value("sqleditor/splitter").toByteArray());
-
-	dataViewer->restoreSplitter(settings.value("dataviewer/splitter").toByteArray());
-	dataViewer->setVisible(settings.value("dataviewer/show", true).toBool());
-	dataViewerAct->setChecked(settings.value("dataviewer/show", true).toBool());
-
-	sqlEditor->setVisible(settings.value("sqleditor/show", true).toBool());
-	schemaBrowser->setVisible(settings.value("objectbrowser/show", true).toBool());
-	schemaBrowserAct->setChecked(settings.value("objectbrowser/show", true).toBool());
-	execSqlAct->setChecked(settings.value("sqleditor/show", true).toBool());
+	dataViewer->restoreSplitter(prefs->dataviewersplitter());
+    bool shown = prefs->dataviewerShown();
+	dataViewer->setVisible(shown);
+	dataViewerAct->setChecked(shown);
+    shown = prefs->objectbrowserShown();
+	schemaBrowser->setVisible(shown);
+	schemaBrowserAct->setChecked(shown);
+    shown = prefs->sqleditorShown();
+	sqlEditor->setVisible(shown);
+	execSqlAct->setChecked(shown);
 
 	if (!m_lastSqlFile.isEmpty()) {
         sqlEditor->setFileName(m_lastSqlFile);
     }
 
-	recentDocs = settings.value("recentDocs/files").toStringList();
+	recentDocs = prefs->recentFiles();
 	rebuildRecentFileMenu();
 }
 
 void LiteManWindow::writeSettings()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-
-    settings.setValue("litemanwindow/height", QVariant(height()));
-    settings.setValue("litemanwindow/width", QVariant(width()));
-	settings.setValue("window/splitter", splitter->saveState());
-	settings.setValue("objectbrowser/show", schemaBrowser->isVisible());
-	settings.setValue("sqleditor/show", sqlEditor->isVisible());
-	settings.setValue("sqleditor/splitter", splitterSql->saveState());
-	settings.setValue("dataviewer/show", dataViewer->isVisible());
-	settings.setValue("dataviewer/splitter", dataViewer->saveSplitter());
-	settings.setValue("recentDocs/files", recentDocs);
+    Preferences * prefs = Preferences::instance();
+    prefs->setlitemanwindowHeight(height());
+    prefs->setlitemanwindowWidth(width());
+	prefs->setdataviewerShown(dataViewer->isVisible());
+	prefs->setobjectbrowserShown(schemaBrowser->isVisible());
+	prefs->setsqleditorShown(sqlEditor->isVisible());
+	prefs->setdataviewersplitter(dataViewer->saveSplitter());
+	prefs->setlitemansplitter(splitter->saveState());
+	prefs->setsqlsplitter(splitterSql->saveState());
+	prefs->setrecentFIles(recentDocs);
 	// last open database
-	settings.setValue("lastDatabase",
-					  QSqlDatabase::database(SESSION_NAME).databaseName());
-	settings.setValue("lastSqlFile", sqlEditor->fileName());
+	prefs->setlastDB(QSqlDatabase::database(SESSION_NAME).databaseName());
+	prefs->setlastSqlFile(sqlEditor->fileName());
 }
 
 void LiteManWindow::newDB()
@@ -671,7 +658,7 @@ void LiteManWindow::openDatabase(const QString & fileName)
 		// Build tree & clean model
 		schemaBrowser->tableTree->buildTree();
 		schemaBrowser->buildPragmasTree();
-		queryEditor->treeChanged();
+        if (queryEditor) { queryEditor->treeChanged(); }
 		dataViewer->setBuiltQuery(false);
 		dataViewer->setTableModel(new QSqlQueryModel(), false);
 		m_activeItem = 0;
@@ -887,7 +874,7 @@ void LiteManWindow::createTable()
 	dlg.exec();
 	disconnect(&dlg, SIGNAL(rebuildTableTree(QString)),
 			schemaBrowser->tableTree, SLOT(buildTableTree(QString)));
-	if (dlg.updated)
+	if (dlg.m_updated)
 	{
         QList<QTreeWidgetItem*> l =
             schemaBrowser->tableTree->searchMask(
@@ -936,9 +923,8 @@ void LiteManWindow::alterTable()
 	connect(&dlg, SIGNAL(rebuildTableTree(QString)),
 			schemaBrowser->tableTree, SLOT(buildTableTree(QString)));
 	dlg.exec();
-	if (dlg.updated)
+	if (dlg.m_updated)
 	{
-		schemaBrowser->tableTree->buildTableItem(m_currentItem, true);
 		checkForCatalogue();
 		if (isActive)
 		{
@@ -966,7 +952,7 @@ void LiteManWindow::populateTable()
 	if (isActive && !checkForPending()) { return; }
 	PopulatorDialog dlg(this, m_currentItem->text(0), m_currentItem->text(1));
 	dlg.exec();
-	if (isActive && dlg.updated) {
+	if (isActive && dlg.m_updated) {
 		dataViewer->saveSelection();
 		m_activeItem = 0; // we've changed it
 		treeItemActivated(m_currentItem, -1);
@@ -1015,10 +1001,10 @@ void LiteManWindow::dropTable()
 					.arg(m_currentItem->text(0)),
 					QMessageBox::Yes, QMessageBox::No);
 
-	if(ret == QMessageBox::Yes)
+	if (ret == QMessageBox::Yes)
 	{
 		// don't check for pending, we're dropping it anyway
-		QString sql = QString("DROP TABLE")
+		QString sql = QString("DROP TABLE ")
 					  + Utils::q(m_currentItem->text(1))
 					  + "."
 					  + Utils::q(m_currentItem->text(0))
@@ -1109,7 +1095,7 @@ void LiteManWindow::createView()
 	connect(&dlg, SIGNAL(rebuildViewTree(QString, QString)),
 			schemaBrowser->tableTree, SLOT(buildViewTree(QString, QString)));
 	dlg.exec();
-	if (dlg.updated)
+	if (dlg.m_updated)
 	{
 		checkForCatalogue();
 		queryEditor->treeChanged();
@@ -1127,7 +1113,7 @@ void LiteManWindow::createViewFromSql(QString query)
 	dlg.exec();
 	disconnect(&dlg, SIGNAL(rebuildViewTree(QString, QString)),
 			schemaBrowser->tableTree, SLOT(buildViewTree(QString, QString)));
-	if (dlg.updated)
+	if (dlg.m_updated)
 	{
 		checkForCatalogue();
 		queryEditor->treeChanged();
@@ -1245,7 +1231,7 @@ void LiteManWindow::alterView()
 	// This might change if we allow editing on views with triggers
 	AlterViewDialog dia(m_currentItem->text(0), m_currentItem->text(1), this);
 	dia.exec();
-	if (dia.update)
+	if (dia.m_updated)
 	{
 		QTreeWidgetItem * triggers = m_currentItem->child(0);
 		if (triggers)
@@ -1331,9 +1317,9 @@ void LiteManWindow::createIndex()
 	}
 	QString table(m_currentItem->text(0));
 	QString schema(m_currentItem->text(1));
-	CreateIndexDialog dia(table, schema, this);
-	dia.exec();
-	if (dia.update)
+	CreateIndexDialog dlg(table, schema, this);
+	dlg.exec();
+	if (dlg.m_updated)
 	{
 		schemaBrowser->tableTree->buildIndexes(m_currentItem, schema, table);
 		checkForCatalogue();
@@ -1487,6 +1473,8 @@ void LiteManWindow::updateContextMenu(QTreeWidgetItem * cur)
 		case TableTree::TableType:
 			contextMenu->addAction(createTableAct);
 			contextMenu->addAction(createViewAct);
+			contextMenu->addAction(createIndexAct);
+			contextMenu->addAction(createTriggerAct);
 			contextMenu->addAction(describeTableAct);
 			contextMenu->addAction(alterTableAct);
 			contextMenu->addAction(dropTableAct);
@@ -1501,12 +1489,10 @@ void LiteManWindow::updateContextMenu(QTreeWidgetItem * cur)
 					{ contextMenu->addAction(emptyTableAct); }
 			}
 			contextMenu->addAction(buildQueryAct);
-			contextMenu->addAction(createIndexAct);
 			contextMenu->addAction(reindexAct);
 			contextMenu->addSeparator();
 			contextMenu->addAction(importTableAct);
 			contextMenu->addAction(populateTableAct);
-			contextMenu->addAction(createTriggerAct);
 			break;
 
 		case TableTree::ViewsItemType:
@@ -1755,7 +1741,7 @@ void LiteManWindow::createTrigger()
 	if (!triggers) { return; }
 	CreateTriggerDialog *dia = new CreateTriggerDialog(m_currentItem, this);
 	dia->exec();
-	if (dia->update)
+	if (dia->m_updated)
 	{
 		schemaBrowser->tableTree->buildTriggers(
             triggers, triggers->text(1), m_currentItem->text(0));
@@ -1776,9 +1762,9 @@ void LiteManWindow::alterTrigger()
 	QString table(triglist->parent()->text(0));
 	QString schema(m_currentItem->text(1));
 	AlterTriggerDialog *dia =
-		new AlterTriggerDialog(trigger, schema, this);
+		new AlterTriggerDialog(m_currentItem, this);
 	dia->exec();
-	if (dia->update)
+	if (dia->m_updated)
 	{
 		schemaBrowser->tableTree->buildTriggers(triglist, schema, table);
 		checkForCatalogue();
@@ -1842,7 +1828,7 @@ void LiteManWindow::constraintTriggers()
 	QString schema(m_currentItem->parent()->text(1));
 	ConstraintsDialog dia(table, schema, this);
 	dia.exec();
-	if (dia.update)
+	if (dia.m_updated)
 	{
 		schemaBrowser->tableTree->buildTriggers(m_currentItem, schema, table);
 		checkForCatalogue();

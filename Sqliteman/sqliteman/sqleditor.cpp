@@ -15,7 +15,6 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QShortcut>
-#include <QSettings>
 #include <QDateTime>
 
 #include <qscilexer.h>
@@ -85,8 +84,8 @@ SqlEditor::SqlEditor(LiteManWindow * parent)
     QShortcut * alternativeSQLRun = new QShortcut(this);
     alternativeSQLRun->setKey(Qt::CTRL + Qt::Key_Return);
 
-	QSettings settings("yarpen.cz", "sqliteman");
-	restoreState(settings.value("sqleditor/state").toByteArray());
+    Preferences * prefs = Preferences::instance();
+    restoreState(prefs->sqleditorState());
 
     connect(ui.actionShow_History, SIGNAL(triggered()),
             this, SLOT(actionShow_History_triggered()));
@@ -136,8 +135,8 @@ SqlEditor::SqlEditor(LiteManWindow * parent)
 
 SqlEditor::~SqlEditor()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-    settings.setValue("sqleditor/state", saveState());
+    Preferences * prefs = Preferences::instance();
+    prefs->setsqleditorState(saveState());
 }
 
 void SqlEditor::setStatusMessage(const QString & message)

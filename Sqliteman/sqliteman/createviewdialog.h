@@ -19,25 +19,22 @@ class QPushButton;
 /*! \brief GUI for view creation
 \author Petr Vanek <petr@scribus.info>
 */
-class CreateViewDialog : public TableEditorDialog
+class CreateViewDialog : public TableEditorDialog // ->DialogCommon->QDialog
 {
 	Q_OBJECT
 
-	public:
-		CreateViewDialog(LiteManWindow * parent = 0,
-						  QTreeWidgetItem * item = 0);
-		~CreateViewDialog(){};
-		void setText(QString query);
-		void setSql(QString query);
-		bool event(QEvent * e);
-
 	private:
+		QPushButton * m_createButton;
 
 		bool checkColumn(int i, QString cname,
 						 QString ctype, QString cextra);
 
-		QPushButton * m_createButton;
-		
+	public:
+		CreateViewDialog(LiteManWindow * parent = 0,
+						  QTreeWidgetItem * item = 0);
+		~CreateViewDialog();
+		void setSql(QString query);
+
 	signals:
 		/*! \brief Rebuild part of the tree */
 		void rebuildViewTree(QString schema, QString name);
@@ -45,7 +42,7 @@ class CreateViewDialog : public TableEditorDialog
 	private slots:
 		void createButton_clicked();
 		void checkChanges();
-		void databaseChanged(int);
+		void databaseChanged(const QString schema);
 };
 
 #endif

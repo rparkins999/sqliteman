@@ -8,8 +8,7 @@ for which a new license (GPL+exception) is in place.
 #ifndef CONSTRAINTSDIALOG_H
 #define CONSTRAINTSDIALOG_H
 
-#include <qdialog.h>
-
+#include "dialogcommon.h"
 #include "ui_constraintsdialog.h"
 
 
@@ -17,22 +16,18 @@ for which a new license (GPL+exception) is in place.
 Sqlite3 does not know how to handle constraints itself.
 \author Petr Vanek <petr@scribus.info>
  */
-class ConstraintsDialog : public QDialog
+class ConstraintsDialog : public DialogCommon // ->QDialog
 {
 	Q_OBJECT
 
 	public:
-		ConstraintsDialog(const QString & tabName, const QString & schema, QWidget * parent = 0);
+		ConstraintsDialog(const QString & tabName, const QString & schema,
+                          LiteManWindow * parent = 0);
 		~ConstraintsDialog();
-
-		bool update;
 
 	private:
 		Ui::ConstraintsDialog ui;
-		QString m_schema;
-		QString m_table;
 
-		bool execSql(const QString & statement, const QString & message);
 		void doRollback(QString message);
 
     private slots:

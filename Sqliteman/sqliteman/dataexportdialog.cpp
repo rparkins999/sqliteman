@@ -14,7 +14,6 @@ for which a new license (GPL+exception) is in place.
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressDialog>
-#include <QSettings>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QSqlQueryModel>
@@ -37,8 +36,6 @@ DataExportDialog::DataExportDialog(DataViewer * parent, const QString & tableNam
 		m_tableName(tableName),
 		file(0)
 {
-	Preferences * prefs = Preferences::instance();
-
 	QAbstractItemModel * data = parent->tableData();
 	m_data = qobject_cast<QSqlQueryModel *>(data);
 	m_table = qobject_cast<SqlTableModel *>(data);
@@ -46,10 +43,8 @@ DataExportDialog::DataExportDialog(DataViewer * parent, const QString & tableNam
 	cancelled = false;
 
 	ui.setupUi(this);
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("dataexport/height", QVariant(500)).toInt();
-	int ww = settings.value("dataexport/width", QVariant(600)).toInt();
-	resize(ww, hh);
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->dataexportWidth(), prefs->dataexportHeight());
 	formats[tr("Comma Separated Values (CSV)")] = "csv";
 	formats[tr("HTML")] = "html";
 	formats[tr("MS Excel XML (XLS)")] = "xls";
@@ -99,9 +94,9 @@ DataExportDialog::DataExportDialog(DataViewer * parent, const QString & tableNam
 
 DataExportDialog::~DataExportDialog()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-    settings.setValue("dataexport/height", QVariant(height()));
-    settings.setValue("dataexport/width", QVariant(width()));
+    Preferences * prefs = Preferences::instance();
+    prefs->setdataexportHeight(height());
+    prefs->setdataexportWidth(width());
 }
 
 void DataExportDialog::slotAccepted()

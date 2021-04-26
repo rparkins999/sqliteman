@@ -8,25 +8,22 @@ for which a new license (GPL+exception) is in place.
 #include <QPushButton>
 #include <QSqlQuery>
 #include <QSqlError>
-#include <QSettings>
 #include <QtDebug>
 
 #include "alterviewdialog.h"
 #include "database.h"
+#include "preferences.h"
 #include "utils.h"
 
 
 AlterViewDialog::AlterViewDialog(const QString & name, const QString & schema,
 								 LiteManWindow * parent)
-	: QDialog(parent),
-	update(false)
+	: DialogCommon(parent)
 {
 	ui.setupUi(this);
-	ui.resultEdit->setHtml("");
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("alterview/height", QVariant(500)).toInt();
-	int ww = settings.value("alterview/width", QVariant(600)).toInt();
-	resize(ww, hh);
+    setResultEdit(ui.resultEdit);
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->alterviewWidth(), prefs->alterviewHeight());
 	ui.databaseCombo->addItem(schema);
 	ui.nameEdit->setText(name);
 	ui.databaseCombo->setDisabled(true);
@@ -63,9 +60,9 @@ AlterViewDialog::AlterViewDialog(const QString & name, const QString & schema,
 
 AlterViewDialog::~AlterViewDialog()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-    settings.setValue("alterview/height", QVariant(height()));
-    settings.setValue("alterview/width", QVariant(width()));
+    Preferences * prefs = Preferences::instance();
+    prefs->setalterviewHeight(height());
+    prefs->setalterviewWidth(width());
 }
 
 void AlterViewDialog::createButton_clicked()
@@ -107,7 +104,7 @@ void AlterViewDialog::createButton_clicked()
 		QSqlQuery q3("ROLLBACK TO ALTER_VIEW;", db);
 		if (q3.lastError().isValid())
 		{
-			ui.resultEdit->append(tr("Cannot roll back after error"));
+			resultAppend(tr("Cannot roll back after error"));
 		}
 		else
 		{
@@ -121,7 +118,7 @@ void AlterViewDialog::createButton_clicked()
 			"Database may be left with a pending savepoint."));
 		return;
 	}
-	update = true;
+	m_updated = true;
 
 	sql = QString("CREATE VIEW ")
 		  + Utils::q(ui.databaseCombo->currentText())
@@ -168,22 +165,4 @@ void AlterViewDialog::createButton_clicked()
 		return;
 	}
 	resultAppend(tr("View altered successfully"));
-}
-
-void AlterViewDialog::resultAppend(QString text)
-{
-	ui.resultEdit->append(text);
-	int lh = QFontMetrics(ui.resultEdit->currentFont()).lineSpacing();
-	QTextDocument * doc = ui.resultEdit->document();
-	if (doc)
-	{
-		int h = (int)(doc->size().height());
-		if (h < lh * 2) { h = lh * 2 + lh / 2; }
-		ui.resultEdit->setFixedHeight(h + lh / 2);
-	}
-	else
-	{
-		int lines = text.split("<br/>").count() + 1;
-		ui.resultEdit->setFixedHeight(lh * lines);
-	}
 }

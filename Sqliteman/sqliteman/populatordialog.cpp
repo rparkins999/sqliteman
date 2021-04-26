@@ -9,28 +9,27 @@ for which a new license (GPL+exception) is in place.
 #include <QHeaderView>
 #include <QDateTime>
 #include <QMessageBox>
-#include <QSettings>
 #include <math.h>
 
 #include "populatordialog.h"
 #include "populatorcolumnwidget.h"
+#include "preferences.h"
 #include "utils.h"
 
-PopulatorDialog::PopulatorDialog(QWidget * parent, const QString & table, const QString & schema)
-	: QDialog(parent),
-	  m_schema(schema),
-	  m_table(table)
+PopulatorDialog::PopulatorDialog(
+    LiteManWindow * parent, const QString & table, const QString & schema)
+	: DialogCommon(parent)
 {
-	updated = false;
+	m_databaseName = schema;
+	m_tableName = table;
 	setupUi(this);
-	resultEdit->setHtml("");
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("populator/height", QVariant(500)).toInt();
-	int ww = settings.value("populator/width", QVariant(600)).toInt();
-	resize(ww, hh);
+	setResultEdit(resultEdit);
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->populatorWidth(), prefs->populatorHeight());
 	columnTable->horizontalHeader()->setStretchLastSection(true);
 
-	QList<FieldInfo> fields = Database::tableFields(m_table, m_schema);
+	QList<FieldInfo> fields =
+        Database::tableFields(m_tableName, m_databaseName);
 	columnTable->clearContents();
 	columnTable->setRowCount(fields.size());
 	QRegExp sizeExp("\\(\\d+\\)");
@@ -76,9 +75,9 @@ PopulatorDialog::PopulatorDialog(QWidget * parent, const QString & table, const 
 
 PopulatorDialog::~PopulatorDialog()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-    settings.setValue("populator/height", QVariant(height()));
-    settings.setValue("populator/width", QVariant(width()));
+    Preferences * prefs = Preferences::instance();
+    prefs->setpopulatorHeight(height());
+    prefs->setpopulatorWidth(width());
 }
 
 void PopulatorDialog::spinBox_valueChanged(int)
@@ -107,9 +106,9 @@ void PopulatorDialog::checkActionTypes()
 qlonglong PopulatorDialog::tableRowCount()
 {
 	QString sql = QString("select count(1) from ")
-				  + Utils::q(m_schema)
+				  + Utils::q(m_databaseName)
 				  + "."
-				  + Utils::q(m_table)
+				  + Utils::q(m_tableName)
 				  + ";";
 	QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
 	if (!execSql(sql, tr("Cannot get statistics for table")))
@@ -197,9 +196,9 @@ void PopulatorDialog::populateButton_clicked()
 		QString sql = QString("INSERT ")
 					  + (constraintBox->isChecked() ? "OR IGNORE" : "")
 					  + " INTO "
-					  + Utils::q(m_schema)
+					  + Utils::q(m_databaseName)
 					  + "."
-					  + Utils::q(m_table)
+					  + Utils::q(m_tableName)
 					  + " ("
 					  + sqlColumns()
 					  + ") VALUES ("
@@ -213,11 +212,11 @@ void PopulatorDialog::populateButton_clicked()
 							  + ":<br/><span style=\" color:#ff0000;\">"
 							  + query.lastError().text()
 							  + "<br/></span>" + tr("using sql statement:")
-							  + "<br/><tt>" + sql;
+							  + "<br/><code>" + sql;
 			resultAppend(errtext);
 			if (!constraintBox->isChecked()) { break; }
 		}
-		else { updated = true; }
+		else { m_updated = true; }
 	}
 
 	if (!execSql("RELEASE POPULATOR;", tr("Cannot release savepoint")))
@@ -227,7 +226,7 @@ void PopulatorDialog::populateButton_clicked()
 			resultAppend(tr(
 				"Database may be left with a pending savepoint."));
 		}
-		updated = false;
+		m_updated = false;
 		return;
 	}
 
@@ -242,9 +241,9 @@ QVariantList PopulatorDialog::autoValues(Populator::PopColumn c)
 	QString sql = QString("select max(")
 				  + Utils::q(c.name)
 				  + ") from "
-				  + Utils::q(m_schema)
+				  + Utils::q(m_databaseName)
 				  + "."
-				  + Utils::q(m_table)
+				  + Utils::q(m_tableName)
 				  + ";";
 
 	QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
@@ -255,7 +254,7 @@ QVariantList PopulatorDialog::autoValues(Populator::PopColumn c)
 						  + ":<br/><span style=\" color:#ff0000;\">"
 						  + query.lastError().text()
 						  + "<br/></span>" + tr("using sql statement:")
-						  + "<br/><tt>" + sql;
+						  + "<br/><code>" + sql;
 		resultAppend(errtext);
 		return QVariantList();
 	}
@@ -375,38 +374,4 @@ QVariantList PopulatorDialog::dateValues(Populator::PopColumn c)
 	} // for
 
 	return ret;
-}
-
-bool PopulatorDialog::execSql(const QString & statement, const QString & message)
-{
-	QSqlQuery query(statement, QSqlDatabase::database(SESSION_NAME));
-	if(query.lastError().isValid())
-	{
-		QString errtext = message
-						  + ":<br/><span style=\" color:#ff0000;\">"
-						  + query.lastError().text()
-						  + "<br/></span>" + tr("using sql statement:")
-						  + "<br/><tt>" + statement;
-		resultAppend(errtext);
-		return false;
-	}
-	return true;
-}
-
-void PopulatorDialog::resultAppend(QString text)
-{
-	resultEdit->append(text);
-	int lh = QFontMetrics(resultEdit->currentFont()).lineSpacing();
-	QTextDocument * doc = resultEdit->document();
-	if (doc)
-	{
-		int h = (int)(doc->size().height());
-		if (h < lh * 2) { h = lh * 2 + lh / 2; }
-		resultEdit->setFixedHeight(h + lh / 2);
-	}
-	else
-	{
-		int lines = text.split("<br/>").count() + 1;
-		resultEdit->setFixedHeight(lh * lines);
-	}
 }

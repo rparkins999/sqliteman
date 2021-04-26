@@ -12,8 +12,6 @@ for which a new license (GPL+exception) is in place.
 	multiple collate are possible even with different collation names
 */
 
-#include <QtCore/qmath.h>
-#include <QCheckBox>
 #include <QMessageBox>
 #include <QSqlQuery>
 #include <QSqlError>
@@ -25,7 +23,9 @@ for which a new license (GPL+exception) is in place.
 #include "altertabledialog.h"
 #include "litemanwindow.h"
 #include "mylineedit.h"
+#include "preferences.h"
 #include "sqlparser.h"
+#include "tabletree.h"
 #include "utils.h"
 
 namespace {
@@ -34,45 +34,42 @@ namespace {
     static int createCount = 0;
 }
 
-void AlterTableDialog::addField(QString oldName, QString oldType,
-								int x, QString oldDefault)
+void AlterTableDialog::addField(FieldInfo field, bool isNew)
 {
 	int i = ui.columnTable->rowCount();
-	TableEditorDialog::addField(oldName, oldType, x, oldDefault);
-	if (i > 0)
-	{
-		ui.columnTable->item(i - 1, 5)->setFlags(Qt::ItemIsEnabled);
-	}
+	TableEditorDialog::addField(field);
 	QTableWidgetItem * it = new QTableWidgetItem();
 	it->setIcon(Utils::getIcon("move-up.png"));
 	it->setToolTip("move up");
-	it->setFlags((i == 0) ? Qt::NoItemFlags : Qt::ItemIsEnabled);
 	ui.columnTable->setItem(i, 4, it);
 	it = new QTableWidgetItem();
 	it->setIcon(Utils::getIcon("move-down.png"));
 	it->setToolTip("move down");
-	it->setFlags(Qt::NoItemFlags);
 	ui.columnTable->setItem(i, 5, it);
 	it =new QTableWidgetItem();
 	it->setIcon(Utils::getIcon("delete.png"));
 	it->setToolTip("remove");
-	it->setFlags(Qt::ItemIsEnabled);
 	ui.columnTable->setItem(i, 6, it);
 	m_isIndexed.append(false);
-	m_oldColumn.append(-1);
+	m_oldColumn.append(isNew ? -1 : i);
 }
 
 void AlterTableDialog::addField()
 {
-	addField(QString(), QString(), 0, QString());
+    FieldInfo field;
+    field.name = QString();
+	addField(field, true);
+    updateButtons();
+    fudge();
 }
 
 void AlterTableDialog::resetClicked()
 {
     ui.resultEdit->clear();
+    m_originalName = Utils::q(m_databaseName) + "." + Utils::q(m_tableName);
     if (m_item == NULL) {
         // we've done a rebuildTableTree(), find the item again
-        m_item = m_creator->findTreeItem(m_dbName, m_tableName);
+        m_item = m_creator->findTreeItem(m_databaseName, m_tableName);
         if (m_item == NULL) { reject(); } // can't continue this dialog
     }
 	// Initialize fields
@@ -82,19 +79,13 @@ void AlterTableDialog::resetClicked()
 	ui.columnTable->setRowCount(0);
 	int n = m_fields.size();
 	m_isIndexed.fill(false, n);
-	m_oldColumn.resize(n);
+	m_oldColumn.resize(0);
 	int i;
 	for (i = 0; i < n; i++)
 	{
-		m_oldColumn[i] = i;
-		QString name(m_fields[i].name);
-		int x = m_fields[i].isAutoIncrement ? 3
-				: ( m_fields[i].isPartOfPrimaryKey ? 2
-					: (m_fields[i].isNotNull ? 1 : 0));
-
-		addField(name, m_fields[i].type, x,
-				 SqlParser::defaultToken(m_fields[i]));
+		addField(m_fields[i], false);
 	}
+	updateButtons();
 
 	// obtain all indexed columns for DROP COLUMN checks
 	QMap<QString,QStringList> columnIndexMap;
@@ -128,78 +119,110 @@ AlterTableDialog::AlterTableDialog(LiteManWindow * parent,
 								   QTreeWidgetItem * item,
 								   const bool isActive)
 	: TableEditorDialog(parent),
-	m_item(item), m_creator(parent)
+	  m_item(item)
 {
-	m_alteringActive = isActive;
-	ui.removeButton->setEnabled(false);
-	ui.removeButton->hide();
+    ui.gridLayout->removeItem(ui.onTableBox);
+    delete ui.onTableBox;
+    delete ui.onTableLabel;
+    delete ui.tableCombo;
 	setWindowTitle(tr("Alter Table"));
+    m_tableName = m_item->text(0);
 	m_tableOrView = "TABLE";
 	m_dubious = false;
-	m_oldWidget = ui.designTab;
-    m_tableName = m_item->text(0);
-
-	m_alterButton =
-		ui.buttonBox->addButton("Alte&r", QDialogButtonBox::ApplyRole);
-	m_alterButton->setDisabled(true);
-	connect(m_alterButton, SIGNAL(clicked(bool)),
-			this, SLOT(alterButton_clicked()));
+	m_alteringActive = isActive;
+	ui.databaseCombo->addItems(m_creator->visibleDatabases());
+    m_noTemp = (ui.databaseCombo->findText("temp", Qt::MatchFixedString) < 0);
+    if (m_noTemp) { ui.databaseCombo->addItem("temp"); }
+    int n = ui.databaseCombo->count();
+    int i;
+    bool databaseMayChange;
+    if (item) {
+        m_databaseName = item->text(1);
+		i = ui.databaseCombo->findText(m_databaseName, Qt::MatchFixedString);
+        if (i < 0) {
+            if (n > 0) {
+                i = 0;
+                m_databaseName = ui.databaseCombo->itemText(0);
+                databaseMayChange = true;
+            } else {
+                m_databaseName.clear();
+                databaseMayChange = false;
+            }
+        } else {
+            databaseMayChange = m_noTemp;
+        }
+    } else {
+        i = 0;
+        m_databaseName = ui.databaseCombo->itemText(0);
+        databaseMayChange = true;
+    }
+    if (item->type() == TableTree::TableType) {
+        m_tableName = item->text(0);
+        databaseMayChange = false;
+    }
+    ui.databaseCombo->setCurrentIndex(i);
+    databaseMayChange &= (n > 1);
+    if (databaseMayChange) {
+        connect(ui.databaseCombo, SIGNAL(currentIndexChanged(const QString &)),
+                this, SLOT(databaseChanged(const QString &)));
+    }
+    ui.databaseCombo->setEnabled(databaseMayChange);
+	ui.nameEdit->setText(m_tableName);
+    ui.nameEdit->setToolTip(QString("Original name: ") + m_tableName);
 	QPushButton * resetButton = new QPushButton("Reset", this);
-	connect(resetButton, SIGNAL(clicked(bool)), this, SLOT(resetClicked()));
 	ui.tabWidget->setCornerWidget(resetButton, Qt::TopRightCorner);
-
-	// item must be valid and a table, otherwise we don't get called
-    m_originalName = Utils::q(m_tableName)
-		   + "."
-		   + Utils::q(m_item->text(0));
-	ui.nameEdit->setText(m_item->text(0));
-	int i = ui.databaseCombo->findText(m_tableName,
-		Qt::MatchFixedString | Qt::MatchCaseSensitive);
-	if (i >= 0)
-	{
-		ui.databaseCombo->setCurrentIndex(i);
-		ui.databaseCombo->setDisabled(true);
-	}
-
+	connect(resetButton, SIGNAL(clicked(bool)), this, SLOT(resetClicked()));
+    disconnect(ui.removeButton, 0, 0, 0);
+	ui.removeButton->setEnabled(false);
+	ui.removeButton->hide();
 	ui.tabWidget->removeTab(2);
 	ui.tabWidget->removeTab(1);
-	m_tabWidgetIndex = ui.tabWidget->currentIndex();
-	ui.adviceLabel->hide();
-
+    fixTabWidget();
 	ui.columnTable->insertColumn(4);
 	ui.columnTable->setHorizontalHeaderItem(4, new QTableWidgetItem());
 	ui.columnTable->insertColumn(5);
 	ui.columnTable->setHorizontalHeaderItem(5, new QTableWidgetItem());
 	ui.columnTable->insertColumn(6);
 	ui.columnTable->setHorizontalHeaderItem(6, new QTableWidgetItem());
-
 	connect(ui.columnTable, SIGNAL(cellClicked(int, int)),
 			this, SLOT(cellClicked(int,int)));
-
+	ui.adviceLabel->hide();
+	m_alterButton =
+		ui.buttonBox->addButton("Alte&r", QDialogButtonBox::ApplyRole);
+	m_alterButton->setDisabled(true);
+	connect(m_alterButton, SIGNAL(clicked(bool)),
+			this, SLOT(alterButton_clicked()));
 	resetClicked();
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->altertableWidth(), prefs->altertableHeight());
+	Utils::setColumnWidths(ui.columnTable);
 }
 
-// on success, return true
-// on fail, print message if non-null, and return false
-bool AlterTableDialog::execSql(const QString & statement,
-							   const QString & message)
+AlterTableDialog::~AlterTableDialog()
 {
-	QSqlQuery query(statement, QSqlDatabase::database(SESSION_NAME));
-	if (query.lastError().isValid())
-	{
-        if (!message.isNull()) {
-            QString errtext = message
-                            + ":<br/><span style=\" color:#ff0000;\">"
-                            + query.lastError().text()
-                            + "<br/></span>" + tr("using sql statement:")
-                            + "<br/><tt>" + statement;
-            resultAppend(errtext);
-        }
-        query.clear();
-		return false;
-	}
-	query.clear();
-	return true;
+    Preferences * prefs = Preferences::instance();
+    prefs->setaltertableHeight(height());
+    prefs->setaltertableWidth(width());
+}
+
+// Called when
+// all old rows have been added by resetClicked(), or
+// a single new row has been added by the add button, or
+// a row has been moved up or down or removed.
+void AlterTableDialog::updateButtons()
+{
+    int n = ui.columnTable->rowCount();
+    for (int i = 0; i < n; ++i) {
+        // move up is enabled except for first row
+        ui.columnTable->item(i, 4)->setFlags(
+            (i == 0) ? Qt::NoItemFlags : Qt::ItemIsEnabled);
+        // move down is enabled except for last row
+        ui.columnTable->item(i, 5)->setFlags(
+            (i == n - 1) ? Qt::NoItemFlags : Qt::ItemIsEnabled);
+        // remove is enabled if there is more than one row
+        ui.columnTable->item(i, 6)->setFlags(
+            (n <= 1) ? Qt::NoItemFlags : Qt::ItemIsEnabled);
+    }
 }
 
 bool AlterTableDialog::doRollback(QString message)
@@ -382,21 +405,7 @@ bool AlterTableDialog::checkColumn(int i, QString cname,
 	int j = m_oldColumn[i];
 	if (j >= 0)
 	{
-		bool useNull = m_prefs->nullHighlight();
-		QString nullText = m_prefs->nullHighlightText();
-
 		QString ftype(m_fields[j].type);
-		if (ftype.isEmpty())
-		{
-			if (useNull && !nullText.isEmpty())
-			{
-				ftype = nullText;
-			}
-			else
-			{
-				ftype = "NULL";
-			}
-		}
 		QString fextra;
 		if (m_fields[j].isAutoIncrement)
 		{
@@ -420,93 +429,15 @@ bool AlterTableDialog::checkColumn(int i, QString cname,
 			qobject_cast<QLineEdit*>(ui.columnTable->cellWidget(i, 3));
 		if (   (j != i)
 			|| (cname != m_fields[j].name)
-			|| (ctype != ftype)
+			|| ((ctype != ftype) && !(ctype.isEmpty() && ftype.isEmpty()))
 			|| (fextra != cextra)
 			|| (defval->text() != SqlParser::defaultToken(m_fields[j])))
 		{
 			m_altered = true;
 		}
-	}
-	else
-	{
-		m_altered = true;
-	}
+	} else { m_altered = true; }
 	return false;
 }
-
-// special version for column with only icons
-void AlterTableDialog::resizeTable()
-{
-	QTableWidget * tv = ui.columnTable;
-	int widthView = tv->viewport()->width();
-	int widthLeft = widthView;
-	int widthUsed = 0;
-	int columns = tv->horizontalHeader()->count();
-	int columnsLeft = columns;
-	QVector<int> wantedWidths(columns);
-	QVector<int> gotWidths(columns);
-	tv->resizeColumnsToContents();
-	int i;
-	for (i = 0; i < columns; ++i)
-	{
-		if (i < columns - 3)
-		{
-			wantedWidths[i] = tv->columnWidth(i);
-		}
-		else
-		{
-			wantedWidths[i] = 28;
-		}
-		gotWidths[i] = 0;
-	}
-	i = 0;
-	/* First give all "small" columns what they want. */
-	while (i < columns)
-	{
-		int w = wantedWidths[i];
-		if ((gotWidths[i] == 0) && (w <= widthLeft / columnsLeft ))
-		{
-			gotWidths[i] = w;
-			widthLeft -= w;
-			widthUsed += w;
-			columnsLeft -= 1;
-			i = 0;
-			continue;
-		}
-		++i;
-	}
-	/* Now allocate to other columns, giving smaller ones a larger proportion
-	 * of what they want;
-	 */
-	for (i = 0; i < columns; ++i)
-	{
-		if (gotWidths[i] == 0)
-		{
-			int w = (int)qSqrt((qreal)(
-				wantedWidths[i] * widthLeft / columnsLeft));
-			gotWidths[i] = w;
-			widthUsed += w;
-		}
-	}
-	/* If there is space left, make all columns proportionately wider to fill
-	 * it.
-	 */
-	if (widthUsed < widthView)
-	{
-		for (i = 0; i < columns; ++i)
-		{
-			tv->setColumnWidth(i, gotWidths[i] * widthView / widthUsed);
-		}
-	}
-	else
-	{
-		for (i = 0; i < columns; ++i)
-		{
-			tv->setColumnWidth(i, gotWidths[i]);
-		}
-	}
-}
-
 void AlterTableDialog::swap(int i, int j)
 {
 	// Much of this unpleasantness is caused by the lack of a
@@ -578,6 +509,7 @@ void AlterTableDialog::swap(int i, int j)
 	k = m_oldColumn[i];
 	m_oldColumn[i] = m_oldColumn[j];
 	m_oldColumn[j] = k;
+    updateButtons();
 	checkChanges();
 }
 
@@ -602,14 +534,16 @@ void AlterTableDialog::drop(int row)
 	m_oldColumn.remove(row);
 	ui.columnTable->setCurrentCell(row, 0);
 	removeField();
-	ui.columnTable->item(0, 4)->setFlags(0);
-	ui.columnTable->item(ui.columnTable->rowCount() - 1, 5)->setFlags(0);
+    updateButtons();
 	m_dropped = true;
 	checkChanges();
 }
 
 void AlterTableDialog::cellClicked(int row, int column)
 {
+    // The tests on "n" and "row" here should be unnecessary because we
+    // disable the button if its action isn't allowed,
+    // but we check anyway just to be on the safe side.
 	int n = ui.columnTable->rowCount();
 	switch (column)
 	{
@@ -620,7 +554,7 @@ void AlterTableDialog::cellClicked(int row, int column)
 			if (row < n - 1) { swap(row, row + 1); }
 			break;
 		case 6: // delete
-			drop(row);
+			if (n > 1) { drop(row); }
 			break;
 		default: return; // cell handles its editing
 	}
@@ -639,7 +573,7 @@ void AlterTableDialog::restorePragmas() {
 // but it is of course empty.
 // Creating a view referencing a column that does not exist in a table that
 // does exist creates the view, but it is also empty.
-// Subsequently creating the missing table or column chnages the view
+// Subsequently creating the missing table or column changes the view
 // to show the data selected.
 // Note however that sqliteman's view creator GUI quotes column names and
 // a quoted column name that does not match a column name in the referenced
@@ -673,8 +607,11 @@ bool AlterTableDialog::doit(QString newTableName) {
 
 	// Here we have column changes to make.
 	// Create the new table
+	QString sql("CREATE TABLE ");
+    sql.append(Utils::q(m_databaseName)).append(".")
+       .append(Utils::q(newTableName)).append(" (")
+       .append(getSQLfromDesign());
 	QString message(tr("Cannot create table ") + newTableName);
-	QString sql(getFullName() + " ( " + getSQLfromGUI());
 	if (!execSql(sql, message))
 	{
 		return true;
@@ -710,6 +647,7 @@ bool AlterTableDialog::doit(QString newTableName) {
 			columnMap.insert(m_fields[j].name, nameItem->text());
 		}
 	}
+    sql = "DROP TABLE ";
 	if (!insert.isEmpty())
 	{
 		select += " FROM "
@@ -721,7 +659,6 @@ bool AlterTableDialog::doit(QString newTableName) {
 				  + newTableName;
 		if (!execSql(insert + select, message))
 		{
-            sql = "DROP TABLE ";
             sql += Utils::q(m_item->text(1))
                 + "."
                 + Utils::q(newTableName)
@@ -734,7 +671,6 @@ bool AlterTableDialog::doit(QString newTableName) {
 	}
 
 	// drop old table
-	sql = "DROP TABLE ";
 	sql += Utils::q(m_item->text(1))
 		   + "."
 		   + Utils::q(m_tableName)
@@ -776,25 +712,25 @@ bool AlterTableDialog::doit(QString newTableName) {
 }
 
 // User clicked on "Alter", go ahead and do it
-// FIXME Use ALTER TABLE REANME COLUMN where appropriate
+// FIXME Use ALTER TABLE RENAME COLUMN where appropriate
 void AlterTableDialog::alterButton_clicked()
 {
     ui.resultEdit->clear();
     // If we're altering the active table and there are unsaved changes,
     // invite the user to save, discard, or abandon the alter table action.
-	if (m_alteringActive && !(creator && creator->checkForPending()))
+	if (m_alteringActive && !(m_creator && m_creator->checkForPending()))
 	{
 		return;
 	}
 
     if (m_item == NULL) {
         // we've done a rebuildTableTree(), find the item again
-        m_item = m_creator->findTreeItem(m_dbName, m_tableName);
+        m_item = m_creator->findTreeItem(m_databaseName, m_tableName);
         if (m_item == NULL) { reject(); } // can't continue this dialog
     }
 	QString newTableName(ui.nameEdit->text());
 	m_tableName = m_item->text(0);
-    m_dbName = m_item->text(1);
+    m_databaseName = m_item->text(1);
 	if (m_dubious)
 	{
 		int ret = QMessageBox::question(this, "Sqliteman",
@@ -850,7 +786,7 @@ void AlterTableDialog::alterButton_clicked()
 		{
 			return;
 		}
-		updated = true;
+		m_updated = true;
         m_tableName = newTableName;
 
         // if there is nothing else to do, we're done.
@@ -899,22 +835,25 @@ void AlterTableDialog::alterButton_clicked()
         // reverse the rename if we did it
         renameTable(savePointTableName, m_item->text(0));
     } else {
-        updated = true;
+        m_updated = true;
         m_item->setText(0, m_tableName);
         emit rebuildTableTree(ui.databaseCombo->currentText());
         m_item = NULL;
     }
-    checkChanges();
+    resetClicked();
     resultAppend(tr("Table successfully altered"));
 }
 
 void AlterTableDialog::checkChanges()
 {
-	m_dubious = false;
+	m_dubious = false; // true if some column has an empty name
 	QString newName(ui.nameEdit->text());
 	m_altered = m_hadRowid == ui.withoutRowid->isChecked();
 	m_altered |= m_dropped;
-	bool ok = checkOk(newName); // side-effect on m_dubious
+	bool ok = checkOk(); // side-effect on m_dubious and m_altered
+    // Alter button is enabled if the current table definition is valid
+    // and something has changed,
+    // even if newName differs from m_tableName in case only.
 	m_alterButton->setEnabled(   ok
 							  && (   m_altered
 								  || (newName != m_tableName)));

@@ -16,7 +16,6 @@ for which a new license (GPL+exception) is in place.
 #include <QLocale>
 #include <QMessageBox>
 #include <QResizeEvent>
-#include <QSettings>
 #include <QSqlField>
 #include <QSqlQuery>
 #include <QSqlRecord>
@@ -26,12 +25,12 @@ for which a new license (GPL+exception) is in place.
 #include "database.h"
 #include "dataexportdialog.h"
 #include "dataviewer.h"
+#include "finddialog.h"
 #include "multieditdialog.h"
 #include "preferences.h"
 #include "sqltableview.h"
 #include "sqlmodels.h"
 #include "sqldelegate.h"
-#include "ui_finddialog.h"
 #include "utils.h"
 
 // private methods
@@ -186,7 +185,7 @@ void DataViewer::findNext(int row)
 					ui.itemView->setCurrentIndex(row, column);
 				}
 				updateButtons();
-				ui.statusText->hide();
+				showStatusText(false);
 				QApplication::restoreOverrideCursor();
 				return;
 			}
@@ -203,6 +202,7 @@ void DataViewer::removeFinder()
 		m_doneFindAll = false;
 		m_finder->close();
 		m_finder = 0;
+        showStatusText(false);
 	}
 }
 
@@ -556,11 +556,8 @@ void DataViewer::openStandaloneWindow()
 #endif
 	SqlQueryModel *qm = new SqlQueryModel(w);
 	w->setAttribute(Qt::WA_DeleteOnClose);
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("dataviewer/height", QVariant(607)).toInt();
-	int ww = settings.value("dataviewer/width", QVariant(819)).toInt();
-	w->resize(ww, hh);
-	
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->dataviewerWidth(), prefs->dataviewerHeight());	
 
 	//! TODO: change setWindowTitle() to the unified QString().arg() sequence after string unfreezing
 	if (tm)
@@ -943,12 +940,12 @@ DataViewer::~DataViewer()
 	removeFinder();
 	if (!isTopLevel)
 	{
-		QSettings settings("yarpen.cz", "sqliteman");
-	    settings.setValue("dataviewer/height", QVariant(height()));
-	    settings.setValue("dataviewer/width", QVariant(width()));
+        Preferences * prefs = Preferences::instance();
+        prefs->setdataviewerHeight(height());
+        prefs->setdataviewerWidth(width());
 	}
 	freeResources( ui.tableView->model()); // avoid memory leak of model
-	delete ui.statusText->document();
+	showStatusText(false);
 }
 
 void DataViewer::setNotPending()
@@ -1065,20 +1062,10 @@ void DataViewer::setBuiltQuery(bool value)
 void DataViewer::setStatusText(const QString & text)
 {
 	ui.statusText->setHtml(text);
-	int lh = QFontMetrics(ui.statusText->currentFont()).lineSpacing();
-	QTextDocument * doc = ui.statusText->document();
-	if (doc)
-	{
-		int h = (int)(doc->size().height());
-		if (h < lh * 2) { h = lh * 2 + lh / 2; }
-		ui.statusText->setFixedHeight(h + lh / 2);
-	}
-	else
-	{
-		int lines = text.split("<br/>").count() + 1;
-		ui.statusText->setFixedHeight(lh * lines);
-	}
-	showStatusText(true);
+	ui.statusText->show();
+    int height = ui.statusText->document()->size().height();
+    ui.statusText->setFixedHeight(height);
+    ui.splitterBlob->update();
 }
 
 void DataViewer::removeErrorMessage()

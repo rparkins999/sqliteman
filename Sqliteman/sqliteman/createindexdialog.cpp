@@ -3,173 +3,383 @@ For general Sqliteman copyright and licensing information please refer
 to the COPYING file provided with the program. Following this notice may exist
 a copyright and/or license notice that predates the release of Sqliteman
 for which a new license (GPL+exception) is in place.
+
+New version built on tableeditordialog
 */
 
-#include <QPushButton>
+#include <QtCore/qmath.h>
+#include <QCheckBox>
 #include <QComboBox>
-#include <QSqlQuery>
-#include <QSqlError>
-#include <QSettings>
+#include <QHBoxLayout>
+#include <QGridLayout>
+#include <QLabel>
+#include <QLayoutItem>
+#include <QList>
+#include <QMessageBox>
+#include <QTreeWidgetItem>
+
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "createindexdialog.h"
-#include "database.h"
+#include "litemanwindow.h"
+#include "mylineedit.h"
+#include "preferences.h"
+#include "sqlparser.h"
 #include "utils.h"
 
-
-CreateIndexDialog::CreateIndexDialog(const QString & tabName,
-									 const QString & schema,
-									 LiteManWindow * parent)
-	: QDialog(parent), m_schema(schema), m_table(tabName)
+// overload slot collatorIndexChanged (different arguments)
+void CreateIndexDialog::collatorIndexChanged(int n, QComboBox * box)
 {
-	creator = parent;
-	update = false;
-	ui.setupUi(this);
-	QString s("Table Name: ");
-	ui.label->setText(s + m_schema + "." + m_table);
+    box->setToolTip(n ? "" : "default is BINARY");
+}
 
-	QList<FieldInfo> columns = Database::tableFields(m_table, m_schema);
-	ui.tableColumns->setRowCount(columns.size());
-	ui.createButton->setDisabled(true);
+void CreateIndexDialog::addField(FieldInfo f)
+{
+    int rc = ui.columnTable->rowCount();
+    ui.columnTable->setRowCount(rc + 1);
+    QTableWidgetItem * it = new QTableWidgetItem(f.name);
+    it->setFlags(Qt::ItemIsEnabled);
+    ui.columnTable->setItem(rc, 0, it);
+    QComboBox * collateBox = new QComboBox(this);
+    QStringList collators;
+    collators << "" << "BINARY" << "NOCASE" << "RTRIM" // built-in
+              << "LOCALIZED" << "LOCALIZED_CASE"; // sqliteman private
+    collateBox->addItems(collators);
+    int n = collateBox->findText(f.collator, Qt::MatchFixedString);
+    if (n < 0) { n = 0; }
+    collateBox->setCurrentIndex(n);
+    collatorIndexChanged(n, collateBox);
+    connect(collateBox, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(collatorIndexChanged(int)));
+    ui.columnTable->setCellWidget(rc, 1, collateBox);
+    QComboBox * ascDesc = new QComboBox(this);
+    QStringList ascDescStrings;
+    ascDescStrings << "ASC" << "DESC";
+    ascDesc->addItems(ascDescStrings);
+    ascDesc->setCurrentIndex(0);
+    ui.columnTable->setCellWidget(rc, 2, ascDesc);
+    it = new QTableWidgetItem();
+    it->setIcon(Utils::getIcon("move-up.png"));
+    it->setToolTip("move up");
+    it->setFlags((rc == 0) ? Qt::NoItemFlags : Qt::ItemIsEnabled);
+    ui.columnTable->setItem(rc, 3, it);
+    it = new QTableWidgetItem();
+    it->setIcon(Utils::getIcon("move-down.png"));
+    it->setToolTip("move down");
+    it->setFlags(Qt::NoItemFlags);
+    if (rc > 0) {
+        ui.columnTable->item(rc - 1, 4)->setFlags(Qt::ItemIsEnabled);
+    }
+    ui.columnTable->setItem(rc, 4, it);
+    it = new QTableWidgetItem();
+    it->setIcon(Utils::getIcon("delete.png"));
+    it->setToolTip("remove");
+    it->setFlags(Qt::ItemIsEnabled);
+    ui.columnTable->setItem(rc, 5, it);
+}
 
-	for(int i = 0; i < columns.size(); i++)
+void CreateIndexDialog::swap(int i, int j)
+{
+	// Much of this unpleasantness is caused by the lack of a
+	// QTableWidget::takeCellWidget() function.
+    QTableWidgetItem * iti = ui.columnTable->takeItem(i, 0);
+    QTableWidgetItem * itj = ui.columnTable->takeItem(j, 0);
+    ui.columnTable->setItem(i, 0, itj);
+    ui.columnTable->setItem(j, 0, iti);
+	QComboBox * iBox =
+		qobject_cast<QComboBox *>(ui.columnTable->cellWidget(i, 1));
+	QComboBox * jBox =
+		qobject_cast<QComboBox *>(ui.columnTable->cellWidget(j, 1));
+	QComboBox * iNewBox = new QComboBox(this);
+	QComboBox * jNewBox = new QComboBox(this);
+	int k;
+	for (k = 0; k < iBox->count(); ++k)
 	{
-		QTableWidgetItem * nameItem = new QTableWidgetItem(columns[i].name);
-		nameItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-		QTableWidgetItem * useItem = new QTableWidgetItem(QString::null);
-		useItem->setCheckState(Qt::Unchecked);
-
-		ui.tableColumns->setItem(i, 0, nameItem);
-		if (columns[i].isPartOfPrimaryKey)
-			nameItem->setIcon(Utils::getIcon("key.png"));
-
-		ui.tableColumns->setItem(i, 1, useItem);
-		QComboBox *asc = new QComboBox(this);
-		asc->addItems(QStringList() << "ASC" << "DESC");
-		asc->setEnabled(false);
-		ui.tableColumns->setCellWidget(i, 2, asc);
+		jNewBox->addItem(iBox->itemText(k));
 	}
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("createindex/height", QVariant(500)).toInt();
-	resize(width(), hh);
-
-	connect(ui.tableColumns, SIGNAL(itemChanged(QTableWidgetItem*)),
-			this, SLOT(tableColumns_itemChanged(QTableWidgetItem*)));
-	connect(ui.indexNameEdit, SIGNAL(textChanged(const QString&)),
-			this, SLOT(indexNameEdit_textChanged(const QString&)));
-	connect(ui.createButton, SIGNAL(clicked()), this, SLOT(createButton_clicked()));
-	resizeWanted = true;
+	for (k = 0; k < jBox->count(); ++k)
+	{
+		iNewBox->addItem(jBox->itemText(k));
+	}
+	k = iBox->currentIndex();
+	jNewBox->setCurrentIndex(k);
+    collatorIndexChanged(k, jNewBox);
+	jNewBox->setEditable(false);
+	connect(jNewBox, SIGNAL(currentIndexChanged(int)),
+			this, SLOT(collatorIndexChanged()));
+    k = jBox->currentIndex();
+	iNewBox->setCurrentIndex(k);
+    collatorIndexChanged(k, iNewBox);
+	iNewBox->setEditable(false);
+	connect(iNewBox, SIGNAL(currentIndexChanged(int)),
+			this, SLOT(collatorIndexChanged()));
+	ui.columnTable->setCellWidget(i, 1, iNewBox); // destroys old one
+	ui.columnTable->setCellWidget(j, 1, jNewBox); // destroys old one
+	iBox = qobject_cast<QComboBox *>(ui.columnTable->cellWidget(i, 2));
+	jBox = qobject_cast<QComboBox *>(ui.columnTable->cellWidget(j, 2));
+	iNewBox = new QComboBox(this);
+	jNewBox = new QComboBox(this);
+	for (k = 0; k < iBox->count(); ++k)
+	{
+		jNewBox->addItem(iBox->itemText(k));
+	}
+	for (k = 0; k < jBox->count(); ++k)
+	{
+		iNewBox->addItem(jBox->itemText(k));
+	}
+	jNewBox->setCurrentIndex(iBox->currentIndex());
+	iNewBox->setCurrentIndex(jBox->currentIndex());
+	jNewBox->setEditable(false);
+	iNewBox->setEditable(false);
+	ui.columnTable->setCellWidget(i, 2, iNewBox); // destroys old one
+	ui.columnTable->setCellWidget(j, 2, jNewBox); // destroys old one
+    iti = ui.columnTable->takeItem(i, 3);
+    itj = ui.columnTable->takeItem(j, 3);
+    iti->setFlags(i ? Qt::ItemIsEnabled: Qt::NoItemFlags);
+    itj->setFlags(j ? Qt::ItemIsEnabled: Qt::NoItemFlags);
+    ui.columnTable->setItem(i, 3, itj);
+    ui.columnTable->setItem(j, 3, iti);
+    k = ui.columnTable->rowCount() - 1;
+    iti = ui.columnTable->takeItem(i, 4);
+    itj = ui.columnTable->takeItem(j, 4);
+    iti->setFlags((i != k) ? Qt::ItemIsEnabled : Qt::NoItemFlags);
+    itj->setFlags((j != k) ? Qt::ItemIsEnabled : Qt::NoItemFlags);
+    ui.columnTable->setItem(i, 4, itj);
+    ui.columnTable->setItem(j, 4, iti);
 }
 
-CreateIndexDialog::~CreateIndexDialog()
+void CreateIndexDialog::drop(int row)
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-    settings.setValue("createindex/height", QVariant(height()));
+    if (ui.columnTable->rowCount() > 1) {
+        ui.columnTable->setCurrentCell(row, 0);
+        removeField();
+        ui.columnTable->item(0, 3)->setFlags(Qt::NoItemFlags);
+        ui.columnTable->item(ui.columnTable->rowCount() - 1, 4)
+            ->setFlags(Qt::NoItemFlags);
+        if (ui.columnTable->rowCount() <= 1) {
+            ui.columnTable->item(0, 5)->setFlags(Qt::NoItemFlags);
+        }
+    }
 }
 
+// private slots:
+void CreateIndexDialog::collatorIndexChanged(int n)
+{
+    collatorIndexChanged(n, (QComboBox *)sender());
+}
+
+void CreateIndexDialog::resetClicked()
+{
+    ui.resultEdit->clear();
+	// Initialize fields
+	SqlParser * parsed = Database::parseTable(m_tableName, m_databaseName);
+	QList<FieldInfo> fields = parsed->m_fields;
+	ui.columnTable->clearContents();
+	ui.columnTable->setRowCount(0);
+	int n = fields.size();
+	for (int i = 0; i < n; i++) { addField(fields[i]); }
+	delete parsed;
+    setFirstLine();
+	checkChanges();
+}
+
+void CreateIndexDialog::indexNameEdited(const QString & text)
+{
+    setFirstLine();
+    checkChanges();
+}
+
+void CreateIndexDialog::cellClicked(int row, int column)
+{
+	int n = ui.columnTable->rowCount();
+	switch (column)
+	{
+		case 3: // move up
+			if (row > 0) { swap(row - 1, row);  }
+			break;
+		case 4: // move down
+			if (row < n - 1) { swap(row, row + 1); }
+			break;
+		case 5: // delete
+			if (ui.columnTable->rowCount() > 1) { drop(row); }
+			break;
+		default: return; // cell handles its editing
+	}
+}
+
+// User clicked on "Create", go ahead and do it
 void CreateIndexDialog::createButton_clicked()
 {
 	ui.resultEdit->setHtml("");
-	if (creator && creator->checkForPending())
-	{
-		QStringList cols;
-		for (int i = 0; i < ui.tableColumns->rowCount(); ++i)
-		{
-			if (ui.tableColumns->item(i, 1)->checkState() == Qt::Checked)
-			{
-				QComboBox* cb;
-				cb = qobject_cast<QComboBox*>
-					(ui.tableColumns->cellWidget(i, 2));
-				cols.append(Utils::q(ui.tableColumns->item(i, 0)->text())
-							+ " " + cb->currentText());
-			}
-		}
-		QString sql = QString("create ")
-					  + (ui.uniqueCheckBox->isChecked() ? "unique" : "")
-					  + " index "
-					  + Utils::q(m_schema)
-					  + "."
-					  + Utils::q(ui.indexNameEdit->text())
-					  + " on "
-					  + Utils::q(m_table)
-					  + " ("
-					  + cols.join(", ")
-					  + ");";
+    if (execSql(getSql(), tr("Cannot create index"))) {
+        resultAppend(tr("Index created successfully"));
+    }
+}
 
-		QSqlQuery q(sql, QSqlDatabase::database(SESSION_NAME));
-		if(q.lastError().isValid())
-		{
-			resultAppend(tr("Error while creating index ")
-						 + ui.indexNameEdit->text()
-						 + ":<br/><span style=\" color:#ff0000;\">"
-						 + q.lastError().text()
-						 + "<br/></span>" + tr("using sql statement:")
-						 + "<br/><tt>" + sql);
-			return;
-		}
-		resultAppend(tr("Index created successfully."));
-		update = true;
+// protected:
+
+// implementation of virtual function from TableEditorDialog
+void CreateIndexDialog::setFirstLine(QWidget * w) {}
+
+void CreateIndexDialog::setFirstLine()
+{
+	QString s("CREATE ");
+    if (ui.withoutRowid->isChecked()) { s += "UNIQUE "; }
+    s = s + "INDEX "
+            + Utils::q(m_databaseName) + "." + Utils::q(ui.nameEdit->text())
+            + " ON " + Utils::q(m_tableName) + " (";
+	ui.firstLine->setText(s);
+}
+
+QString CreateIndexDialog::getSQLfromDesign()
+{
+    QString sql;
+    int n = ui.columnTable->rowCount();
+    for (int i = 0; i < n; ++i) {
+        QComboBox * collatorBox =
+            qobject_cast<QComboBox *>(ui.columnTable->cellWidget(i, 1));
+        QString collator = collatorBox->currentIndex() ?
+            Utils::q(collatorBox->currentText()) : "BINARY";
+        QComboBox * ascDesc =
+            qobject_cast<QComboBox *>(ui.columnTable->cellWidget(i, 2));
+        sql = sql + (i ? ",\n" : "")
+                  + Utils::q(ui.columnTable->item(i, 0)->text())
+                  + " COLLATE " + collator + " "
+                  + Utils::q(ascDesc->currentText());
+    }
+    return sql + ")" + ui.queryEditor->whereClause() + ";";
+}
+
+QString CreateIndexDialog::getSQLfromGUI(QWidget * w)
+{
+	if (w == ui.sqlTab) {
+		return ui.textEdit->text();
+	} else {
+		return getSQLfromDesign();
 	}
 }
 
-void CreateIndexDialog::tableColumns_itemChanged(QTableWidgetItem* item)
+// public:
+CreateIndexDialog::CreateIndexDialog(
+    const QString & tabName, const QString & schema, LiteManWindow * parent)
+	: TableEditorDialog(parent)
 {
-	int r = item->row();
-	Q_ASSERT_X(r != -1 , "CreateIndexDialog", "table item out of the table");
-	qobject_cast<QComboBox*>(ui.tableColumns->cellWidget(r, 2))->setEnabled(
-							 (item->checkState() == Qt::Checked));
-	checkToEnable();
+	setWindowTitle(tr("Create Index"));
+    if (schema.isEmpty()) {
+        ui.databaseCombo->addItems(m_creator->visibleDatabases());
+        m_noTemp = (ui.databaseCombo->findText(
+            "temp", Qt::MatchFixedString) < 0);
+        if (m_noTemp) { ui.databaseCombo->addItem("temp"); }
+        ui.databaseCombo->setCurrentIndex(0);
+        if (ui.databaseCombo->count() > 1) {
+            connect(
+                ui.databaseCombo, SIGNAL(currentIndexChanged(const QString &)),
+                this, SLOT(databaseChanged(const QString &)));
+            ui.databaseCombo->setEnabled(true);
+        } else { ui.databaseCombo->setEnabled(false); }
+        m_databaseName = ui.databaseCombo->itemText(0);
+    } else {
+        ui.databaseCombo->addItem(schema);
+        ui.databaseCombo->setEnabled(false);
+        m_databaseName = schema;
+    }
+    ui.labelTable->setText("Index name");
+	connect(ui.nameEdit, SIGNAL(textEdited(QString)),
+            this, SLOT(indexNameEdited(QString)));
+    if (tabName.isEmpty()) {
+        ui.tableCombo->addItems(
+            Database::getObjects("table", m_databaseName).keys());
+        ui.tableCombo->setCurrentIndex(0);
+        if (ui.tableCombo->count() > 1) {
+            connect(ui.tableCombo, SIGNAL(currentIndexChanged(const QString &)),
+                this, SLOT(tableChanged(const QString &)));
+            ui.tableCombo->setEnabled(true);
+        } else { ui.tableCombo->setEnabled(false); }
+        m_tableName = ui.tableCombo->itemText(0);
+    } else {
+        ui.tableCombo->addItem(tabName);
+        ui.tableCombo->setEnabled(false);
+        m_tableName = tabName;
+    }
+    ui.tableCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    m_tableOrView = "INDEX";
+    ui.tabWidget->setTabText(0, "Column");
+    ui.tabWidget->setTabToolTip(0, "Choose columns to index");
+    ui.tabWidget->setTabText(1, "WHERE");
+    ui.tabWidget->setTabToolTip(1, "Add conditions for indexed rows");
+	QPushButton * resetButton = new QPushButton("Reset", this);
+	ui.tabWidget->setCornerWidget(resetButton, Qt::TopRightCorner);
+	connect(resetButton, SIGNAL(clicked(bool)), this, SLOT(resetClicked()));
+    fixTabWidget();
+    ui.columnTable->horizontalHeaderItem(1)->setText("Collator");
+    ui.columnTable->horizontalHeaderItem(1)->setToolTip(
+        "Collation order for column");
+    ui.columnTable->horizontalHeaderItem(2)->setText("Asc/Desc");
+    ui.columnTable->horizontalHeaderItem(3)->setText("");
+	ui.columnTable->insertColumn(4);
+	ui.columnTable->setHorizontalHeaderItem(4, new QTableWidgetItem());
+	ui.columnTable->insertColumn(5);
+	ui.columnTable->setHorizontalHeaderItem(5, new QTableWidgetItem());
+	connect(ui.columnTable, SIGNAL(cellClicked(int, int)),
+			this, SLOT(cellClicked(int,int)));
+    ui.withoutRowid->setText("Unique");
+    ui.columnsGrid->removeWidget(ui.addButton);
+    delete ui.addButton;
+    ui.columnsGrid->removeWidget(ui.removeButton);
+    delete ui.removeButton;
+    ui.removeButton = 0;
+    ui.queryEditor->ui.mainLayout->removeItem(ui.queryEditor->ui.hLayout);
+    delete ui.queryEditor->ui.DatabaseName;
+    delete ui.queryEditor->ui.schemaList;
+    delete ui.queryEditor->ui.tableName;
+    delete ui.queryEditor->ui.tablesList;
+    delete ui.queryEditor->ui.hLayout;
+    ui.queryEditor->ui.mainLayout->removeWidget(ui.queryEditor->ui.aTTQlabel);
+    delete ui.queryEditor->ui.aTTQlabel;
+    ui.queryEditor->ui.tabWidget->removeTab(0);
+    ui.queryEditor->ui.tabWidget->setCurrentIndex(1);
+    ui.queryEditor->ui.tabWidget->removeTab(2);
+	m_createButton =
+		ui.buttonBox->addButton("Create", QDialogButtonBox::ApplyRole);
+	m_createButton->setDisabled(true);
+	connect(m_createButton, SIGNAL(clicked(bool)),
+			this, SLOT(createButton_clicked()));
+	resetClicked();
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->createindexWidth(), prefs->createindexHeight());
 }
 
-void CreateIndexDialog::indexNameEdit_textChanged(const QString &)
-{
-	checkToEnable();
+CreateIndexDialog::~CreateIndexDialog() {
+    Preferences * prefs = Preferences::instance();
+    prefs->setcreateindexHeight(height());
+    prefs->setcreateindexWidth(width());
 }
 
-void CreateIndexDialog::checkToEnable()
+// public slots:
+
+// reimplementation of virtual function from TableEditorDialog
+void CreateIndexDialog::checkChanges()
 {
-	bool nameTest = !ui.indexNameEdit->text().simplified().isEmpty();
-	bool columnTest = false;
-	for (int i = 0; i < ui.tableColumns->rowCount(); ++i)
-	{
-		if (ui.tableColumns->item(i, 1)->checkState() == Qt::Checked)
-		{
-			columnTest = true;
-			break;
-		}
-	}
-	ui.createButton->setEnabled(nameTest && columnTest);
+	QString newName(ui.nameEdit->text());
+	bool ok = checkOk();
+	m_createButton->setEnabled(ok);
+    ui.resultEdit->clear();
+    if (ui.columnTable->rowCount() > 0) {
+        ui.columnTable->item(0, 5)->setFlags(
+            (ui.columnTable->rowCount() > 1)
+                ? Qt::ItemIsEnabled : Qt::NoItemFlags );
+    }
 }
 
-void CreateIndexDialog::resultAppend(QString text)
-{
-	ui.resultEdit->append(text);
-	int lh = QFontMetrics(ui.resultEdit->currentFont()).lineSpacing();
-	QTextDocument * doc = ui.resultEdit->document();
-	if (doc)
-	{
-		int h = (int)(doc->size().height());
-		if (h < lh * 2) { h = lh * 2 + lh / 2; }
-		ui.resultEdit->setFixedHeight(h + lh / 2);
-	}
-	else
-	{
-		int lines = text.split("<br/>").count() + 1;
-		ui.resultEdit->setFixedHeight(lh * lines);
-	}
+void CreateIndexDialog::tableChanged(const QString table) {
+    m_tableName = table;
+    setFirstLine();
+    checkChanges();
 }
 
-void CreateIndexDialog::resizeEvent(QResizeEvent * event)
-{
-	resizeWanted = true;
-	QDialog::resizeEvent(event);
-}
-
-void CreateIndexDialog::paintEvent(QPaintEvent * event)
-{
-	if (resizeWanted)
-	{
-		Utils::setColumnWidths(ui.tableColumns);
-		resizeWanted = false;
-	}
-	QDialog::paintEvent(event);
+void CreateIndexDialog::databaseChanged(const QString schema) {
+    m_databaseName = schema;
+    setFirstLine();
+    checkChanges();
 }

@@ -13,6 +13,7 @@ for which a new license (GPL+exception) is in place.
 #warning "QXmlStreamReader is disabled. Qt 4.3.x required."
 #endif
 
+#include "preferences.h"
 #include "shortcuteditordialog.h"
 #include "shortcutmodel.h"
 
@@ -34,10 +35,15 @@ ShortcutEditorDialog::ShortcutEditorDialog(QWidget * parent)
 
 	connect(exportButton, SIGNAL(clicked()), this, SLOT(exportButton_clicked()));
 	connect(importButton, SIGNAL(clicked()), this, SLOT(importButton_clicked()));
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->shortcutWidth(), prefs->shortcutHeight());
 }
 
 ShortcutEditorDialog::~ShortcutEditorDialog()
 {
+    Preferences * prefs = Preferences::instance();
+    prefs->setshortcutHeight(height());
+    prefs->setshortcutWidth(width());
 }
 
 void ShortcutEditorDialog::removeAllButton_clicked()

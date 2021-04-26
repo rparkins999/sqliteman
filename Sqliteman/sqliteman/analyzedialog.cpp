@@ -5,20 +5,17 @@ a copyright and/or license notice that predates the release of Sqliteman
 for which a new license (GPL+exception) is in place.
 */
 
-#include <QSettings>
-
 #include "analyzedialog.h"
 #include "database.h"
+#include "preferences.h"
 #include "utils.h"
 
 AnalyzeDialog::AnalyzeDialog(QWidget * parent)
 	: QDialog(parent)
 {
 	ui.setupUi(this);
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("analyze/height", QVariant(500)).toInt();
-	int ww = settings.value("analyze/width", QVariant(600)).toInt();
-	resize(ww, hh);
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->analyzeWidth(), prefs->analyzeHeight());
 
 	ui.tableList->addItems(Database::getObjects("table").keys());
 
@@ -29,9 +26,9 @@ AnalyzeDialog::AnalyzeDialog(QWidget * parent)
 
 AnalyzeDialog::~AnalyzeDialog()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-    settings.setValue("analyze/height", QVariant(height()));
-    settings.setValue("analyze/width", QVariant(width()));
+    Preferences * prefs = Preferences::instance();
+    prefs->setanalyzeHeight(height());
+    prefs->setanalyzeWidth(width());
 }
 
 void AnalyzeDialog::dropButton_clicked()

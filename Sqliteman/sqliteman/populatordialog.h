@@ -30,22 +30,24 @@ T_STAT: static value. No computings, only user given string/number.
 T_DT_NOW: datetime now
 T_DT_RAND: random datetime
 T_IGNORE: nothing inserted. It's left for table default/null value.
-
 \author Petr Vanek <petr@scribus.ifno>
 */
-class PopulatorDialog : public QDialog, public Ui::PopulatorDialog
+
+#include "dialogcommon.h"
+
+class LiteManWindow;
+
+class PopulatorDialog : public DialogCommon, // ->QDialog
+                        public Ui::PopulatorDialog
 {
 	Q_OBJECT
 
 	public:
-		PopulatorDialog(QWidget * parent = 0, const QString & table = 0, const QString & schema = 0);
+		PopulatorDialog(LiteManWindow * parent = 0,
+                        const QString & table = 0, const QString & schema = 0);
 		~PopulatorDialog();
-		bool updated;
 		
 	private:
-
-		QString m_schema;
-		QString m_table;
 
 		QList<Populator::PopColumn> m_columnList;
 
@@ -80,10 +82,6 @@ class PopulatorDialog : public QDialog, public Ui::PopulatorDialog
 		QSqlQuery::numRowsAffected() for execBatch() method (it returns
 		1/0/-1 in the case of execBatch()). */
 		qlonglong tableRowCount();
-
-		bool execSql(const QString & statement, const QString & message);
-
-		void resultAppend(QString text);
 
 	private slots:
 		void populateButton_clicked();

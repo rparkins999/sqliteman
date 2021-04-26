@@ -1,5 +1,5 @@
 /*
-For general Sqliteman copyright and licensing information please refer
+// For general Sqliteman copyright and licensing information please refer
 to the COPYING file provided with the program. Following this notice may exist
 a copyright and/or license notice that predates the release of Sqliteman
 for which a new license (GPL+exception) is in place.
@@ -15,47 +15,45 @@ for which a new license (GPL+exception) is in place.
 #include "createtabledialog.h"
 #include "database.h"
 #include "litemanwindow.h"
-#include "tabletree.h"
+#include "preferences.h"
 #include "utils.h"
 
 CreateTableDialog::CreateTableDialog(LiteManWindow * parent,
 									 QTreeWidgetItem * item)
 	: TableEditorDialog(parent)
 {
-	ui.removeButton->setEnabled(false); // Disable row removal
+    ui.gridLayout->removeItem(ui.onTableBox);
+    delete ui.onTableBox;
+    delete ui.onTableLabel;
+    delete ui.tableCombo;
 	ui.withoutRowid->setChecked(false);
 	setWindowTitle(tr("Create Table"));
-	m_tableOrView = "TABLE";
 	m_dubious = false;
-	m_oldWidget = ui.designTab;
-	
-	m_createButton =
+		m_createButton =
 		ui.buttonBox->addButton("Create", QDialogButtonBox::ApplyRole);
-	m_createButton->setDisabled(true);
+        m_createButton->setEnabled(false);
 	connect(m_createButton, SIGNAL(clicked(bool)),
 			this, SLOT(createButton_clicked()));
-
-	ui.databaseCombo->setCurrentIndex(0);
-	if (item && (   (item->type() == TableTree::DatabaseItemType)
-				 || (item->type() == TableTree::TablesItemType)))
-	{
-		int i = ui.databaseCombo->findText(item->text(1),
-			Qt::MatchFixedString | Qt::MatchCaseSensitive);
-		if (i >= 0)
-		{
-			ui.databaseCombo->setCurrentIndex(i);
-            if (!addedTemp) {
-                ui.databaseCombo->setDisabled(true);
-            }
-		}
-	}
-	m_tabWidgetIndex = ui.tabWidget->currentIndex();
-    m_originalName = QString();
-
+    setItem(item, false);
+    fixTabWidget();
 	ui.textEdit->setText("");
-	ui.queryEditor->setItem(0);
-	addField(); // A table should have at least one field
-	Utils::setColumnWidths(ui.columnTable);
+	TableEditorDialog::addField(); // A table should have at least one field
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->createtableWidth(), prefs->createtableHeight());
+}
+
+CreateTableDialog::~CreateTableDialog()
+{
+    Preferences * prefs = Preferences::instance();
+    prefs->setcreatetableHeight(height());
+    prefs->setcreatetableWidth(width());
+}
+
+void CreateTableDialog::addField()
+{
+    TableEditorDialog::addField();
+    resizeTable();
+    fudge();
 }
 
 void CreateTableDialog::createButton_clicked()
@@ -83,18 +81,14 @@ void CreateTableDialog::createButton_clicked()
 		if (ret == QMessageBox::Cancel) { return; }
 	}
 	ui.resultEdit->setHtml("");
-	QString sql(ui.firstLine->text() + getSQLfromGUI());
-	QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
-	if(query.lastError().isValid())
-	{
-		resultAppend(tr("Cannot create table")
-					 + ":<br/><span style=\" color:#ff0000;\">"
-					 + query.lastError().text()
-					 + "<br/></span>" + tr("using sql statement:")
-					 + "<br/><tt>" + sql);
-		return;
-	}
-	updated = true;
+    if (!execSql(getSql(), tr("Cannot create table"))) {
+        return;
+    }
+	m_updated = true;
+    // == OK here because sqlite uses lower case for it
+    if (m_noTemp && (m_databaseName == "temp")) {
+        ui.queryEditor->addSchema("temp");
+    }
 	emit rebuildTableTree(ui.databaseCombo->currentText());
 	resultAppend(tr("Table created successfully"));
 }
@@ -108,5 +102,13 @@ bool CreateTableDialog::checkColumn(int i, QString cname,
 void CreateTableDialog::checkChanges()
 {
 	m_dubious = false;
-	m_createButton->setEnabled(checkOk(ui.nameEdit->text()));
+	m_createButton->setEnabled(checkOk());
+    ui.removeButton->setEnabled(ui.columnTable->rowCount() > 1);
+}
+
+void CreateTableDialog::databaseChanged(const QString schema)
+{
+    m_databaseName = schema;
+    setFirstLine(ui.tabWidget->currentWidget());
+    checkChanges();
 }

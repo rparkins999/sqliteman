@@ -5,56 +5,58 @@ a copyright and/or license notice that predates the release of Sqliteman
 for which a new license (GPL+exception) is in place.
 */
 
-#ifndef INDEXDIALOG_H
-#define INDEXDIALOG_H
+#ifndef CREATEINDEXDIALOG_H
+#define CREATEINDEXDIALOG_H
 
-#include <qwidget.h>
+#include "database.h"
+#include "tableeditordialog.h"
 
-#include "litemanwindow.h"
-#include "ui_createindexdialog.h"
-
+class LiteManWindow;
+class QPushButton;
 
 /*! \brief GUI for index creation
 \author Petr Vanek <petr@scribus.info>
 */
-class CreateIndexDialog : public QDialog
+class CreateIndexDialog : public TableEditorDialog // ->DialogCommon->Qdialog
 {
 	Q_OBJECT
 
-	public:
-		/*! \brief Create a dialog
-		\param tabName name of the index parent table
-		\param schema name of the db schema
-		\param parent standard Qt parent
-		*/
-		CreateIndexDialog(const QString & tabName, const QString & schema,
-						  LiteManWindow * parent = 0);
-		~CreateIndexDialog();
+private:
+    QPushButton * m_createButton;
 
-		bool update;
-
-	private:
-		Ui::CreateIndexDialog ui;
-		QString m_schema;
-		QString m_table;
-
-		void checkToEnable();
-		void resultAppend(QString text);
-		bool resizeWanted;
-		void paintEvent(QPaintEvent * event);
-		void resizeEvent(QResizeEvent * event);
-
-
-		// We ought to be able use use parent() for this, but for some reason
-		// qobject_cast<LiteManWindow*>(parent()) doesn't work
-		LiteManWindow * creator;
+    void collatorIndexChanged(int n, QComboBox * box);
+    void addField(FieldInfo f);
+    void swap(int i, int j);
+    void drop (int i);
 
 private slots:
-		void tableColumns_itemChanged(QTableWidgetItem* item);
-		void indexNameEdit_textChanged(const QString & text);
-		/*! \brief Parse user's inputs and create a sql statement */
-		void createButton_clicked();
+    void collatorIndexChanged(int n);
+    void resetClicked();
+    void indexNameEdited(const QString & text);
+    void cellClicked(int, int);
+    /*! \brief Parse user's inputs and create an sql statement */
+    void createButton_clicked();
 
+protected:
+    void setFirstLine(QWidget * w);
+    void setFirstLine();
+    QString getSQLfromDesign();
+    QString getSQLfromGUI(QWidget * w);
+
+public:
+    /*! \brief Create a dialog
+    \param tabName name of the index parent table
+    \param schema name of the db schema
+    \param parent standard Qt parent
+    */
+    CreateIndexDialog(const QString & tabName, const QString & schema,
+                        LiteManWindow * parent = 0);
+    ~CreateIndexDialog();
+
+public slots:
+    void checkChanges();
+    void tableChanged(const QString table);
+    void databaseChanged(const QString schema);
 };
 
-#endif
+#endif // CREATEINDEXDIALOG_H

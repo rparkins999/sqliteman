@@ -26,13 +26,12 @@ statement and renaming. See createButton_clicked()
 \author Petr Vanek <petr@scribus.info>
 */
 
-class AlterTableDialog : public TableEditorDialog
+class AlterTableDialog : public TableEditorDialog // ->DialogCommon->QDialog
 {
 	Q_OBJECT
 
 	private:
-		void addField(QString oldName, QString oldType,
-					  int x, QString oldDefault);
+		void addField(FieldInfo field, bool isNew);
 
 	private slots:
 		void addField();
@@ -45,7 +44,7 @@ class AlterTableDialog : public TableEditorDialog
 						 QTreeWidgetItem * item = 0,
 						 const bool isActive = false
 						);
-		~AlterTableDialog(){};
+		~AlterTableDialog();
 
 	private:
 		QTreeWidgetItem * m_item;
@@ -60,20 +59,7 @@ class AlterTableDialog : public TableEditorDialog
 		int m_oldPragmaAlterTable; // really boolean but sqlite uses an int
         int m_oldPragmaForeignKeys; // really boolean but sqlite uses an int
 
-        // This is the name that the table currently has inside doit().
-        // Some bad errors may lead to the table being left with a temporary
-        // name.
-        QString m_tableName;
-        QString m_dbName;
-        LiteManWindow * m_creator;
-
-		/*! \brief Execute statement, handle errors,
-		and output message to the GUI.
-		\param statement a SQL statement as QString
-		\param message a text message to display in the log widget: if it is null no message is displayed
-		\retval bool true on SQL success
-		*/
-		bool execSql(const QString & statement, const QString & message);
+        void updateButtons(); // fix up enabling and disabling of buttons
 
 		//! \brief Roll back whole transaction after failure
 		bool doRollback(QString message);
@@ -114,7 +100,6 @@ class AlterTableDialog : public TableEditorDialog
 
         bool checkColumn(int i, QString cname,
 						 QString ctype, QString cextra);
-		void resizeTable();
 		void swap(int i, int j);
 		void drop (int i);
         void restorePragmas();

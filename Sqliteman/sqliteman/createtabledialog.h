@@ -16,30 +16,32 @@ class QPushButton;
 /*! \brief A GUI for CREATE TABLE procedure.
 \author Petr Vanek <petr@scribus.info>
 */
-class CreateTableDialog : public TableEditorDialog
+class CreateTableDialog : public TableEditorDialog // ->DialogCommon->QDialog
 {
 	Q_OBJECT
 
-	public:
-		CreateTableDialog(LiteManWindow * parent = 0,
-						  QTreeWidgetItem * item = 0);
-		~CreateTableDialog(){};
+    public:
+        CreateTableDialog(LiteManWindow * parent = 0,
+                          QTreeWidgetItem * item = 0);
+        ~CreateTableDialog();
 
-	private:
-		/*! \brief Analyze user changes and performs the CREATE TABLE sql
-		*/
-		bool checkColumn(int i, QString cname,
-						 QString ctype, QString cextra);
+    private:
+        /*! \brief Analyze user changes and performs the CREATE TABLE sql
+        */
+        bool checkColumn(int i, QString cname,
+                         QString ctype, QString cextra);
 
 
-		QPushButton * m_createButton;
+        QPushButton * m_createButton;
 
     signals:
-		void rebuildTableTree(QString schema);
+        void rebuildTableTree(QString schema);
 
-	private slots:
-		void createButton_clicked();
-		void checkChanges();
+    private slots:
+        void addField();
+        void createButton_clicked();
+        void checkChanges();
+        void databaseChanged(const QString schema);
 };
 
 #endif

@@ -4,12 +4,13 @@ to the COPYING file provided with the program. Following this notice may exist
 a copyright and/or license notice that predates the release of Sqliteman
 for which a new license (GPL+exception) is in place.
 
-This file written by and copyright © 2015 Richard P. Parkins, M. A., and released under the GPL.
+This file written by and copyright © 2021 Richard P. Parkins, M. A., and released under the GPL.
 
 This class parses SQL schemas (not general SQL statements). Since the
 schema is known to be valid, we do not always detect bad syntax.
 */
 
+// This bit of fantasy enables my pd prettyprinter to print enum values
 #ifdef ENUMPRINT
 #undef SQLPARSER_H
 #undef ENUM
@@ -17,7 +18,7 @@ schema is known to be valid, we do not always detect bad syntax.
 #undef ENUMLAST
 #define ENUM(type)  static QString prepare##type(enum type x) { switch (x) {
 #define ENUMVALUE(x) case x: return #x;
-#define ENUMLAST(x) case x: return #x; default: return NULL; } } 
+#define ENUMLAST(x) case x: return #x; default: return NULL; } }
 #endif
 
 #ifndef SQLPARSER_H
@@ -84,6 +85,7 @@ typedef struct Expression {
 typedef struct FieldInfo {
 	QString name;
 	QString type;
+    QString collator;
     QString referencedTable;
     QStringList referencedKeys;
 	QString defaultValue;

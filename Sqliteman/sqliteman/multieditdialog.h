@@ -22,6 +22,7 @@ class MultiEditDialog : public QDialog, public Ui::MultiEditDialog
 
 	public:
 		MultiEditDialog(QWidget * parent = 0);
+        ~MultiEditDialog();
 		
 		void setData(const QVariant & data);
 		QVariant data();

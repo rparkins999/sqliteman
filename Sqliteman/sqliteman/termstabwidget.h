@@ -17,16 +17,21 @@ for which a new license (GPL+exception) is in place.
  * \author Richard Parkins extracted from QueryEditorDialog
  *         also used in FindDialog
  */
-class TermsTabWidget : public QWidget, public Ui::TermsTabWidget
+
+class TermsTabWidget : public QWidget
 {
 	Q_OBJECT
 
+    private:
+        bool m_noTermsAllowed;
 	public:
+        Ui::TermsTabWidget ui;
 		/*!
 		 * @brief Creates the terms tab.
 		 * @param parent The parent widget.
 		 */
 		TermsTabWidget(QWidget * parent = 0);
+        void allowNoTerms(bool allowed);
 
 		QStringList m_columnList;
 

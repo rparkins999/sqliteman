@@ -13,72 +13,75 @@ for which a new license (GPL+exception) is in place.
 
 TermsTabWidget::TermsTabWidget(QWidget * parent): QWidget(parent)
 {
-	setupUi(this);
-
-	termsTable->setColumnCount(3);
-	termsTable->horizontalHeader()->hide();
-	termsTable->verticalHeader()->hide();
+	ui.setupUi(this);
+    m_noTermsAllowed = true; // for all except FindDialog
+	ui.termsTable->setColumnCount(3);
+	ui.termsTable->horizontalHeader()->hide();
+	ui.termsTable->verticalHeader()->hide();
 
     // needed because the LineEdit's frame has vanished
-	termsTable->setShowGrid(true);
+	ui.termsTable->setShowGrid(true);
 
-	connect(termMoreButton, SIGNAL(clicked()),
+	connect(ui.termMoreButton, SIGNAL(clicked()),
 		this, SLOT(moreTerms()));
-	connect(termLessButton, SIGNAL(clicked()),
+	connect(ui.termLessButton, SIGNAL(clicked()),
 		this, SLOT(lessTerms()));
 }
 
+void TermsTabWidget::allowNoTerms(bool allowed) { m_noTermsAllowed = allowed; }
+
 void TermsTabWidget::paintEvent(QPaintEvent * event)
 {
-    // force at least one term because it isn't much use without one
-    // for some reason calling moreTerms() in the constructor doesn't work
-    if (termsTable->rowCount() == 0)
+    // Force at least one term for find dialog,
+    // We couldn't do this in our creator becuse m_noTermsAllowed
+    // and m_columnList weren't initialised yet.
+    if ((ui.termsTable->rowCount() == 0) && !m_noTermsAllowed)
     {
         moreTerms();
         emit firstTerm();
     }
-	Utils::setColumnWidths(termsTable);
-	QWidget::paintEvent(event);
+	Utils::setColumnWidths(ui.termsTable);
+	QWidget::paintEvent(event); // now call the superclass to do the paint
 }
 
 void TermsTabWidget::moreTerms()
 {
-	int i = termsTable->rowCount();
-	termsTable->setRowCount(i + 1);
+	int i = ui.termsTable->rowCount();
+	ui.termsTable->setRowCount(i + 1);
 	QComboBox * fields = new QComboBox();
 	fields->addItems(m_columnList);
-	termsTable->setCellWidget(i, 0, fields);
+	ui.termsTable->setCellWidget(i, 0, fields);
 	QComboBox * relations = new QComboBox();
 	relations->addItems(QStringList() << tr("Contains") << tr("Doesn't contain")
 									  << tr("Starts with")
 									  << tr("Equals") << tr("Not equals")
 									  << tr("Bigger than") << tr("Smaller than")
 									  << tr("Is null") << tr("Is not null"));
-	termsTable->setCellWidget(i, 1, relations);
+	ui.termsTable->setCellWidget(i, 1, relations);
 	connect(relations, SIGNAL(currentIndexChanged(const QString &)),
 			this, SLOT(relationsIndexChanged(const QString &)));
 	QLineEdit * value = new QLineEdit();
-	termsTable->setCellWidget(i, 2, value);
-	termsTable->resizeColumnsToContents();
-	termLessButton->setEnabled(i > 0);
+	ui.termsTable->setCellWidget(i, 2, value);
+	ui.termsTable->resizeColumnsToContents();
+	ui.termLessButton->setEnabled((i > 1) || m_noTermsAllowed);
 	update();
 }
 
 void TermsTabWidget::lessTerms()
 {
-	int i = termsTable->rowCount() - 1;
-	termsTable->removeRow(i);
-	termsTable->resizeColumnsToContents();
-	if (i == 1) { termLessButton->setEnabled(false); }
+	int i = ui.termsTable->rowCount() - 1;
+	ui.termsTable->removeRow(i);
+	ui.termsTable->resizeColumnsToContents();
+	ui.termLessButton->setEnabled((i > 1) || m_noTermsAllowed);
 	update();
 }
 
 void TermsTabWidget::relationsIndexChanged(const QString &)
 {
 	QComboBox * relations = qobject_cast<QComboBox *>(sender());
-	for (int i = 0; i < termsTable->rowCount(); ++i)
+	for (int i = 0; i < ui.termsTable->rowCount(); ++i)
 	{
-		if (relations == termsTable->cellWidget(i, 1))
+		if (relations == ui.termsTable->cellWidget(i, 1))
 		{
 			switch (relations->currentIndex())
 			{
@@ -89,18 +92,19 @@ void TermsTabWidget::relationsIndexChanged(const QString &)
 				case 4: // Not equals
 				case 5: // Bigger than
 				case 6: // Smaller than
-					if (!(termsTable->cellWidget(i, 2)))
+					if (!(ui.termsTable->cellWidget(i, 2)))
 					{
-						termsTable->setCellWidget(i, 2, new QLineEdit());
+						ui.termsTable->setCellWidget(i, 2, new QLineEdit());
 					}
-					return;
+					break;
 
 				case 7: // is null
 				case 8: // is not null
-					termsTable->removeCellWidget(i, 2);
-					return;
+					ui.termsTable->removeCellWidget(i, 2);
+					break;
 			}
 		}
 	}
-	update();
+    ui.termsTable->resizeColumnsToContents();
+    update();
 }

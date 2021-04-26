@@ -14,14 +14,14 @@ class QTreeWidgetItem;
 
 class DataViewer;
 
+#include "termstabwidget.h"
 #include "ui_finddialog.h"
-#include "ui_termstabwidget.h"
 
 /*!
  * @brief A modeless window for doing searches
  * \author Richard Parkins
  */
-class FindDialog : public QMainWindow, public Ui::findDialog
+class FindDialog : public QMainWindow
 {
 	Q_OBJECT
 
@@ -38,6 +38,7 @@ class FindDialog : public QMainWindow, public Ui::findDialog
 		void updateButtons();
 
 	public:
+        Ui::FindDialog ui;
 		/*!
 		 * @brief Creates the query editor.
 		 * @param parent The parent widget for the dialog.

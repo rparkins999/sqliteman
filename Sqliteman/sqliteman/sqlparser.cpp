@@ -960,6 +960,7 @@ void SqlParser::clearField(FieldInfo &f)
 {
 	f.name = QString();
 	f.type = QString();
+	f.collator = QString();
     f.referencedTable = QString();
     f.referencedKeys = QStringList(); 
 	f.defaultValue = QString();
@@ -1543,6 +1544,7 @@ SqlParser::SqlParser(QString input)
 					|| (t.type == tokenBackQuotedIdentifier)
 					|| (t.type == tokenStringLiteral))
 				{
+                    f.collator = t.name;
 					state = 14; // look for constraint or , or )
 				} else { break; } // not a valid create statement
 				m_tokens.removeFirst();

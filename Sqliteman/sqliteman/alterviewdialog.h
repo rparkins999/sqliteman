@@ -8,16 +8,15 @@ for which a new license (GPL+exception) is in place.
 #ifndef ALTERVIEWDIALOG_H
 #define ALTERVIEWDIALOG_H
 
-#include <qwidget.h>
-
-#include "litemanwindow.h"
+#include "dialogcommon.h"
 #include "ui_alterviewdialog.h"
 
+class LiteManWindow;
 
 /*! \brief GUI for view altering
 \author Petr Vanek <petr@scribus.info>
 */
-class AlterViewDialog : public QDialog
+class AlterViewDialog : public DialogCommon //->QDialog
 {
 	Q_OBJECT
 
@@ -26,12 +25,11 @@ class AlterViewDialog : public QDialog
 						const QString & schema, LiteManWindow * parent = 0);
 		~AlterViewDialog();
 
-		bool update;
+		bool m_updated;
 		void setText(const QString & text) { ui.sqlEdit->setText(text); };
 
 	private:
 		Ui::AlterViewDialog ui;
-		void resultAppend(QString text);
 		
 	private slots:
 		void createButton_clicked();

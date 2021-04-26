@@ -11,69 +11,83 @@ for which a new license (GPL+exception) is in place.
 #include <QDialog>
 
 #include "database.h"
+#include "dialogcommon.h"
 #include "ui_tableeditordialog.h"
-#include "preferences.h"
-
-class LiteManWindow;
 
 /*! \brief A base dialog for creating and editing tables.
-This dialog is taken as a inheritance parent for AlterTableDialog
-and CreateTableDialog and CreatViewDialog.
+This dialog is used as an inheritance parent for
+AlterTableDialog
+CreateIndexDialog
+CreateTableDialog
+CreateViewDialog
+None of these have their own ui: the layout for TableEditorDialog is
+modified instead.
+
 \author Petr Vanek <petr@scribus.info>
 \author Igor Khanin
 */
-class TableEditorDialog : public QDialog
+class QTreeWidgetItem;
+
+class TableEditorDialog : public DialogCommon // public QDialog
 {
-		Q_OBJECT
-	public:
-		TableEditorDialog(LiteManWindow * parent);
-		~TableEditorDialog();
+    Q_OBJECT
+private slots:
+    void fudgeSlot();
+private:
+    bool m_fudging = false;
+    QRect m_rect;
+    bool m_useNull;
+    QString m_nullText;
+    QColor m_nullColor;
+    int m_paintCount = 0;
 
-		Ui::TableEditorDialog ui;
+public:
+    Ui::TableEditorDialog ui;
+    void fudge();
+    TableEditorDialog(LiteManWindow * parent);
+    ~TableEditorDialog();
+    void fixTabWidget();
+    void fixNull(QLineEdit * edit);
+    virtual void addField(FieldInfo field);
+    // This returns the current schema selected from ui.databaseCombo
+    // (not the schema passed in, if any).
+    QString schema();
 
-		void resultAppend(QString text);
+protected:
+    bool m_resizeWanted; // column relayout needed, not window resize
+    bool m_dirty; // SQL has been edited
+    QString m_tableOrView;
+    QString m_originalName; // NULL except in Alter Table Dialog
+    bool m_dubious; // some column has an empty name
+    int m_tabWidgetIndex;
+    QWidget * m_oldWidget; // the widget from which we got the SQL
+    bool m_noTemp; // temp database does not exist yet
 
-		virtual void addField(QString oldName, QString oldType,
-					  int x, QString oldDefault);
+    void setItem(QTreeWidgetItem * item, bool makeView);
+    QString createdName();
+    bool checkOk();
+    virtual bool checkColumn(
+        int i, QString cname, QString type, QString cextra);
+    virtual QString getSQLfromDesign();
+    virtual QString getSQLfromGUI(QWidget * w);
+    QString getSql();
+    QString getFullName();
+    virtual void setFirstLine(QWidget * w);
+    void setDirty();
+    virtual void resizeTable();
+    void paintEvent(QPaintEvent * event);
+    void resizeEvent(QResizeEvent * event);
 
-		QString schema();
-		QString createdName();
-
-		Preferences * m_prefs;
-		bool updated;
-
-	protected:
-		bool checkOk(QString newName);
-		virtual bool checkColumn(int i, QString cname,
-								 QString type, QString cextra) = 0;
-		QString getSQLfromDesign();
-		QString getSQLfromGUI();
-		QString getFullName();
-		void setFirstLine();
-		void setDirty();
-		virtual void resizeTable();
-		void paintEvent(QPaintEvent * event);
-		void resizeEvent(QResizeEvent * event);
-		QString m_tableOrView;
-        QString m_originalName; // NULL except in Alter Table Dialog
-		int m_tabWidgetIndex;
-		bool m_dirty; // SQL has been edited
-		bool m_dubious; // some column has an empty name
-		QWidget * m_oldWidget; // widget from which we got SQL
-		bool resizeWanted;
-        bool addedTemp;
-
-		// We ought to be able use use parent() for this, but for some reason
-		// qobject_cast<LiteManWindow*>(parent()) doesn't work
-		LiteManWindow * creator;
-
-	public slots:
-		virtual void addField();
-		virtual void removeField();
-		virtual void fieldSelected();
-		void tableNameChanged();
-		void tabWidget_currentChanged(int index);
-		virtual void checkChanges() = 0;
+public slots:
+    virtual void addField();
+    virtual void removeField();
+    virtual void fieldSelected();
+    void tableNameChanged();
+    void tabWidget_currentChanged(int index);
+    virtual void checkChanges() = 0;
+    void lineEdited();
+    void typeEdited(QString text);
+    void typeIndexChanged(int index);
 };
 
 #endif // TABLEEDITORDIALOG_H

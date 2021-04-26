@@ -10,6 +10,7 @@ for which a new license (GPL+exception) is in place.
 
 #include <qwidget.h>
 
+#include "dialogcommon.h"
 #include "ui_createtriggerdialog.h"
 
 class QTreeWidgetItem;
@@ -17,19 +18,18 @@ class QTreeWidgetItem;
 /*! \brief GUI for trigger creation
 \author Petr Vanek <petr@scribus.info>
 */
-class CreateTriggerDialog : public QDialog
+class CreateTriggerDialog : public DialogCommon // ->QDialog
 {
 	Q_OBJECT
 
 	public:
-		CreateTriggerDialog(QTreeWidgetItem * item, QWidget * parent = 0);
+		CreateTriggerDialog(QTreeWidgetItem * item, LiteManWindow * parent = 0);
 		~CreateTriggerDialog();
 
-		bool update;
+		bool m_updated;
 
-	private:
+	protected:
 		Ui::CreateTriggerDialog ui;
-		void resultAppend(QString text);
 
 	private slots:
 		void createButton_clicked();

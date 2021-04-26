@@ -27,6 +27,8 @@ class QueryStringModel : public QStringListModel
 		void clear();
 		//! append new string at the end of the model
 		void append(const QString & value);
+        //! remove (all occurrences of) a string from the model
+        void removeAll(const QString & value);
 };
 
 #endif //QUERYSTRINGMODEL_H

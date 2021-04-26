@@ -12,21 +12,20 @@ for which a new license (GPL+exception) is in place.
 #include <QSettings>
 
 #include "createtriggerdialog.h"
-#include "litemanwindow.h"
 #include "database.h"
+#include "litemanwindow.h"
+#include "preferences.h"
 #include "tabletree.h"
 #include "utils.h"
 
 CreateTriggerDialog::CreateTriggerDialog(QTreeWidgetItem * item,
-										 QWidget * parent)
-	: QDialog(parent),
-	update(false)
+										 LiteManWindow * parent)
+	: DialogCommon(parent)
 {
 	ui.setupUi(this);
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("createtrigger/height", QVariant(500)).toInt();
-	int ww = settings.value("createtrigger/width", QVariant(600)).toInt();
-	resize(ww, hh);
+    setResultEdit(ui.resultEdit);
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->createtriggerWidth(), prefs->createtriggerHeight());
 
 	if (item->type() == TableTree::TableType)
 	{
@@ -39,8 +38,10 @@ CreateTriggerDialog::CreateTriggerDialog(QTreeWidgetItem * item,
 			+ Utils::q(item->text(0))
 			+ "\n[ FOR EACH ROW | FOR EACH STATEMENT ] [ WHEN expression ]\n"
 			+ "BEGIN\n<statement-list>\nEND;");
+        connect(ui.createButton, SIGNAL(clicked()),
+			this, SLOT(createButton_clicked()));
 	}
-	else // trigger on view
+	else if (item->type() == TableTree::TableType)
 	{
 		ui.textEdit->setText(
 			QString("-- sqlite3 simple trigger template\n"
@@ -51,17 +52,17 @@ CreateTriggerDialog::CreateTriggerDialog(QTreeWidgetItem * item,
 			+ Utils::q(item->text(0))
 			+ "\n[ FOR EACH ROW | FOR EACH STATEMENT ] [ WHEN expression ]\n"
 			 + "BEGIN\n<statement-list>\nEND;");
-	}
-
-	connect(ui.createButton, SIGNAL(clicked()),
+        connect(ui.createButton, SIGNAL(clicked()),
 			this, SLOT(createButton_clicked()));
+	}
+	// otherwise it's an AlterTriggerDialog which initialises itself
 }
 
 CreateTriggerDialog::~CreateTriggerDialog()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-    settings.setValue("createtrigger/height", QVariant(height()));
-    settings.setValue("createtrigger/width", QVariant(width()));
+    Preferences * prefs = Preferences::instance();
+    prefs->setcreatetriggerHeight(height());
+    prefs->setcreatetriggerWidth(width());
 }
 
 void CreateTriggerDialog::createButton_clicked()
@@ -79,28 +80,10 @@ void CreateTriggerDialog::createButton_clicked()
 						 + ":<br/><span style=\" color:#ff0000;\">"
 						 + query.lastError().text()
 						 + "<br/></span>" + tr("using sql statement:")
-						 + "<br/><tt>" + sql);
+						 + "<br/><code>" + sql);
 			return;
 		}
 		resultAppend(tr("Trigger created successfully"));
-		update = true;
-	}
-}
-
-void CreateTriggerDialog::resultAppend(QString text)
-{
-	ui.resultEdit->append(text);
-	int lh = QFontMetrics(ui.resultEdit->currentFont()).lineSpacing();
-	QTextDocument * doc = ui.resultEdit->document();
-	if (doc)
-	{
-		int h = (int)(doc->size().height());
-		if (h < lh * 2) { h = lh * 2 + lh / 2; }
-		ui.resultEdit->setFixedHeight(h + lh / 2);
-	}
-	else
-	{
-		int lines = text.split("<br/>").count() + 1;
-		ui.resultEdit->setFixedHeight(lh * lines);
+		m_updated = true;
 	}
 }

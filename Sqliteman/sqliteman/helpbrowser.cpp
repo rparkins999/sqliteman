@@ -6,11 +6,10 @@ for which a new license (GPL+exception) is in place.
 */
 #include <QUrl>
 #include <QDir>
-#include <QSettings>
 
 #include "helpbrowser.h"
+#include "preferences.h"
 #include "utils.h"
-
 
 HelpBrowser::HelpBrowser(const QString & lang, QWidget * parent)
 #ifdef WIN32
@@ -43,11 +42,9 @@ HelpBrowser::HelpBrowser(const QString & lang, QWidget * parent)
 	ui.textBrowser->setSource(QUrl(docs + "index.html"));
 
 	// settings
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("help/height", QVariant(500)).toInt();
-	int ww = settings.value("help/width", QVariant(600)).toInt();
-	resize(ww, hh);
-	ui.splitter->restoreState(settings.value("help/splitter").toByteArray());
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->helpWidth(), prefs->helpHeight());
+	ui.splitter->restoreState(prefs->helpsplitter());
 
 	ui.actionBack->setEnabled(false);
 	ui.actionForward->setEnabled(false);
@@ -63,11 +60,10 @@ HelpBrowser::HelpBrowser(const QString & lang, QWidget * parent)
 
 void HelpBrowser::closeEvent(QCloseEvent *e)
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-
-    settings.setValue("help/height", QVariant(height()));
-    settings.setValue("help/width", QVariant(width()));
-	settings.setValue("help/splitter", ui.splitter->saveState());
+    Preferences * prefs = Preferences::instance();
+    prefs->sethelpHeight(height());
+    prefs->sethelpWidth(width());
+	prefs->sethelpsplitter(ui.splitter->saveState());
 
 	QMainWindow::closeEvent(e);
 }

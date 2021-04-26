@@ -7,7 +7,6 @@ for which a new license (GPL+exception) is in place.
 
 #include <QDir>
 #include <QStyleFactory>
-#include <QSettings>
 #include <QColorDialog>
 #include <QFileDialog>
 #include <qscilexersql.h>
@@ -134,10 +133,8 @@ PreferencesDialog::PreferencesDialog(QWidget * parent)
 	: QDialog(parent)
 {
 	setupUi(this);
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("prefsdialog/height", QVariant(500)).toInt();
-	int ww = settings.value("prefsdialog/width", QVariant(600)).toInt();
-	resize(ww, hh);
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->preferencesWidth(), prefs->preferencesHeight());
 
 	m_prefsData = new PrefsDataDisplayWidget(this);
 	m_prefsLNF = new PrefsLNFWidget(this);
@@ -193,8 +190,6 @@ PreferencesDialog::PreferencesDialog(QWidget * parent)
 	// change prefs widgets
 	connect(listWidget, SIGNAL(currentRowChanged(int)),
 			stackedWidget, SLOT(setCurrentIndex(int)));
-
-	Preferences * prefs = Preferences::instance();
 
 	// avail langs
 	QDir d(TRANSLATION_DIR, "*.qm");
@@ -260,9 +255,9 @@ PreferencesDialog::PreferencesDialog(QWidget * parent)
 
 PreferencesDialog::~PreferencesDialog()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-    settings.setValue("prefsdialog/height", QVariant(height()));
-    settings.setValue("prefsdialog/width", QVariant(width()));
+    Preferences * prefs = Preferences::instance();
+    prefs->setpreferencesHeight(height());
+    prefs->setpreferencesWidth(width());
 }
 
 bool PreferencesDialog::saveSettings()

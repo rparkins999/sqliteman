@@ -28,3 +28,10 @@ void QueryStringModel::append(const QString & value)
 	l.append(value);
 	setStringList(l);
 }
+
+void QueryStringModel::removeAll(const QString & value)
+{
+	QStringList l(stringList());
+	l.removeAll(value);
+	setStringList(l);
+}

@@ -6,6 +6,14 @@
 #ifndef PD_H
 #define PD_H
 
+// Undefine this if you will never want to use a debugger on the sqlite3
+// library and want to make sqliteman smaller.
+#define WANT_VDBE_DECODING
+
+// Undefine this if you will never use a debugger at all
+// and want to make sqliteman smaller
+#define WANT_PD
+
 #include <QColor>
 #include <QComboBox>
 #include <QFont>
@@ -21,6 +29,7 @@
 #include <QRect>
 #include <QRectF>
 #include <QRegExp>
+#include <QSet>
 #include <QSize>
 #include <QSizeF>
 #include <QSqlError>
@@ -59,6 +68,7 @@ private:
     static QString prepareSize(QSize s);
     static QString prepareSizeF(QSizeF s);
     static QString prepareString(QString s);
+    static QString prepareTreeWidgetItem(const QTreeWidgetItem * const item);
     static QString prepareUrl(QUrl u);
     static QString prepareVariant(QVariant v);
 
@@ -72,6 +82,8 @@ public:
     static void dump(unsigned long long int u);
     static void dump(bool b);
     static void dump(long double d);
+    static void dump(const char * s);
+    static void dump(const unsigned char * s) { dump((const char *)s); }
 
     // Qt types that I use in alphabetical order
     static void dump(QColor c);
@@ -79,7 +91,7 @@ public:
     static void dump(QComboBox * box);
     static void dump(QFont f);
     static void dump(QHash<QString, QVariant> &h);
-    static void dump(QItemSelection selection);
+    static void dump(QItemSelection &selection);
     static void dump(QLine l);
     static void dump(QLineEdit & le);
     static void dump(QLineEdit * le);
@@ -91,6 +103,7 @@ public:
     static void dump(QList<QModelIndex> &l);
     static void dump(QList<QObject *> &l);
     static void dump(QList<QString> &l);
+    static void dump(QList<QTreeWidgetItem *> &l);
     static void dump(QList<QVariant> &l);
     static void dump(QMap<QString, QList<QString> > &m);
     static void dump(QMap<QString, QStringList> &m);
@@ -105,6 +118,7 @@ public:
     static void dump(QRect r);
     static void dump(QRectF r);
     static void dump(QRegExp r);
+    static void dump(QSet<QTreeWidgetItem *> &l);
     static void dump(QSize s);
     static void dump(QSizeF s);
     static void dump(QSqlError & e);
@@ -141,7 +155,9 @@ public:
     static void dump(SqlParser & p);
     static void dump(SqlParser * pp);
     static void dump(QList<SqlParser *> &l);
-    
+#ifdef WANT_VDBE_DECODING
+    static void dumpOpList(void * pVdbe);
+#endif // WANT_VDBE_DECODING
     // magic for printing enumerations
 #define ENUMPRINT
 #include "sqlparser.h"

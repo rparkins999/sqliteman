@@ -31,6 +31,15 @@ MultiEditDialog::MultiEditDialog(QWidget * parent)
 			this, SLOT(blobSaveButton_clicked()));
 	connect(nullCheckBox, SIGNAL(stateChanged(int)),
 			this, SLOT(nullCheckBox_stateChanged(int)));
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->multieditWidth(), prefs->multieditHeight());
+}
+
+MultiEditDialog::~MultiEditDialog()
+{
+    Preferences * prefs = Preferences::instance();
+    prefs->setmultieditHeight(height());
+    prefs->setmultieditWidth(width());
 }
 
 void MultiEditDialog::setData(const QVariant & data)

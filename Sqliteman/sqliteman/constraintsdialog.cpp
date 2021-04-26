@@ -8,23 +8,22 @@ for which a new license (GPL+exception) is in place.
 #include <QPushButton>
 #include <QSqlQuery>
 #include <QSqlError>
-#include <QSettings>
 
 #include "constraintsdialog.h"
 #include "database.h"
+#include "preferences.h"
 #include "utils.h"
 
-ConstraintsDialog::ConstraintsDialog(const QString & tabName, const QString & schema, QWidget * parent)
-	: QDialog(parent),
-	m_schema(schema),
-	m_table(tabName)
+ConstraintsDialog::ConstraintsDialog(
+    const QString & tabName, const QString & schema, LiteManWindow * parent)
+	: DialogCommon(parent)
 {
-	update = false;
+	m_databaseName = schema;
+    m_tableName = tabName;
 	ui.setupUi(this);
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("constraints/height", QVariant(500)).toInt();
-	int ww = settings.value("constraints/width", QVariant(600)).toInt();
-	resize(ww, hh);
+    setResultEdit(ui.resultEdit);
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->constraintsWidth(), prefs->constraintsHeight());
 
 	// trigger name templates
 	ui.insertName->setText(QString("tr_cons_%1_ins").arg(tabName));
@@ -66,7 +65,7 @@ ConstraintsDialog::ConstraintsDialog(const QString & tabName, const QString & sc
 						  + query.lastError().text()
 						  + tr("\nusing sql statement:\n")
 						  + sql;
-		ui.resultEdit->setText(errtext);
+		resultAppend(errtext);
 		return;
 	}
 	// 2 - table - FK table; 3 - from - column name; 4 - to - fk column name
@@ -132,14 +131,15 @@ ConstraintsDialog::ConstraintsDialog(const QString & tabName, const QString & sc
 
 ConstraintsDialog::~ConstraintsDialog()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-    settings.setValue("constraints/height", QVariant(height()));
-    settings.setValue("constraints/width", QVariant(width()));
+    Preferences * prefs = Preferences::instance();
+    prefs->setconstraintsHeight(height());
+    prefs->setconstraintsWidth(width());
 }
 
 void ConstraintsDialog::createButton_clicked()
 {
-	ui.resultEdit->setHtml("INSERT trigger<br/>");
+	ui.resultEdit->setHtml("");
+	resultAppend("INSERT trigger<br/>");
 	if (!execSql("SAVEPOINT CONSTRAINTS;", tr("Cannot create savepoint")))
 	{
 		return;
@@ -149,16 +149,17 @@ void ConstraintsDialog::createButton_clicked()
 		if (execSql(QString("CREATE TRIGGER ")
 					 + Utils::q(ui.insertName->text())
 					 + " BEFORE INSERT ON "
-					 + Utils::q(m_schema)
+					 + Utils::q(m_databaseName)
 					 + "."
-					 + Utils::q(m_table)
+					 + Utils::q(m_tableName)
 					 + " FOR EACH ROW\nBEGIN\n"
 					 + "-- created by Sqliteman tool\n\n"
 					 + ui.insertEdit->text()
 					 + "END;",
 					 tr("Cannot create trigger:")))
 		{
-			ui.resultEdit->append("Trigger created successfully");
+			resultAppend("Trigger created successfully");
+            m_updated = true;
 		}
 		else
 		{
@@ -168,25 +169,25 @@ void ConstraintsDialog::createButton_clicked()
 	}
 	else
 	{
-		ui.resultEdit->append(tr("No action for INSERT") + "<br/>");
+		resultAppend(tr("No action for INSERT") + "<br/>");
 	}
 
-	ui.resultEdit->append("UPDATE trigger<br/>");
+	resultAppend("UPDATE trigger<br/>");
 	if (ui.updateEdit->text().length() != 0)
 	{
 		if (execSql(QString("CREATE TRIGGER ")
 					 + Utils::q(ui.updateName->text())
 					 + " BEFORE UPDATE ON "
-					 + Utils::q(m_schema)
+					 + Utils::q(m_databaseName)
 					 + "."
-					 + Utils::q(m_table)
+					 + Utils::q(m_tableName)
 					 + " FOR EACH ROW\nBEGIN\n"
 					 + "-- created by Sqliteman tool\n\n"
 					 + ui.updateEdit->text()
 					 + "END;",
 					 tr("Cannot create trigger")))
 		{
-			ui.resultEdit->append("Trigger created successfully");
+			resultAppend("Trigger created successfully");
 		}
 		else
 		{
@@ -195,24 +196,25 @@ void ConstraintsDialog::createButton_clicked()
 		}
 	}
 	else
-		ui.resultEdit->append(tr("No action for UPDATE") + "<br/>");
+		resultAppend(tr("No action for UPDATE") + "<br/>");
 
-	ui.resultEdit->append("DELETE trigger<br/>");
+	resultAppend("DELETE trigger<br/>");
 	if (ui.deleteEdit->text().length() != 0)
 	{
 		if (execSql(QString("CREATE TRIGGER ")
 					 + Utils::q(ui.updateName->text())
 					 + " BEFORE DELETE ON "
-					 + Utils::q(m_schema)
+					 + Utils::q(m_databaseName)
 					 + "."
-					 + Utils::q(m_table)
+					 + Utils::q(m_tableName)
 					 + " FOR EACH ROW\nBEGIN\n"
 					 + "-- created by Sqliteman tool\n\n"
 					 + ui.deleteEdit->text()
 					 + "END;",
 					 tr("Cannot create trigger")))
 		{
-			ui.resultEdit->append("Trigger created successfully");
+			resultAppend("Trigger created successfully");
+            m_updated = true;
 		}
 		else
 		{
@@ -220,37 +222,15 @@ void ConstraintsDialog::createButton_clicked()
 			return;
 		}
 	}
-	else
-		ui.resultEdit->append(tr("No action for DELETE") + "<br/>");
+	else {
+		resultAppend(tr("No action for DELETE") + "<br/>");
+    }
 	if (!execSql("RELEASE CONSTRAINTS;", tr("Cannot release savepoint")))
 	{
 		doRollback(tr("Cannot roll back either"));
 		return;
 	}
 }
-
-bool ConstraintsDialog::execSql(const QString & statement,
-								   const QString & message)
-{
-	QSqlQuery query(statement, QSqlDatabase::database(SESSION_NAME));
-	if (query.lastError().isValid())
-	{
-		QString errtext = message
-			   + ":<br/><span style=\" color:#ff0000;\">"
-			   + query.lastError().text()
-			   + "<br/></span>" + tr("using sql statement:")
-			   + "<br/><tt>" + statement
-			   + "</tt><br/>";
-		ui.resultEdit->append(errtext);
-		return false;
-	}
-	else
-	{
-		update = true;
-		return true;
-	}
-}
-
 void ConstraintsDialog::doRollback(QString message)
 {
 	if (execSql("ROLLBACK TO CONSTRAINTS;", message))
@@ -261,5 +241,5 @@ void ConstraintsDialog::doRollback(QString message)
 			return;
 		}
 	}
-	ui.resultEdit->append(tr("Database may be left with a pending savepoint."));
+	resultAppend(tr("Database may be left with a pending savepoint."));
 }

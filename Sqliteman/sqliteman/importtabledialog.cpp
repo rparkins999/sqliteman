@@ -9,7 +9,6 @@ for which a new license (GPL+exception) is in place.
 */
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QSettings>
 #include <QStandardItemModel>
 
 #if QT_VERSION >= 0x040300
@@ -20,12 +19,13 @@ for which a new license (GPL+exception) is in place.
 
 #include <QSqlQuery>
 #include <QSqlError>
+#include <QTextStream>
 #include <QTreeWidgetItem>
-#include <QtDebug>
 
+#include "database.h"
 #include "importtabledialog.h"
 #include "importtablelogdialog.h"
-#include "database.h"
+#include "preferences.h"
 #include "sqliteprocess.h"
 #include "utils.h"
 
@@ -38,10 +38,8 @@ ImportTableDialog::ImportTableDialog(LiteManWindow * parent,
 	update = false;
 	creator = parent;
 	setupUi(this);
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("importtable/height", QVariant(500)).toInt();
-	int ww = settings.value("importtable/width", QVariant(600)).toInt();
-	resize(ww, hh);
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->importtableWidth(), prefs->importtableHeight());
 
 	QString n;
 	int currIx = 0;
@@ -81,9 +79,9 @@ ImportTableDialog::ImportTableDialog(LiteManWindow * parent,
 
 ImportTableDialog::~ImportTableDialog()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-    settings.setValue("importtable/height", QVariant(height()));
-    settings.setValue("importtable/width", QVariant(width()));
+    Preferences * prefs = Preferences::instance();
+    prefs->setimporttableHeight(height());
+    prefs->setimporttableWidth(width());
 }
 
 QStringList ImportTableDialog::splitLine(QTextStream * in,
@@ -536,7 +534,8 @@ ImportTable::XMLModel::XMLModel(QString fileName, QList<FieldInfo> fields,
 	}
 	if (xml.error() && xml.error() != QXmlStreamReader::PrematureEndOfDocumentError)
 	{
-        qDebug() << "XML ERROR:" << xml.lineNumber() << ": " << xml.errorString();
+        qDebug("XML ERROR:%lld:%s",
+               xml.lineNumber(), xml.errorString().toUtf8().data());
     }
 
 	file.close();

@@ -18,11 +18,12 @@ class QTreeWidgetItem;
  * \author Igor Khanin
  * \author Petr Vanek <petr@scribus.info>
  */
-class QueryEditorDialog : public QDialog, public Ui::QueryEditorDialog
+class QueryEditorDialog : public QDialog
 {
 	Q_OBJECT
 
 	public:
+        Ui::QueryEditorDialog ui;
 		/*!
 		 * @brief Creates the query editor.
 		 * @param parent The parent widget for the dialog.

@@ -23,6 +23,7 @@ class ImportTableLogDialog : public QDialog, public Ui::ImportTableLogDialog
 
 	public:
 		ImportTableLogDialog(QStringList log, QWidget * parent = 0);
+        ~ImportTableLogDialog();
 };
 
 #endif

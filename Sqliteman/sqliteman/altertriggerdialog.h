@@ -8,32 +8,28 @@ for which a new license (GPL+exception) is in place.
 #ifndef ALTERTRIGGERDIALOG_H
 #define ALTERTRIGGERDIALOG_H
 
-#include <qwidget.h>
+#include "createtriggerdialog.h"
 
-#include "ui_createtriggerdialog.h"
-
+class QTreeWidgetItem;
 
 /*! \brief GUI for trigger altering
 \author Petr Vanek <petr@scribus.info>
 */
-class AlterTriggerDialog : public QDialog
+class AlterTriggerDialog : public CreateTriggerDialog // ->DialogCommon->QDialog
 {
 	Q_OBJECT
 
 	public:
-		AlterTriggerDialog(const QString & name, const QString & schema, QWidget * parent = 0);
+		AlterTriggerDialog(QTreeWidgetItem * item, LiteManWindow * parent = 0);
 		~AlterTriggerDialog();
 
- 		bool update;
+ 		bool m_updated;
 
 	private:
-		Ui::CreateTriggerDialog ui;
-		QString m_schema;
 		QString m_name;
-		void resultAppend(QString text);
 
 	private slots:
-		void createButton_clicked();
+		void alterButton_clicked();
 };
 
-#endif
+#endif // ALTERTRIGGERDIALOG_H

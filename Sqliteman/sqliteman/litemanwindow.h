@@ -56,7 +56,7 @@ class LiteManWindow : public QMainWindow
         QStringList visibleDatabases();
         QTreeWidgetItem * findTreeItem(QString database, QString table);
 
-		QueryEditorDialog * queryEditor;
+		QueryEditorDialog * queryEditor = 0;
         QAction * actToggleSqlEditorToolBar;
         QAction * actToggleDataViewerToolBar;
 
@@ -176,7 +176,7 @@ class LiteManWindow : public QMainWindow
 
 		QString m_lastDB;
 		QString m_lastSqlFile;
-		QString m_appName;
+		QString m_appName = "Sqliteman";
 		QString m_lang;
 		QTreeWidgetItem * m_activeItem;
 		QTreeWidgetItem * m_currentItem;
@@ -188,7 +188,7 @@ class LiteManWindow : public QMainWindow
 		SchemaBrowser * schemaBrowser;
 		SqlEditor* sqlEditor;
 		QSplitter* splitterSql;
-		HelpBrowser * helpBrowser;
+		HelpBrowser * helpBrowser = 0;
 		
 		QMenu * databaseMenu;
 		QMenu * adminMenu;

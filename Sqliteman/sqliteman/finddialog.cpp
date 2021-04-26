@@ -8,7 +8,6 @@ for which a new license (GPL+exception) is in place.
 #include <QComboBox>
 #include <QLineEdit>
 #include <QScrollBar>
-#include <QSettings>
 #include <QSqlField>
 #include <QSqlRecord>
 #include <QTreeWidgetItem>
@@ -16,9 +15,8 @@ for which a new license (GPL+exception) is in place.
 #include "database.h"
 #include "dataviewer.h"
 #include "finddialog.h"
+#include "preferences.h"
 #include "sqlparser.h"
-#include "ui_finddialog.h"
-#include "ui_termstabwidget.h"
 #include "utils.h"
 
 bool FindDialog::notSame(QStringList l1, QStringList l2)
@@ -71,44 +69,43 @@ void FindDialog::closeEvent(QCloseEvent * event)
 
 FindDialog::FindDialog(QWidget * parent)
 {
-	setupUi(this);
-	connect(finishedbutton, SIGNAL(clicked()), this, SLOT(close()));
-	QSettings settings("yarpen.cz", "sqliteman");
-	int hh = settings.value("finddialog/height", QVariant(400)).toInt();
-	int ww = settings.value("finddialog/width", QVariant(600)).toInt();
-	resize(ww, hh);
+	ui.setupUi(this);
+    ui.termsTab->allowNoTerms(false);
+    Preferences * prefs = Preferences::instance();
+	resize(prefs->finddialogWidth(), prefs->finddialogHeight());
 }
 
 FindDialog::~FindDialog()
 {
-	QSettings settings("yarpen.cz", "sqliteman");
-    settings.setValue("finddialog/height", QVariant(height()));
-    settings.setValue("finddialog/width", QVariant(width()));
+    Preferences * prefs = Preferences::instance();
+    prefs->setfinddialogHeight(height());
+    prefs->setfinddialogWidth(width());
 }
 
 void FindDialog::updateButtons()
 {
-	bool enabled = termsTab->termsTable->rowCount() != 0;
-	findfirst->setEnabled(enabled);
-	findnext->setEnabled(enabled);
-	findall->setEnabled(enabled);
+	bool enabled = ui.termsTab->ui.termsTable->rowCount() != 0;
+	ui.findfirst->setEnabled(enabled);
+	ui.findnext->setEnabled(enabled);
+	ui.findall->setEnabled(enabled);
 }
 
 void FindDialog::doConnections(DataViewer * dataviewer)
 {
-	connect(findfirst, SIGNAL(clicked()),
+	connect(ui.findfirst, SIGNAL(clicked()),
 			dataviewer, SLOT(findFirst()));
-	connect(findnext, SIGNAL(clicked()),
+	connect(ui.findnext, SIGNAL(clicked()),
 			dataviewer, SLOT(findNext()));
-	connect(findall, SIGNAL(clicked()),
+	connect(ui.findall, SIGNAL(clicked()),
 			dataviewer, SLOT(findAll()));
+	connect(ui.finishedbutton, SIGNAL(clicked()), this, SLOT(close()));
 	connect(this, SIGNAL(findClosed()),
 			dataviewer, SLOT(findClosing()));
-	connect(termsTab, SIGNAL(firstTerm()),
+	connect(ui.termsTab, SIGNAL(firstTerm()),
 			this, SLOT(updateButtons()));
-	connect(termsTab->termMoreButton, SIGNAL(clicked()),
+	connect(ui.termsTab->ui.termMoreButton, SIGNAL(clicked()),
 			this, SLOT(updateButtons()));
-	connect(termsTab->termLessButton, SIGNAL(clicked()),
+	connect(ui.termsTab->ui.termLessButton, SIGNAL(clicked()),
 			this, SLOT(updateButtons()));
 }
 
@@ -125,14 +122,14 @@ void FindDialog::setup(QString schema, QString table)
 	delete parser;
 	if (   (schema != m_schema)
 		|| (table != m_table)
-		|| (notSame(termsTab->m_columnList, columns)))
+		|| (notSame(ui.termsTab->m_columnList, columns)))
 	{
 		m_schema = schema;
 		m_table = table;
-		termsTab->m_columnList = columns;
-		termsTab->termsTable->clear();
-		termsTab->termsTable->setRowCount(0);
-		termsTab->caseCheckBox->setChecked(false);
+		ui.termsTab->m_columnList = columns;
+		ui.termsTab->ui.termsTable->clear();
+		ui.termsTab->ui.termsTable->setRowCount(0);
+		ui.termsTab->ui.caseCheckBox->setChecked(false);
 	}
 	updateButtons();
 }
@@ -140,17 +137,17 @@ void FindDialog::setup(QString schema, QString table)
 bool FindDialog::isMatch(QSqlRecord * rec, int i)
 {
 	QComboBox * field = qobject_cast<QComboBox *>
-		(termsTab->termsTable->cellWidget(i, 0));
+		(ui.termsTab->ui.termsTable->cellWidget(i, 0));
 	QComboBox * relation = qobject_cast<QComboBox *>
-		(termsTab->termsTable->cellWidget(i, 1));
+		(ui.termsTab->ui.termsTable->cellWidget(i, 1));
 	QLineEdit * value = qobject_cast<QLineEdit *>
-		(termsTab->termsTable->cellWidget(i, 2));
+		(ui.termsTab->ui.termsTable->cellWidget(i, 2));
 	if (field && relation)
 	{
 		QVariant data(rec->value(field->currentText()));
 		bool dataOk;
 		QString dataString(data.toString());
-		if (!(termsTab->caseCheckBox->isChecked()))
+		if (!(ui.termsTab->ui.caseCheckBox->isChecked()))
 		{
 			dataString = QLocale().toLower(dataString);
 		}
@@ -162,7 +159,7 @@ bool FindDialog::isMatch(QSqlRecord * rec, int i)
 		{
 			valString = value->text();
 			valDouble = valString.toDouble(&valOk);
-			if (!(termsTab->caseCheckBox->isChecked()))
+			if (!(ui.termsTab->ui.caseCheckBox->isChecked()))
 			{
 				valString = QLocale().toLower(valString);
 			}
@@ -262,10 +259,10 @@ bool FindDialog::isMatch(QSqlRecord * rec, int i)
 
 bool FindDialog::isMatch(QSqlRecord * rec)
 {
-	int terms = termsTab->termsTable->rowCount();
+	int terms = ui.termsTab->ui.termsTable->rowCount();
 	if (terms > 0)
 	{
-		if (termsTab->andButton->isChecked())
+		if (ui.termsTab->ui.andButton->isChecked())
 		{
 			for (int i = 0; i < terms; ++i)
 			{
