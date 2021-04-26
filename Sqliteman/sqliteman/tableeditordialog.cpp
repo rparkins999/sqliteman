@@ -29,20 +29,20 @@ for which a new license (GPL+exception) is in place.
  * its column has been resized. */
 void TableEditorDialog::fudgeSlot()
 {
-    setGeometry(m_rect);
-    resizeTable();
+    resize(m_rect.width(), m_rect.height());
     m_fudging = false;
 }
 
 void TableEditorDialog::fudge()
 {
+    resizeTable();
     if (!m_fudging) { // prevent re-entrant use of m_rect
         m_fudging = true;
         m_rect = geometry();
-        setGeometry(m_rect.x(), m_rect.y(), m_rect.width() + 1, m_rect.height());
-        /* The number 10 (milliseconds) here can be operating system dependent:
+        resize(m_rect.width() + 1, m_rect.height());
+        /* The number 20 (milliseconds) here can be operating system dependent:
          * it needs to be big enough for at least one clock tick. */
-        QTimer::singleShot(10, this, SLOT(fudgeSlot()));
+        QTimer::singleShot(20, this, SLOT(fudgeSlot()));
     }
 }
 
@@ -54,7 +54,6 @@ TableEditorDialog::TableEditorDialog(LiteManWindow * parent)
 	m_useNull = prefs->nullHighlight();
 	m_nullText = prefs->nullHighlightText();
     m_nullColor = prefs->nullHighlightColor();
-	m_resizeWanted = true;
 	m_dirty = false;
     m_tableOrView = QString();
     m_originalName = QString();
@@ -174,7 +173,6 @@ void TableEditorDialog::addField(FieldInfo field)
 	connect(defval, SIGNAL(textEdited(const QString &)),
 			this, SLOT(lineEdited()));
 	ui.columnTable->setCurrentCell(rc, 0);
-	m_resizeWanted = true;
 }
 
 QString TableEditorDialog::schema()
@@ -342,7 +340,7 @@ void TableEditorDialog::removeField()
     if (ui.columnTable->rowCount() > 1) {
         ui.columnTable->removeRow(ui.columnTable->currentRow());
 		checkChanges();
-        m_resizeWanted = true;
+        fudge();
 	}
 }
 
@@ -555,20 +553,8 @@ void TableEditorDialog::resizeTable()
 
 void TableEditorDialog::resizeEvent(QResizeEvent * event)
 {
-	m_resizeWanted = true;
 	QDialog::resizeEvent(event);
-}
-
-void TableEditorDialog::paintEvent(QPaintEvent * event)
-{
-	if (m_resizeWanted)
-	{
-		resizeTable();
-        updateGeometry();
-		m_resizeWanted = false;
-	}
-	QDialog::paintEvent(event);
-    m_paintCount++;
+    fudge();
 }
 
 void TableEditorDialog::tableNameChanged()

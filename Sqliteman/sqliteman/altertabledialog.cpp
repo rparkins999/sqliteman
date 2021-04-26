@@ -113,6 +113,7 @@ void AlterTableDialog::resetClicked()
 	delete parsed;
 	m_dropped = false;
 	checkChanges();
+    fudge();
 }
 
 AlterTableDialog::AlterTableDialog(LiteManWindow * parent,
@@ -192,10 +193,9 @@ AlterTableDialog::AlterTableDialog(LiteManWindow * parent,
 	m_alterButton->setDisabled(true);
 	connect(m_alterButton, SIGNAL(clicked(bool)),
 			this, SLOT(alterButton_clicked()));
-	resetClicked();
     Preferences * prefs = Preferences::instance();
 	resize(prefs->altertableWidth(), prefs->altertableHeight());
-	Utils::setColumnWidths(ui.columnTable);
+	resetClicked();
 }
 
 AlterTableDialog::~AlterTableDialog()

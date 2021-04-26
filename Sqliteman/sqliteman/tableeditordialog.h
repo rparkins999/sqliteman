@@ -39,7 +39,6 @@ private:
     bool m_useNull;
     QString m_nullText;
     QColor m_nullColor;
-    int m_paintCount = 0;
 
 public:
     Ui::TableEditorDialog ui;
@@ -54,7 +53,6 @@ public:
     QString schema();
 
 protected:
-    bool m_resizeWanted; // column relayout needed, not window resize
     bool m_dirty; // SQL has been edited
     QString m_tableOrView;
     QString m_originalName; // NULL except in Alter Table Dialog
@@ -75,7 +73,6 @@ protected:
     virtual void setFirstLine(QWidget * w);
     void setDirty();
     virtual void resizeTable();
-    void paintEvent(QPaintEvent * event);
     void resizeEvent(QResizeEvent * event);
 
 public slots:

@@ -52,7 +52,6 @@ CreateTableDialog::~CreateTableDialog()
 void CreateTableDialog::addField()
 {
     TableEditorDialog::addField();
-    resizeTable();
     fudge();
 }
 
