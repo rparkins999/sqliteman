@@ -304,7 +304,7 @@ CreateIndexDialog::CreateIndexDialog(
     }
     ui.tableCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     m_tableOrView = "INDEX";
-    ui.tabWidget->setTabText(0, "Column");
+    ui.tabWidget->setTabText(0, "Columns");
     ui.tabWidget->setTabToolTip(0, "Choose columns to index");
     ui.tabWidget->setTabText(1, "WHERE");
     ui.tabWidget->setTabToolTip(1, "Add conditions for indexed rows");

@@ -5,20 +5,20 @@
 	<meta name="generator" content="DocBook XSL Stylesheets V1.67.2">
 	<meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database">
 	<link rel="start" href="index.html" title="The Sqliteman Handbook">
-	<link rel="up" href="ch07.html" title="Chapter 7. Features and Dialogs">
-	<link rel="prev" href="ch07s05.html" title="Populate Table">
-	<link rel="next" href="ch07s07.html" title="Create Index">
+	<link rel="up" href="FeaturesDialogs.html" title="Chapter 7. Features and Dialogs">
+	<link rel="prev" href="PopulateTable.html" title="Populate Table">
+	<link rel="next" href="CreateIndex.html" title="Create Index">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 	<div class="navheader">
 		<table width="100%" summary="Navigation header">
 			<tr><th colspan="3" align="center">Create View</th></tr>
 			<tr><td width="20%" align="left">
-					<a accesskey="p" href="ch07s05.html">Prev</a>
+					<a accesskey="p" href="PopulateTable.html">Prev</a>
 				</td>
 				<th width="60%" align="center">Chapter 7. Features and Dialogs</th>
 				<td width="20%" align="right">
-					<a accesskey="n" href="ch07s07.html">Next</a>
+					<a accesskey="n" href="CreateIndex.html">Next</a>
 				</td>
 			</tr>
 		</table>
@@ -32,7 +32,12 @@
 			</div>
 		</div>
 	</div>
-	<p>The <a href="ch07s06.html#id20151111">AS query</a> and <a href="ch07s06.html#id20151112">EDIT SQL</a> tabs allow you to create a view using the query builder or by editing an SQL SELECT.</p>
+	<p>The <a href="CreateView.html#id20151111">AS query</a> and
+        <a href="CreateView.html#id20151112">EDIT SQL</a>
+        tabs allow you to create a view using the
+        <a href="ch07s11.html">Query Builder</a>
+        or by editing an SQL SELECT.
+    </p>
 	<p></p>
 	<div class="screenshot">
 		<div class="mediaobject">
@@ -49,11 +54,15 @@
 			<dd><p>Name of new view. It must be nonempty.</p></dd>
 			<dt><span class="term"><a name="id20151111">AS query tab</a></span></dt>
 			<dd>
-				<p>This opens the query builder where you can create a view using a CREATE VIEW name AS SELECT ... statement.</p>
+				<p>This opens the
+                    <a href="ch07s11.html">Query Builder</a>
+                    where you can create a view using a
+                    CREATE VIEW name AS SELECT ... statement.
+				</p>
 			</dd>
 			<dt><span class="term"><a name="id20151112">Edit SQL tab</a></span></dt>
 			<dd>
-				<p>You can write any SQL CREATE VIEW statement here: the first line containing 'CREATE VIEW "schemaname"."tablename" AS' is not editable except by changing the Database name or Table Name in the fields above. When you first open this tab, it will make a CREATE VIEW statement from the information in the <a href="ch07s06.html#id20151111">AS query</a> tab. Every subsequent time you open this tab you will be asked if you want to keep the existing SQL or make it from the information in the <a href="ch07s06.html#id20151111">AS query</a> tab again.</p>
+				<p>You can write any SQL CREATE VIEW statement here: the first line containing 'CREATE VIEW "schemaname"."tablename" AS' is not editable except by changing the Database name or Table Name in the fields above. When you first open this tab, it will make a CREATE VIEW statement from the information in the <a href="CreateView.html#id20151111">AS query</a> tab. Every subsequent time you open this tab you will be asked if you want to keep the existing SQL or make it from the information in the <a href="CreateView.html#id20151111">AS query</a> tab again.</p>
 				<p>If you omit the terminating semicolon, <span class="application">sqliteman</span> will add it for you.</p>
 			</dd>
 			<dt><span class="term">Create</span></dt>
@@ -67,6 +76,6 @@
 			</dd>
 		</dl>
 	</div>
-	<div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ch07s05.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ch07.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ch07s07.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Populate Table </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> Create Index</td></tr></table>
+	<div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="PopulateTable.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="FeaturesDialogs.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="CreateIndex.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Populate Table </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> Create Index</td></tr></table>
 	</div>
 </body></html>

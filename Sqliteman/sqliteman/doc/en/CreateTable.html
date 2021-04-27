@@ -5,18 +5,18 @@
 	<meta name="generator" content="DocBook XSL Stylesheets V1.67.2">
 	<meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database">
 	<link rel="start" href="index.html" title="The Sqliteman Handbook">
-	<link rel="up" href="ch07.html" title="Chapter 7. Features and Dialogs">
-	<link rel="prev" href="ch07s01.html" title="Auto Commit and Transaction Pending modes">
-	<link rel="next" href="ch07s03.html" title="Alter Table">
+	<link rel="up" href="FeaturesDialogs.html" title="Chapter 7. Features and Dialogs">
+	<link rel="prev" href="TransactionModes.html" title="Auto Commit and Transaction Pending modes">
+	<link rel="next" href="AlterTable.html" title="Alter Table">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 	<div class="navheader">
 		<table width="100%" summary="Navigation header">
 			<tr><th colspan="3" align="center">Create Table</th></tr>
 			<tr><td width="20%" align="left">
-					<a accesskey="p" href="ch07s01.html">Prev</a> </td>
+					<a accesskey="p" href="TransactionModes.html">Prev</a> </td>
 					<th width="60%" align="center">Chapter 7. Features and Dialogs</th>
-				<td width="20%" align="right"> <a accesskey="n" href="ch07s03.html">Next</a></td></tr>
+				<td width="20%" align="right"> <a accesskey="n" href="AlterTable.html">Next</a></td></tr>
 		</table>
 	<hr></div>
 	<div class="sect1" lang="en">
@@ -25,7 +25,7 @@
 				<h2 class="title" style="clear: both"><a name="createTable"></a>Create Table</h2>
 			</div>
 		</div>
-		<p>The <a href="ch07s02.html#id2015101">(columns)</a>, <a href="ch07s02.html#id2015102">AS query</a>, and <a href="ch07s02.html#id2015103">EDIT SQL</a> tabs allow you to create a table in various ways.</p>
+		<p>The <a href="CreateTable.html#id2015101">(columns)</a>, <a href="CreateTable.html#id2015102">AS query</a>, and <a href="CreateTable.html#id2015103">EDIT SQL</a> tabs allow you to create a table in various ways.</p>
 		<p></p><div class="screenshot">
 			<div class="mediaobject">
 				<img src="createTable.png" alt="Create table dialog">
@@ -49,7 +49,13 @@
             </p></dd>
 			<dt><span class="term"><a name="id2015101">(columns) tab</a></span></dt>
 			<dd>
-				<p>Use "Add" and "Remove" buttons to create columns for this table. Every column must have a table-unique name, chosen data type (prepared combo box), optional extra constraint (nothing, NOT NULL, PRIMARY KEY [implies NOT NULL], or AUTOINCREMENT [implies PRIMARY KEY and NOT NULL]), and optional DEFAULT value. If you want to use your own non-standard data type, you can type it into the combo box.
+				<p>Use "Add" and "Remove" buttons to create columns for this table. Every column must have a table-unique name, chosen data type (prepared combo box), optional extra constraint,
+				and optional DEFAULT value. Prepared data types are
+				BLOB, INTEGER, REAL, and TEXT: if you want to use your own
+				non-standard data type, you can type it into the combo box.
+				Available extra constraints are  (nothing), NOT NULL,
+				PRIMARY KEY (implies NOT NULL), or AUTOINCREMENT
+				(implies PRIMARY KEY and NOT NULL).
 				The rules for admissible default values are complex
 				and described in
 				<a href="apb.html">Appendix B</a>.
@@ -69,7 +75,7 @@
 			</dd>
 			<dt><span class="term"><a name="id2015103">Edit SQL tab</a></span></dt>
 			<dd>
-				<p>You can write any SQL CREATE TABLE statement here: the first line containing 'CREATE TABLE "schemaname"."tablename" [AS or (]' is not editable except by changing the Database name or Table Name in the fields above. When you first open this tab, it will make a CREATE TABLE statement from the information in the previously open <a href="ch07s02.html#id2015101">(columns)</a> or <a href="ch07s02.html#id2015102">AS query</a> tab. Every subsequent time you open this tab you will be asked if you want to keep the existing SQL or make it from the information in the previously open tab again.</p>
+				<p>You can write any SQL CREATE TABLE statement here: the first line containing 'CREATE TABLE "schemaname"."tablename" [AS or (]' is not editable except by changing the Database name or Table Name in the fields above. When you first open this tab, it will make a CREATE TABLE statement from the information in the previously open <a href="CreateTable.html#id2015101">(columns)</a> or <a href="CreateTable.html#id2015102">AS query</a> tab. Every subsequent time you open this tab you will be asked if you want to keep the existing SQL or make it from the information in the previously open tab again.</p>
 				<p>If you omit the terminating semicolon, sqliteman will add it for you.</p>
 			</dd>
 			<dt><span class="term">Without rowid</span></dt>
@@ -77,7 +83,7 @@
 <dd><p>Check this box to create a WITHOUT ROWID table. It must have at least one PRIMARY KEY and no AUTOINCREMENT.</p></dd>
 <dt><span class="term">Create</span></dt>
 <dd><p>Press this button to create the table.
-When the <a href="ch07s02.html#id2015101">(columns)</a> tab is selected,
+When the <a href="CreateTable.html#id2015101">(columns)</a> tab is selected,
 the Create button is only enabled when the new table name is nonempty,
 and the table name is not the same (ignoring case) at the name of any
 index, view, or table,
@@ -87,10 +93,10 @@ and no other column is a PRIMARY KEY,
 and if Without rowid is checked there is at least one PRIMARY KEY column,
 and any column default values are admissible
 (see <a href="apb.html">Appendix B</a>).
-When the <a href="ch07s02.html#id2015102">AS query</a> tab or the <a href="ch07s02.html#id2015103">Edit SQL</a> tab is selected, the Create button is only enabled if the new table has a nonempty name. The result of this operation is shown in the text area below, which will expand if it needs to contain a long error message.</p>
+When the <a href="CreateTable.html#id2015102">AS query</a> tab or the <a href="CreateTable.html#id2015103">Edit SQL</a> tab is selected, the Create button is only enabled if the new table has a nonempty name. The result of this operation is shown in the text area below, which will expand if it needs to contain a long error message.</p>
 <p>Sqlite will permit a table to be created with a table name which contains non-alphanumeric characters or with an empty string as a column name, so sqliteman allows these. However in both of these cases it asks if you really want to do it, since the underlying library doesn't handle such tables correctly.</p></dd></dl></div></div>
 <div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr>
-          <td width="40%" align="left"><a accesskey="p" href="ch07s01.html">Prev</a> </td>
-          <td width="20%" align="center"><a accesskey="u" href="ch07.html">Up</a>
-          </td><td width="40%" align="right"> <a accesskey="n" href="ch07s03.html">Next</a></td></tr>
+          <td width="40%" align="left"><a accesskey="p" href="TransactionModes.html">Prev</a> </td>
+          <td width="20%" align="center"><a accesskey="u" href="FeaturesDialogs.html">Up</a>
+          </td><td width="40%" align="right"> <a accesskey="n" href="AlterTable.html">Next</a></td></tr>
           <tr><td width="40%" align="left" valign="top">Auto Commit and Transaction Pending modes </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> Alter Table</td></tr></table></div></body></html>

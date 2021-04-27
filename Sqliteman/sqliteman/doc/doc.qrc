@@ -34,25 +34,25 @@
         <file>en/go-next.png</file>
         <file>en/go-previous.png</file>
         <file>en/gpl-license.html</file>
-        <file>en/ch01.html</file>
-        <file>en/ch02.html</file>
-        <file>en/ch03.html</file>
-        <file>en/ch04.html</file>
-        <file>en/ch05.html</file>
-        <file>en/ch06.html</file>
-        <file>en/ch06s02.html</file>
-        <file>en/ch06s03.html</file>
-        <file>en/ch06s04.html</file>
-        <file>en/ch06s05.html</file>
-        <file>en/ch07.html</file>
-        <file>en/ch07s00.html</file>
-        <file>en/ch07s01.html</file>
-        <file>en/ch07s02.html</file>
-        <file>en/ch07s03.html</file>
-        <file>en/ch07s04.html</file>
-        <file>en/ch07s05.html</file>
-        <file>en/ch07s06.html</file>
-        <file>en/ch07s07.html</file>
+        <file>en/Introduction.html</file>
+        <file>en/Issues.html</file>
+        <file>en/Starting.html</file>
+        <file>en/Overview.html</file>
+        <file>en/MainWindow.html</file>
+        <file>en/MenuStructure.html</file>
+        <file>en/ContextMenu.html</file>
+        <file>en/DatabaseMenu.html</file>
+        <file>en/SystemMenu.html</file>
+        <file>en/HelpMenu.html</file>
+        <file>en/FeaturesDialogs.html</file>
+        <file>en/UserDefinedFunctions.html</file>
+        <file>en/TransactionModes.html</file>
+        <file>en/CreateTable.html</file>
+        <file>en/AlterTable.html</file>
+        <file>en/ImportTable.html</file>
+        <file>en/PopulateTable.html</file>
+        <file>en/CreateView.html</file>
+        <file>en/CreateIndex.html</file>
         <file>en/ch07s08.html</file>
         <file>en/ch07s09.html</file>
         <file>en/ch07s10.html</file>

@@ -476,7 +476,7 @@ void TableEditorDialog::setDirty()
 	m_dirty = true;
 }
 
-// special version for column with comboboxes or only icons
+// special version for column with comboboxes or icons
 void TableEditorDialog::resizeTable()
 {
 	QTableWidget * tv = ui.columnTable;
