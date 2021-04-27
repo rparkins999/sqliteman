@@ -792,6 +792,8 @@ void AlterTableDialog::alterButton_clicked()
         // if there is nothing else to do, we're done.
 		if (!m_altered) {
             m_item->setText(0, newTableName);
+            m_originalName = Utils::q(m_databaseName)
+                             + "." + Utils::q(m_tableName);
             checkChanges();
             resultAppend(tr("Table successfully altered"));
             return;
