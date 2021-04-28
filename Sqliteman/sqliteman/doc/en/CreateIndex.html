@@ -1,0 +1,134 @@
+<html><head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Create Index</title>
+    <link rel="stylesheet" href="kde-default.css" type="text/css">
+    <meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database">
+    <link rel="start" href="index.html" title="The Sqliteman Handbook">
+    <link rel="up" href="FeaturesDialogs.html"
+        title="Chapter 7. Features and Dialogs">
+    <link rel="prev" href="CreateView.html" title="View related dialogs">
+    <link rel="next" href="ch07s08.html" title="Constraint Triggers">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+    <div class="navheader">
+        <table width="100%" summary="Navigation header">
+            <tr>
+                <th colspan="3" align="center">Create Index</th>
+            </tr><tr>
+                <td width="20%" align="left">
+                    <a accesskey="p" href="CreateView.html">Prev</a>
+                </td>
+                <th width="60%" align="center">Chapter 7. Features and Dialogs</th>
+                <td width="20%" align="right">
+                    <a accesskey="n" href="ch07s08.html">Next</a>
+                </td>
+            </tr>
+        </table>
+        <hr>
+    </div>
+    <div class="sect1" lang="en">
+        <div class="titlepage">
+        <h2 class="title" style="clear: both">
+            <a name="createIndex"></a>Create Index
+        </h2>
+    </div>
+    <p>
+        This dialog enables you to create an index on a table.
+        At present it can only be invoked from the context menu of a table
+        in the schema browser, so the
+        <span class="term">Database</span> and
+        <span class="term">On Table</span> dropdown lists are frozen to the
+        database and table selected: this restriction my be removed in a future
+        revision of <span class="application">Sqliteman</span>.
+    </p>
+    <p></p>
+    <div class="variablelist">
+    <dl>
+    <dt><span class="term">Database</span></dt>
+    <dd><p>
+        This is prefilled with the name of the database containing
+        the table to be indexed.
+    </p></dd>
+    <dt><span class="term">Index name</span></dt>
+    <dd><p>
+        The name of the index to be created has to be typed in here.
+    </p></dd>
+    <dt><span class="term">Database</span></dt>
+    <dd><p>
+        This is prefilled with the name of the table to be indexed.
+    </p></dd>
+    <dt><span class="term"><a name="columnstab">Columns tab</a></span></dt>
+    <div class="screenshot"><div class="mediaobject">
+        <img src="createIndex1.png" alt="Create Index dialog">
+    </div></div>
+    <p></p>
+    <dd><p>
+        This shows a list of the columns in the table to be indexed.
+        The list contains the name of each column,
+        a dropdown box to choose a collator to sort the values for that column
+        (which is prefilled with the defined collator for that column
+        if there is one), a dropdown box to choose ascending or descending
+        for the sort order, and buttons to reorder columns or remove them
+        from the index. An index must index at least one column, so it will
+        not let you remove all of them. If you remove a column that you want
+        by mistake, the <span class="term">Reset</span> button will restore
+        the original list. If no collator is chosen,
+        <span class="application">sqlite</span>
+        will use its default collator which is BINARY.
+    </p></dd>
+    <dt><span class="term">Unique?</span></dt>
+    <dd><p>
+        Check it if you want to have an unique index. Default is not unique.
+    </p></dd>
+    <dt><span class="term"><a name="WHEREtab">WHERE tab</a></span></dt>
+    <div class="screenshot"><div class="mediaobject">
+        <img src="createIndex2.png" alt="Create Index dialog">
+    </div></div>
+    <dd><p>
+        This tab allows you to add a WHERE clause to make a partial index.
+        "Match any of the following terms" is preselected because current
+        versions of <span class="application">sqlite</span> cannot make
+        use of AND-connected terms unless all tests are "IS NOT NULL".
+    </p></dd>
+    <p></p>
+    <dt><span class="term">Case Sensitive</span></dt>
+    <dd><p>
+        Check it if you want to have tests on strings to be case sensitive.
+    </p></dd>
+    <dt><span class="term">More</span></dt>
+    <dd><p>
+        Add a term to the WHERE clause.
+    </p></dd>
+    <dt><span class="term">Less</span></dt>
+    <dd><p>
+        Remove the last term from the WHERE clause.
+    </p></dd>
+    <dt><span class="term">Edit SQL tab</span></dt>
+    <dd><p>
+        You can write any SQL CREATE INDEX statement here: the first line containing 'CREATE INDEX "schemaname"."indexname" ON tablename' is not
+        editable except by changing the Index Name in the field above.
+        When you first open this tab, it will make a CREATE INDEX statement
+        from the information in the
+        <a href="CreateIndex.html#columnstab">
+            <span class="term">Columns tab</span>
+        </a>
+        and the
+        <a href="CreateIndex.html#WHEREtab">WHERE</a>
+        tab (if there is anything in it).
+        Every subsequent time you open this tab you will be asked if you want to
+        keep the existing SQL or make it from the information in the other
+        tabs again.
+    </p><p>
+        If you omit the terminating semicolon, sqliteman will add it for you.
+    </p></dd>
+    <dt><span class="term">Create</span></dt>
+    <dd><p>
+        Press this button to create the index.
+        The Create button is only enabled if the Index name is nonempty
+        and different (ignoring case) from the name of any table or view
+        or other index in the database.
+        The result of this operation is shown in the text area below,
+        which will appear if it is needed and expand if it needs
+        to contain a long error message.
+    </p></dd>
+    <div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="CreateView.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="FeaturesDialogs.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ch07s08.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Create View </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> Constraint Triggers</td></tr></table></div></body></html>
