@@ -6,8 +6,8 @@
 <meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database">
 <link rel="start" href="index.html" title="The Sqliteman Handbook">
 <link rel="up" href="FeaturesDialogs.html" title="Chapter 7. Features and Dialogs">
-<link rel="prev" href="ch07s13.html" title="Find Dialog">
-<link rel="next" href="ch07s15.html" title="Export Data">
+<link rel="prev" href="Find.html" title="Find Dialog">
+<link rel="next" href="Export.html" title="Export Data">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <div class="navheader">
@@ -15,12 +15,12 @@
 		<tr><th colspan="3" align="center">Data Viewer</th></tr>
 		<tr>
 			<td width="20%" align="left">
-				<a accesskey="p" href="ch07s13.html">Prev</a>
+				<a accesskey="p" href="Find.html">Prev</a>
 			</td>
 			<th width="60%" align="center">
 				Chapter 7. Features and Dialogs</th>
 			<td width="20%" align="right">
-				<a accesskey="n" href="ch07s15.html">Next</a>
+				<a accesskey="n" href="Export.html">Next</a>
 			</td>
 		</tr>
 	</table>
@@ -36,27 +36,31 @@
 	<div class="itemizedlist">
 		<ul type="disc">
 			<li><p>Results of queries launched by
-				<a href="ch07s11.html" title="Query Builder">
+				<a href="QueryBuilder.html" title="Query Builder">
 					the graphical query builder
 				</a>.
 			</p></li>
 			<li><p>Results of statements launched in
-			<a href="ch07s12.html" title="SQL Editor">the SQL Editor</a>.
+			<a href="SQLeditor.html" title="SQL Editor">the SQL Editor</a>.
 			</p></li>
 			<li><p>Content of tables and views listed in
-			<a href="ch07s10.html" title="Schema Browser">
+			<a href="SchemaBrowser.html" title="Schema Browser">
 			the Schema Browser</a>.
 			Click on a table name to fetch its data.
 			</p></li>
 		</ul>
 	</div>
-	<p>Changes in Data Viewer are handled in a separate transaction. So you
+	<p><span class="bluebackground">
+        Edited rows are displayed with a blue-green background.
+    </span><br><br>
+	Changes in Data Viewer are cached locally and have to be explicitly
+	promoted into the database. So you
 		<span class="emphasis">have to</em></span>
 		click the
-		<span class="guibutton"><a href="ch07s14.html#commit">Commit</a>
+		<span class="guibutton"><a href="DataViewer.html#commit">Commit</a>
 		</span>
 		button to promote them into the database file or the
-		<span class="guibutton"><a href="ch07s14.html#rollback">Rollback</a>
+		<span class="guibutton"><a href="DataViewer.html#rollback">Rollback</a>
 		</span>
 		button to discard them.
 	</p>
@@ -71,7 +75,7 @@
         or
         <span><strong class="command">SAVEPOINT</strong></span>)
         from the SQL editor you have to close that as well after using the
-        <span class="guibutton"><a href="ch07s14.html#commit">Commit</a>
+        <span class="guibutton"><a href="DataViewer.html#commit">Commit</a>
         </span>
         button in order for your changes to become permanent in the
         database. See
@@ -82,7 +86,7 @@
     </div>
 	<p>Data changes are available only for tables (invoked in Schema Browser).
 		There is no way to edit the data returned by an SQL statement yet,
-		but for simple queries the <a href="ch07s13.html">Find Dialog</a>
+		but for simple queries the <a href="Find.html">Find Dialog</a>
 		may help you.
 	</p>
 	<p></p>
@@ -103,7 +107,7 @@
 							This button is enabled only when viewing a table. It
 							opens a dialog enabling you to search in the table.
 							for details see
-							the <a href="ch07s13.html">Find Dialog</a>.
+							the <a href="Find.html">Find Dialog</a>.
 						</p>
 					 </span>
 				 </p>
@@ -168,7 +172,7 @@
                             If the default for a field is an sqlite expression,
                             it will be prefilled with the result of evaluating
                             the expression: since it is possible
-                            <a href="apb.html"> (see appendix B) </a>
+                            <a href="DefaultValues.html"> (see appendix B) </a>
                             to constuct an
                             <span class="application">sqlite</span> constant
                             expression with a non-constant value using
@@ -179,7 +183,7 @@
                             If the whole table has not been read yet, inserting
                             a row causes the remainder of the table to be read into memory.
                         </p><p>
-                            <a href="ch07s14.html#commit">Commit</a>
+                            <a href="DataViewer.html#commit">Commit</a>
                             action is required to make this permanent.
                         </p>
                     </span>
@@ -213,7 +217,7 @@
                             violation that field is prefilled as for a new row
                             instead of being copied.
                         </p><p>
-                            <a href="ch07s14.html#commit">Commit</a>
+                            <a href="DataViewer.html#commit">Commit</a>
                             action is required to make this permanent.
                         </p>
                     </span>
@@ -240,7 +244,7 @@
 						This button is enabled only when viewing a table and a
 						current row is selected. It deletes the selected row
 						from the table.
-						<a href="ch07s14.html#commit">Commit</a>
+						<a href="DataViewer.html#commit">Commit</a>
 						action is required to make this permanent.
 					</span>
 				</p>
@@ -257,19 +261,19 @@
 				<p>
 					<span class="action">
 						This button replaces the
-						<a href="ch07s14.html#removerow">Remove Row</a>
+						<a href="DataViewer.html#removerow">Remove Row</a>
 						button when you have just executed a query created by
 						the
-						<a href="ch07s11.html">Query Builder</a>.
+						<a href="QueryBuilder.html">Query Builder</a>.
 						It deletes all the records found by the query from the
 						table against which the query was run. It will ask you
 						if you really want to do this first as this can delete a
 						lot of records. This is an immediate action and does not
 						require
-						<a href="ch07s14.html#commit">Commit</a>
+						<a href="DataViewer.html#commit">Commit</a>
 						action to update the database. Note this button is not
 						available after executing a query from the
-						<a href="ch07s12.html">SQL Editor</a>
+						<a href="SQLeditor.html">SQL Editor</a>
 						widget, since this can contain a more complex SELECT
 						which cannot be simply modified into a DELETE
 						statement.
@@ -354,7 +358,7 @@
 					<span class="action">
 						Open the Data Export dialog. You can export currently
 						selected data in various formats.
-						<a href="ch07s15.html" title="Export Data">
+						<a href="Export.html" title="Export Data">
 							See Data Export documentation</a>.
 					</span>
 				</p>
@@ -418,11 +422,11 @@
 					</p>
 					<p>
 						Clicking on the Item View tab will display the
-						<a href="ch07s14.html#itemview">Item View</a>
+						<a href="DataViewer.html#itemview">Item View</a>
 						for the currently selected row (the tab is disabled
 						when there is no current row). Double-clicking on a row
 						number in the Full View will open the
-						<a href="ch07s14.html#itemview">Item View</a>
+						<a href="DataViewer.html#itemview">Item View</a>
 						for that row.
 					</p>
 					<p>
@@ -481,7 +485,7 @@
 						</dt>
 						<dd>
 							Open the
-							<a href="ch07s14.html#line-edit">In-line Editor</a>
+							<a href="DataViewer.html#line-edit">In-line Editor</a>
 							in the field. This can also be invoked by
 							double-clicking on the field.
 						<dt>
@@ -497,7 +501,7 @@
 						</dt>
 						<dd>
 							Bring up the
-							<a href="ch07s14.html#advanced">Multiline Editor</a>
+							<a href="DataViewer.html#advanced">Multiline Editor</a>
 							to edit the contents of the field in a pop-up
 							window.
 						</dd>
@@ -521,10 +525,10 @@
 						you are already at that row. Below the navigation
 						buttons there are two small buttons to overwrite the
 						selected field with a NULL and to open the
-						<a href="ch07s14.html#advanced">Multiline Editor</a>:
+						<a href="DataViewer.html#advanced">Multiline Editor</a>:
 						these are only visible if the table is editable.
 						You can also use the
-						<a href="ch07s14.html#linenumber">go to line number</a>
+						<a href="DataViewer.html#linenumber">go to line number</a>
 						button.
 					</p>
 					<p>
@@ -629,7 +633,7 @@
 						</dt>
 						<dd>
 							Bring up the
-							<a href="ch07s14.html#advanced">Multiline Editor</a>
+							<a href="DataViewer.html#advanced">Multiline Editor</a>
 							to edit the contents of the field in a pop-up
 							window.
 						</dd>
@@ -645,7 +649,7 @@
 					<span class="guibutton">Describe</span>
 					menu action or from running multiple commands as a
 					script in the
-					<a href="ch07s12.html">SQL Editor</a>
+					<a href="SQLeditor.html">SQL Editor</a>
 					are listed in this tab. It is automatically
 					selected if you run a script which does not generate a
 					table.
@@ -738,7 +742,7 @@
 			Data Viewer. If the
 			<span class="guibutton">Insert NULL</span>
 			option is checked, only NULL is inserted. As usual the
-			<a href="ch07s14.html#commit">commit</a>
+			<a href="DataViewer.html#commit">commit</a>
 			button then has to be used to promote the changes into the database.
 		</p>
 		<div class="variablelist">
@@ -874,13 +878,13 @@
 	<table width="100%" summary="Navigation footer">
 		<tr>
 			<td width="40%" align="left">
-				<a accesskey="p" href="ch07s13.html">Prev</a>
+				<a accesskey="p" href="Find.html">Prev</a>
 			</td>
 			<td width="20%" align="center">
 				<a accesskey="u" href="FeaturesDialogs.html">Up</a>
 			</td>
 			<td width="40%" align="right">
-				<a accesskey="n" href="ch07s15.html">Next</a>
+				<a accesskey="n" href="Export.html">Next</a>
 			</td>
 		</tr>
 		<tr>

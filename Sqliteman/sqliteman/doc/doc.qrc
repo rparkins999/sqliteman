@@ -1,11 +1,11 @@
 <RCC>
     <qresource prefix="/doc">
         <file>en/alterTable.png</file>
-        <file>en/apa.html</file>
-        <file>en/apb.html</file>
-        <file>en/apas02.html</file>
-        <file>en/apas03.html</file>
-        <file>en/apas04.html</file>
+        <file>en/Installation.html</file>
+        <file>en/DefaultValues.html</file>
+        <file>en/Requirements.html</file>
+        <file>en/Compilation.html</file>
+        <file>en/Configuration.html</file>
         <file>en/blob.png</file>
         <file>en/close.png</file>
         <file>en/column.png</file>
@@ -54,17 +54,17 @@
         <file>en/PopulateTable.html</file>
         <file>en/CreateView.html</file>
         <file>en/CreateIndex.html</file>
-        <file>en/ch07s08.html</file>
-        <file>en/ch07s09.html</file>
-        <file>en/ch07s10.html</file>
-        <file>en/ch07s11.html</file>
-        <file>en/ch07s12.html</file>
-        <file>en/ch07s13.html</file>
-        <file>en/ch07s14.html</file>
-        <file>en/ch07s15.html</file>
-        <file>en/ch08.html</file>
-        <file>en/ch09.html</file>
-        <file>en/ch09s02.html</file>
+        <file>en/ConstraintTriggers.html</file>
+        <file>en/Attached.html</file>
+        <file>en/SchemaBrowser.html</file>
+        <file>en/QueryBuilder.html</file>
+        <file>en/SQLeditor.html</file>
+        <file>en/Find.html</file>
+        <file>en/DataViewer.html</file>
+        <file>en/Export.html</file>
+        <file>en/Questions.html</file>
+        <file>en/Credits.html</file>
+        <file>en/Licence.html</file>
         <file>en/finddialog.png</file>
         <file>en/index.html</file>
         <file>en/index.png</file>

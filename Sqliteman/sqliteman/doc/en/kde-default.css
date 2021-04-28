@@ -361,4 +361,7 @@ pre.license {
   font-family: monospace;
   color: rgb(0,0,0);
 }
+span.bluebackground { 
+  background-color: rgb(100,255,255);
+}
 

@@ -45,7 +45,7 @@ and if there is an AUTOINCREMENT column its type is INTEGER
 and no other column is a PRIMARY KEY,
 and if Without rowid is checked there is at least one PRIMARY KEY column,
 and any column default values are admissible
-(see <a href="apb.html">Appendix B</a>).</p>
+(see <a href="DefaultValues.html">Appendix B</a>).</p>
   <p><span class="application">Sqlite</span> will permit a table to be created with a table name which contains non-alphanumeric characters or with an empty string as a column name, so <span class="application">sqlitema</span>n allows these. However in both of these cases it asks if you really want to do it, since the underlying library doesn't display such tables correctly.</p><p>
           </p><div class="screenshot"><div class="mediaobject"><img src="alterTable.png" alt="Alter table dialog"></div></div><p>
           </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2526118"></a>Steps to alter table</h3></div></div></div><div class="orderedlist"><ol type="1"><li><p>Remember triggers and indexes from the original table</p></li><li><p>Rename the original table with temporary name if it is a case-insensitive match for the new name</p></li><li><p>Create new table with new name containing new column structure</p></li><li><p>Perform INSERT INTO new table SELECT FROM (possibly renamed) old table</p></li><li><p>Drop old table</p></li><li><p>Try to recreate original indexes and triggers</p></li></ol></div><p>When there is no change other than the name, only the rename
