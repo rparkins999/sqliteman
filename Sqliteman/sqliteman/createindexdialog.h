@@ -21,6 +21,9 @@ class CreateIndexDialog : public TableEditorDialog // ->DialogCommon->Qdialog
 {
 	Q_OBJECT
 
+signals:
+    void rebuildTableTree(QString schema);
+
 private:
     QPushButton * m_createButton;
 

@@ -1318,6 +1318,8 @@ void LiteManWindow::createIndex()
 	QString table(m_currentItem->text(0));
 	QString schema(m_currentItem->text(1));
 	CreateIndexDialog dlg(table, schema, this);
+	connect(&dlg, SIGNAL(rebuildTableTree(QString)),
+			schemaBrowser->tableTree, SLOT(buildTableTree(QString)));
 	dlg.exec();
 	if (dlg.m_updated)
 	{

@@ -172,14 +172,19 @@ void CreateIndexDialog::collatorIndexChanged(int n)
 void CreateIndexDialog::resetClicked()
 {
     ui.resultEdit->clear();
+    ui.queryEditor->ui.termsTab->m_columnList.clear();
 	// Initialize fields
 	SqlParser * parsed = Database::parseTable(m_tableName, m_databaseName);
 	QList<FieldInfo> fields = parsed->m_fields;
 	ui.columnTable->clearContents();
 	ui.columnTable->setRowCount(0);
 	int n = fields.size();
-	for (int i = 0; i < n; i++) { addField(fields[i]); }
+	for (int i = 0; i < n; i++) {
+        addField(fields[i]);
+        ui.queryEditor->ui.termsTab->m_columnList.append(fields[i].name);
+    }
 	delete parsed;
+    ui.queryEditor->ui.termsTab->ui.orButton->setChecked(true);
     setFirstLine();
 	checkChanges();
 }
@@ -214,6 +219,7 @@ void CreateIndexDialog::createButton_clicked()
 	ui.resultEdit->setHtml("");
     if (execSql(getSql(), tr("Cannot create index"))) {
         resultAppend(tr("Index created successfully"));
+        emit rebuildTableTree(m_databaseName);
     }
 }
 
@@ -246,7 +252,7 @@ QString CreateIndexDialog::getSQLfromDesign()
         sql = sql + (i ? ",\n" : "")
                   + Utils::q(ui.columnTable->item(i, 0)->text())
                   + " COLLATE " + collator + " "
-                  + Utils::q(ascDesc->currentText());
+                  + ascDesc->currentText();
     }
     return sql + ")" + ui.queryEditor->whereClause() + ";";
 }
@@ -337,9 +343,16 @@ CreateIndexDialog::CreateIndexDialog(
     delete ui.queryEditor->ui.hLayout;
     ui.queryEditor->ui.mainLayout->removeWidget(ui.queryEditor->ui.aTTQlabel);
     delete ui.queryEditor->ui.aTTQlabel;
-    ui.queryEditor->ui.tabWidget->removeTab(0);
-    ui.queryEditor->ui.tabWidget->setCurrentIndex(1);
     ui.queryEditor->ui.tabWidget->removeTab(2);
+    ui.queryEditor->ui.tabWidget->removeTab(0);
+    ui.queryEditor->ui.tabWidget->setCurrentIndex(0);
+    // debugging
+    QWidget * innerReset =
+        (QWidget *)ui.queryEditor->findChild<QObject*>("Reset");
+    if (innerReset) {
+        innerReset->setEnabled(false);
+        innerReset->hide();
+    }
 	m_createButton =
 		ui.buttonBox->addButton("Create", QDialogButtonBox::ApplyRole);
 	m_createButton->setDisabled(true);

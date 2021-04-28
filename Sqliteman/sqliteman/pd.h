@@ -71,6 +71,7 @@ private:
     static QString prepareTreeWidgetItem(const QTreeWidgetItem * const item);
     static QString prepareUrl(QUrl u);
     static QString prepareVariant(QVariant v);
+    static QString prepareWidget(const QWidget * ob);
 
     static QString prepareFieldInfo(const struct FieldInfo f);
 
@@ -105,6 +106,7 @@ public:
     static void dump(QList<QString> &l);
     static void dump(QList<QTreeWidgetItem *> &l);
     static void dump(QList<QVariant> &l);
+    static void dump(QList<QWidget *> &l);
     static void dump(QMap<QString, QList<QString> > &m);
     static void dump(QMap<QString, QStringList> &m);
     static void dump(QMap<QString, QObject *> &m);
@@ -142,6 +144,7 @@ public:
     static void dump(QVector<QPoint> &v);
     static void dump(QVector<QPointF> &v);
     static void dump(QVector<QVariant> &v);
+    static void dump(QWidget * w);
 
     // The following are for sqliteman's own application types
     static void dump(enum tokenType t);

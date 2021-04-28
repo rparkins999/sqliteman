@@ -302,6 +302,7 @@ QueryEditorWidget::QueryEditorWidget(QWidget * parent): QWidget(parent)
     connect(ui.schemaList, SIGNAL(currentIndexChanged(const QString)),
             this, SLOT(schemaSelected(const QString)));
 	QPushButton * resetButton = new QPushButton("Reset", this);
+    resetButton->setObjectName("Reset");
 	connect(resetButton, SIGNAL(clicked(bool)),
             this, SLOT(resetClicked()));
 	ui.tabWidget->setCornerWidget(resetButton, Qt::TopRightCorner);

@@ -352,6 +352,17 @@ QString pd::prepareVariant(QVariant v) {
         }
     }
 }
+QString pd::prepareWidget(const QWidget * ob) {
+    if (ob == NULL) { return "<Null QWidget>"; }
+    else {
+        QString s(ob->metaObject()->className());
+        QString name(ob->objectName());
+        if (name.size() > 0) {
+            s.append(" (").append(name).append(")");
+        }
+        return s;
+    }
+}
 
 QString pd::prepareFieldInfo(const struct FieldInfo f) {
 	QString s("name ");
@@ -524,6 +535,17 @@ void pd::dump(QList<QVariant> &l) {
         QList<QVariant>::const_iterator i;
         for (i = l.constBegin(); i != l.constEnd(); ++i) {
             addItem("", *i);
+        }
+        endList();
+    }
+}
+void pd::dump(QList<QWidget *> &l) {
+    if (l.isEmpty()) { qDebug ("Empty QList<QWidget *>"); }
+    else {
+        startList("QList");
+        QList<QWidget *>::const_iterator i;
+        for (i = l.constBegin(); i != l.constEnd(); ++i) {
+            addItem(prepareWidget((QWidget *)*i));
         }
         endList();
     }
@@ -813,6 +835,7 @@ void pd::dump(QVector<QVariant> &v) {
         endList();
     }
 }
+void pd::dump(QWidget * w) { dump(prepareWidget((QWidget *)w)); }
 // The following are for sqliteman's own application types
 void pd::dump(enum tokenType t) { dump(preparetokenType(t)); }
 void pd::dump(const struct Token & t) {
