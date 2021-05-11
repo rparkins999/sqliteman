@@ -10,24 +10,11 @@ This class parses SQL schemas (not general SQL statements). Since the
 schema is known to be valid, we do not always detect bad syntax.
 */
 
-// This bit of fantasy enables my pd prettyprinter to print enum values
-#ifdef ENUMPRINT
-#undef SQLPARSER_H
-#undef ENUM
-#undef ENUMVALUE
-#undef ENUMLAST
-#define ENUM(type)  static QString prepare##type(enum type x) { switch (x) {
-#define ENUMVALUE(x) case x: return #x;
-#define ENUMLAST(x) case x: return #x; default: return NULL; } }
-#endif
-
 #ifndef SQLPARSER_H
 
-#ifndef ENUMPRINT
-#undef ENUM
-#undef ENUMVALUE
-#undef ENUMLAST
-#define ENUM(type) enum type {
+// This make a normal enum definition when this file isn't included from pd.h
+#ifndef ENUM
+#define ENUM(t) enum t {
 #define ENUMVALUE(x) x,
 #define ENUMLAST(x) x };
 #endif
@@ -63,7 +50,121 @@ ENUMVALUE(exprXOp) // expression unary-postfix-operator
 ENUMVALUE(exprExpr) // ( expression )
 ENUMLAST(exprCall) // fname (expression)
 
-#ifndef ENUMPRINT
+// Main SQL statement parser
+ENUM(sqlParserState)
+ENUMVALUE(expectCREATE) // at present we only handle CREATE TABLE or INDEX
+// TEMP or TEMPORARY isn't preserved in the schema
+ENUMVALUE(expectCreated) // TABLE or UNIQUE or INDEX
+// we don't handle views or triggers yet
+// IF NOT EXISTS and database name don't get copied to the schema
+// from here we are creating a table
+ENUMVALUE(TexpectTableName) // name of the table
+// CREATE TABLE AS SELECT ... is translated into CREATE TABLE (...)
+ENUMVALUE(TexpectColumnList) // expect '('
+ENUMVALUE(TexpectColumnName) // name of the column
+ENUMVALUE(TexpectColOrTC) // seen ',' expect another column or table constraint
+ENUMVALUE(TexpectColumnType) // expect type or column constraint or ',' or ')'
+ENUMVALUE(TexpectTypeQualifier) // ... or column constraint or , or )
+ENUMVALUE(TexpectFieldWidth1) // after '(' expect sign or number
+ENUMVALUE(TexpectFieldWidth1N) // after sign, must have number
+ENUMVALUE(TexpectFieldWidthSep) // expect ',' or ')'
+ENUMVALUE(TexpectFieldWidth2) // after ',' expect sign or number
+ENUMVALUE(TexpectFieldWidth2N) // after sign, must have number
+ENUMVALUE(TexpectFieldWidthClose) // after "nnn,nnn", must have ')'
+ENUMVALUE(TexpectColConstraint) // after ("nnn,nnn") expect constraint
+// from here we are decoding a column constraint in a table
+ENUMVALUE(CCexpectName) // after CONSTRAINT expect name
+ENUMVALUE(CCexpectType) // after CONSTRAINT name expect constraint type
+ENUMVALUE(CCexpectKEY) // after PRIMARY expect KEY
+ENUMVALUE(CCexpectPKqualifier) // after PRIMARY KEY
+ENUMVALUE(CCexpectPKConflict) // after PRIMARY KEY expect conflict clause or next
+ENUMVALUE(CCexpectPKCONFLICT) // after ON expect CONFLICT
+ENUMVALUE(CCexpectPKConflictAction) // after ON CONFLICT expect action
+ENUMVALUE(CCexpectAUTO) // after CONFLICT action expect AUTOINCREMENT or next
+ENUMVALUE(CCexpectNULL) // after NOT expect NULL
+ENUMVALUE(CCexpectConflict) // expect conflict clause or next
+ENUMVALUE(CCexpectCONFLICT) // after ON expect CONFLICT
+ENUMVALUE(CCexpectConflictAction) // after ON CONFLICT expect action
+ENUMVALUE(CCexpectOpenExprClose) // after CHECK expect (expression)
+ENUMVALUE(CCexpectExprClose) // after '(' expect expression ')'
+ENUMVALUE(CCexpectDefault) // after DEFAULT expect default value
+ENUMVALUE(CCexpectDefaultExprClose) // after DEFAULT '(' expect expression ')'
+ENUMVALUE(CCexpectDefaultLiteral) // after DEFAULT '+' or '-' expect number
+ENUMVALUE(CCexpectCollateName) // after COLLATE expect name
+ENUMVALUE(CCexpectREFTable) // after REFERENCES expect table name
+// from here we are decoding a foreign key column constraint
+// a column constraint can only reference one foreign key column
+ENUMVALUE(CCexpectREFOpen) // expect '(' or foreign key action or next
+ENUMVALUE(CCexpectREFColumn) // after '(' expect column name
+ENUMVALUE(CCexpectREFClose) // after column name expect ')'
+ENUMVALUE(CCexpectFKType) // expect ON, MATCH, (NOT) DEFERRABLE, or next
+ENUMVALUE(CCexpectFKDeleteUpdate) // after ON expect DELETE or UPDATE
+ENUMVALUE(CCexpectFKDUAction) // after DELETE or UPDATE expect action
+ENUMVALUE(CCexpectFKSetAction) // after SET expect NULL or DEFAULT
+ENUMVALUE(CCexpectFKACTION) // after NO expect ACTION
+ENUMVALUE(CCexpectFKMatchType) // after MATCH expect SIMPLE or PARTIAL or FULL
+// NOT NULL can be a column constraint
+ENUMVALUE(CCexpectFKDEFERRABLE) // after NOT expect DEFERRABLE or NULL
+ENUMVALUE(CCexpectFKINITIALLY) // after DEFERRABLE expect INITIALLY or next
+ENUMVALUE(CCexpectFKDeferType) // after INITIALLY expect DEFERRED or IMMEDIATE
+// from here we are decoding a table constraint
+ENUMVALUE(TCexpectName) // after ',' CONSTRAINT expect table constraint name
+ENUMVALUE(TCexpectType) // after table constraint name expect constraint type
+ENUMVALUE(TCexpectPKEY) // after PRIMARY expect KEY
+ENUMVALUE(TCexpectPKOpen) // after PRIMARY KEY expect '('
+ENUMVALUE(TCexpectPKColumn) // expect next column in primary key list
+ENUMVALUE(TCexpectPKQualifier) // expect COLLATE or ASC or DESC or next
+ENUMVALUE(TCexpectPKCollateName) // after COLLATE expect name
+ENUMVALUE(TCexpectPKAscDesc) // expect ASC or DESC or next
+ENUMVALUE(TCexpectPKNext) // expect ',' or ')'
+ENUMVALUE(TCexpectUOpen) // after UNIQUE expect '('
+ENUMVALUE(TCexpectUColumn) // expect next column in primary key list
+ENUMVALUE(TCexpectUQualifier) // expect COLLATE or ASC or DESC or next
+ENUMVALUE(TCexpectUCollateName) // after COLLATE expect name
+ENUMVALUE(TCexpectUAscDesc) // expect ASC or DESC or next
+ENUMVALUE(TCexpectUNext) // expect ',' or ')'
+ENUMVALUE(TCexpectONorNext) // expect ON or comma or ')'
+ENUMVALUE(TCexpectCONFLICT) // after ON expect CONFLICT
+ENUMVALUE(TCexpectConflictAction) // after ON CONFLICT epect action
+ENUMVALUE(TCexpectCheckOpen) // expect '(' after CHECK
+ENUMVALUE(TCexpectCheckExpr) // expect expression after CHECK (
+// from here we are decoding a foreign key table constraint
+ENUMVALUE(TCexpectFKEY) // after FOREIGN expect KEY
+ENUMVALUE(TCexpectFKOpen) // after FOREIGN KEY expect '('
+ENUMVALUE(TCexpectFKColumn) // in this-table column list, expect column name
+ENUMVALUE(TCexpectFKClose) // in this-table column list, expect ',' or ')'
+ENUMVALUE(TCexpectREFERENCES) // expect REFERENCES
+ENUMVALUE(TCexpectREFTable) // after REFERENCES expect foreign table name
+ENUMVALUE(TCexpectREFOpen) // after table name expect referenced column list
+ENUMVALUE(TCexpectREFColumn) // after '(' or ',' expect column name
+ENUMVALUE(TCexpectREFClose) // after column name expect ',' or ')'
+ENUMVALUE(TCexpectFKType) // expect ON, MATCH, (NOT) DEFERRABLE, or next
+ENUMVALUE(TCexpectFKDeleteUpdate) // after ON expect DELETE or UPDATE
+ENUMVALUE(TCexpectFKDUAction) // after DELETE or UPDATE expect action
+ENUMVALUE(TCexpectFKSetAction) // after SET expect NULL or DEFAULT
+ENUMVALUE(TCexpectACTION) // after NO expect ACTION
+ENUMVALUE(TCexpectFKMatchType) // after MATCH expect SIMPLE or PARTIAL or FULL
+ENUMVALUE(TCexpectFKDEFERRABLE) // after NOT expect DEFERRABLE
+ENUMVALUE(TCexpectFKINITIALLY) // after DEFERRABLE expect INITIALLY or next
+ENUMVALUE(TCexpectFKDeferType) // after INITIALLY expect DEFERRED or IMMEDIATE
+ENUMVALUE(TCexpectAnotherOrEnd) // look for another table constraint or end
+ENUMVALUE(TexpectTableConstraint) // after comma expect 
+// from here we are creating a table
+ENUMVALUE(TexpectWITHOUT) // only allow WITHOUT ROWID or end
+ENUMVALUE(TexpectROWID) // after WITHOUT expect ROWID
+// from here we are creating an index
+ENUMVALUE(IexpectINDEX) // after CREATE UNIQUE
+ENUMVALUE(IexpectIndexName) // after CREATE INDEX
+ENUMVALUE(IexpectON) // after CREATE INDEX name
+ENUMVALUE(IexpectTableName) // after CREATE INDEX on name, expect table name
+ENUMVALUE(IexpectColumnList)
+ENUMVALUE(IexpectIndexedColumn)
+ENUMVALUE(IexpectWHERE)
+ENUMVALUE(IexpectWhereExpression)
+// here we should ahev finished, so any more tokens are an error
+ENUMLAST(expectStatementEnd)
+
+#ifndef ENUMSKIP
 
 enum itemType {
 	createTable,
@@ -145,6 +246,6 @@ class SqlParser
  		bool replace(QMap<QString,QString> map, QString newTableName);
 };
 
-#endif // ENUMPRINT
+#endif // ENUMSKIP
 #endif // SQLPARSER_H
 #define SQLPARSER_H

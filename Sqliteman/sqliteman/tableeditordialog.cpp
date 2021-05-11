@@ -249,23 +249,19 @@ QString TableEditorDialog::getFullName()
 
 QString TableEditorDialog::getSQLfromDesign()
 {
+    Preferences * prefs = Preferences::instance();
+    int width = prefs->textWidthMarkSize();
 	QString sql;
+    QString line;
 	bool first = true;
 	QStringList primaryKeys;
 	for (int i = 0; i < ui.columnTable->rowCount(); i++)
 	{
-		if (first)
-		{
-			first = false;
-		}
-		else
-		{
-			sql += ",";
-		}
+		QString column;
 		MyLineEdit * ed =
 			qobject_cast<MyLineEdit *>(ui.columnTable->cellWidget(i, 0));
 		QString name(ed->text());
-		sql += Utils::q(name);
+		column = Utils::q(name);
 		QComboBox * box =
 			qobject_cast<QComboBox *>(ui.columnTable->cellWidget(i, 1));
 		QString type(box->currentText());
@@ -274,13 +270,13 @@ QString TableEditorDialog::getSQLfromDesign()
             if (box->currentIndex() == 0) {
                 type = Utils::q(type);
             }
-			sql += " " + type;
+			column += " " + type;
 		}
 		box = qobject_cast<QComboBox *>(ui.columnTable->cellWidget(i, 2));
 		QString extra(box->currentText());
 		if (extra.contains("AUTOINCREMENT"))
 		{
-			sql += " PRIMARY KEY AUTOINCREMENT";
+			column += " PRIMARY KEY AUTOINCREMENT";
 		}
 		else if (extra.contains("PRIMARY KEY"))
 		{
@@ -288,15 +284,24 @@ QString TableEditorDialog::getSQLfromDesign()
 		}
 		if (extra.contains("NOT NULL"))
 		{
-			sql += " NOT NULL";
+			column += " NOT NULL";
 		}
 		ed = qobject_cast<MyLineEdit *>(ui.columnTable->cellWidget(i, 3));
 		QString defval(ed->text());
 		if (!defval.isEmpty())
 		{
-			sql += " DEFAULT " + defval;
+			column += " DEFAULT " + defval;
 		}
+		if (line.size() + column.size() >= width) {
+            if (first) { first = false; } else { line += ","; }
+            sql += line + "\n";
+            line = column;
+        } else {
+            if (first) { first = false; } else { line += ", "; }
+            line += column;
+        }
 	}
+	sql += line;
 	if (primaryKeys.count() > 0)
 	{
 		sql += ",\nPRIMARY KEY ( ";

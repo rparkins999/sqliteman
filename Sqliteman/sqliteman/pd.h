@@ -147,10 +147,8 @@ public:
     static void dump(QWidget * w);
 
     // The following are for sqliteman's own application types
-    static void dump(enum tokenType t);
     static void dump(const struct Token & t);
     static void dump(QList<Token> &l);
-    static void dump(enum exprType t);
     static void dump(Expression * e);
     static void dump(QList<Expression *> &l);
     static void dump(const struct FieldInfo &f);
@@ -161,9 +159,32 @@ public:
 #ifdef WANT_VDBE_DECODING
     static void dumpOpList(void * pVdbe);
 #endif // WANT_VDBE_DECODING
-    // magic for printing enumerations
-#define ENUMPRINT
+
+// This bit of fantasy enables me to prettyprint enum values
+#undef ENUM
+#undef ENUMVALUE
+#undef ENUMLAST
+#undef ENUMSKIP
+#define ENUM(t) \
+    static void dump(enum t x) { dump(prepare##t(x)); } \
+    static QString prepare##t(enum t x) { switch (x) {
+#define ENUMVALUE(x) case x: return #x;
+#define ENUMLAST(x) case x: return #x; default: return NULL; } }
+#define ENUMSKIP
+
+// This part is repeated for each header file that contains enumerations
+// that I want to be able to prettyprint.
+#ifdef SQLPARSER_H
+#undef SQLPARSER_H
 #include "sqlparser.h"
-#undef ENUMPRINT
+#else
+#include "sqlparser.h"
+#undef SQLPARSER_H
+#endif
+
+#undef ENUM
+#undef ENUMVALUE
+#undef ENUMLAST
+#undef ENUMSKIP
 };
 #endif

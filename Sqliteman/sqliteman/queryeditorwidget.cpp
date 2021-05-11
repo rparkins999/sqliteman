@@ -10,6 +10,7 @@ for which a new license (GPL+exception) is in place.
 #include <QScrollBar>
 #include <QTreeWidgetItem>
 
+#include "preferences.h"
 #include "queryeditorwidget.h"
 #include "querystringmodel.h"
 #include "sqlparser.h"
@@ -316,7 +317,7 @@ QString QueryEditorWidget::whereClause()
 	if (n > 0)
 	{ // First determine what is the chosen logic word (And/Or)
         QString logicWord =
-            (ui.termsTab->ui.andButton->isChecked()) ? ") AND (" : ") OR (";
+            (ui.termsTab->ui.andButton->isChecked()) ? ")\nAND (" : ")\nOR (";
 
 		sql += "\nWHERE (";
         bool nocase = !(ui.termsTab->ui.caseCheckBox->isChecked());
@@ -390,14 +391,29 @@ QString QueryEditorWidget::whereClause()
 
 QString QueryEditorWidget::statement()
 {
-	QString sql = "SELECT\n";
+    Preferences * prefs = Preferences::instance();
+    int width = prefs->textWidthMarkSize();
+    QString sql;
+	QString line = "SELECT ";
 
 	// columns
 	if (selectModel->rowCount() == 0)
-		sql += "* ";
+		sql = line + "* ";
 	else
 	{
-		sql += Utils::q(selectModel->stringList(), "\"");
+        QStringList columns = selectModel->stringList();
+        bool first = true;
+        while (columns.count() > 0) {
+            if (first) { first = false; } else { line += ","; }
+            QString s = Utils::q(columns.takeFirst());
+            if (line.size() + s.size() > width) {
+                sql += line + "\n";
+                line = " " + s;
+            } else {
+                line += " " + s;
+            }
+        }
+		sql += line;
 	}
 
 	// Add table name
@@ -420,7 +436,7 @@ QString QueryEditorWidget::statement()
 				qobject_cast<QComboBox *>(ui.ordersTable->cellWidget(i, 2));
 			if (fields && collators && directions)
 			{
-				if (i > 0) { sql += ", "; }
+				if (i > 0) { sql += ",\n "; }
 				sql += Utils::q(fields->currentText());
 				sql += " COLLATE ";
 				sql += collators->currentText() + " ";

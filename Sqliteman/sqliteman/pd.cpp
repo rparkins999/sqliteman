@@ -837,7 +837,6 @@ void pd::dump(QVector<QVariant> &v) {
 }
 void pd::dump(QWidget * w) { dump(prepareWidget((QWidget *)w)); }
 // The following are for sqliteman's own application types
-void pd::dump(enum tokenType t) { dump(preparetokenType(t)); }
 void pd::dump(const struct Token & t) {
     dump(preparetokenType(t.type) + '(' + t.name + ')');
 }
@@ -852,7 +851,6 @@ void pd::dump(QList<Token> &l) {
         endList();
     }
 }
-void pd::dump(enum exprType t) { dump(prepareexprType(t)); }
 void pd::dump(Expression * e) { dump(SqlParser::toString(e)); }
 void pd::dump(QList<Expression *> &l) {
     if (l.isEmpty()) { qDebug ("Empty QList<Expression *>"); }
