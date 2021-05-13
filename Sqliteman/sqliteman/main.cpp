@@ -36,6 +36,7 @@ for which a new license (GPL+exception) is in place.
 #define ARG_LANG_SHORT "-l"
 #define ARG_AVAILLANG_SHORT "-la"
 #define ARG_SCRIPT "-s"
+#define ARG_EXECUTE "-x"
 #define endl QString("\n")
 
 
@@ -59,6 +60,7 @@ class ArgsParser
 		//! \brief No file is opened when the returned value is null
 		const QString & fileToOpen();
 		const QString & scriptToOpen();
+		bool executeScript();
 	private:
 		int argc;
 		char ** argv;
@@ -67,6 +69,7 @@ class ArgsParser
 		void langsAvailable();
 		QString m_lastDB;
 		QString m_lastSqlFile;
+        bool m_execute;
 };
 
 /*! \brief Pre-fill available translations into QMap to cooperate
@@ -76,6 +79,7 @@ ArgsParser::ArgsParser(int c, char ** v)
 	: argc(c), argv(v), m_locale(""),
 	m_lastDB(QString()), m_lastSqlFile(QString())
 {
+    m_execute = false;
 	QDir d(TRANSLATION_DIR, "*.qm");
 	int i = 1; // 0 is for system default
 	QStringList l = d.entryList();
@@ -123,6 +127,7 @@ const QString & ArgsParser::fileToOpen()
 {
 	if (m_lastDB.isNull())
 	{
+        m_execute = false; // in case called before executeScript()
 		Preferences* p = Preferences::instance();
 		if (p->openLastDB() && QFileInfo(p->lastDB()).exists())
 			m_lastDB = p->lastDB();
@@ -141,6 +146,12 @@ const QString & ArgsParser::scriptToOpen()
 	return m_lastSqlFile;
 }
 
+bool ArgsParser::executeScript()
+{
+    // only allow script to be executed if a database name is given
+    return m_execute && !(m_lastDB.isNull());
+}
+
 bool ArgsParser::parseArgs()
 {
 	QString arg("");
@@ -155,7 +166,8 @@ bool ArgsParser::parseArgs()
 			m_locale = argv[i];
 			continue;
 		}
-		else if ((arg == ARG_SCRIPT) && (++i < argc))
+		else if (   ((arg == ARG_SCRIPT) && (++i < argc))
+                 || ((arg == ARG_EXECUTE) && (++i < argc)))
 		{
 			m_lastSqlFile = QFile::decodeName(argv[i]);
 			if (!QFileInfo(m_lastSqlFile).exists())
@@ -166,6 +178,7 @@ bool ArgsParser::parseArgs()
 					cout << QString("File ") << m_lastSqlFile << QString(" does not exist, aborting.") << endl;
 				return false;
 			}
+			if (arg == ARG_EXECUTE) { m_execute = true; }
 			continue;
 		}
 		else if (arg == ARG_VERSION || arg == ARG_VERSION_SHORT)
@@ -181,7 +194,10 @@ bool ArgsParser::parseArgs()
 			cout << QString("  --version -v  prints version") << endl;
 			cout << QString("  --lang    -l  set a GUI language. E.g. --lang cs for Czech") << endl;
 			cout << QString("  --langs   -la lists available languages") << endl;
-			cout << QString("  + various Qt options") << endl << endl;
+			cout << QString("  -s scriptfile loads scriptfile") << endl;
+			cout << QString("  -x scriptfile loads and executes scriptfile") << endl;
+			cout << QString("  + various Qt options") << endl;
+			cout << QString("  for more information use sqliteman's built-in help viewer") << endl << endl;
 			return false;
 		}
 		else if (arg == ARG_AVAILLANG || arg == ARG_AVAILLANG_SHORT)
@@ -248,7 +264,7 @@ int main(int argc, char ** argv)
 	app.installTranslator(&translator);
 
 	LiteManWindow * wnd = new LiteManWindow(
-        cli.fileToOpen(), cli.scriptToOpen());
+        cli.fileToOpen(), cli.scriptToOpen(), cli.executeScript());
 	wnd->setLanguage(cli.localeCode());
 	wnd->show();
 
@@ -300,7 +316,7 @@ void defaultCrashHandler(int sig)
 	{
 		crashRecursionCounter++;
 		QString sigMsg(QString("\nSqliteman crashes due to Signal #%1\n\n\
-All database opened will be rollbacked and closed.\n\n\
+All databases opened will be rolled back and closed.\n\n\
 Collect last steps that forced this\n\
 situlation and report it as a bug, please.").arg(sig));
 		cout << sigMsg << endl;

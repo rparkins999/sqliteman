@@ -60,7 +60,7 @@ for which a new license (GPL+exception) is in place.
 #endif
 
 LiteManWindow::LiteManWindow(
-    const QString & fileToOpen, const QString & scriptToOpen)
+    const QString & fileToOpen, const QString & scriptToOpen, bool executeScript)
 	: QMainWindow(),
 	m_lastDB(""),
 	m_lastSqlFile(scriptToOpen)
@@ -87,9 +87,12 @@ LiteManWindow::LiteManWindow(
 	m_activeItem = 0;
 	statusBar()->addPermanentWidget(m_sqliteVersionLabel);
 	readSettings();
+	queryEditor = new QueryEditorDialog(this);
 	// Check command line
 	if (!fileToOpen.isEmpty()) { open(fileToOpen); }
-	queryEditor =  new QueryEditorDialog(this);
+	if (executeScript) {
+        sqlEditor->actionRun_as_Script_triggered();
+    }
 }
 
 LiteManWindow::~LiteManWindow()

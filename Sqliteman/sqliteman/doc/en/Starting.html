@@ -1,9 +1,9 @@
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 3. Start the Application</title><link rel="stylesheet" href="kde-default.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.67.2"><meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database"><link rel="start" href="index.html" title="The Sqliteman Handbook"><link rel="up" href="index.html" title="The Sqliteman Handbook"><link rel="prev" href="Issues.html" title="Chapter 2. Sqlite Specific Issues"><link rel="next" href="Overview.html" title="Chapter 4. The First Overview"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 3. Start the Application</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="Issues.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="Overview.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="start-app"></a>Chapter 3. Start the Application</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="Starting.html
 #cli-usage">Usage in the command line</a></span></dt><dd><dl><dt><span class="sect2"><a href="Starting.html
 #databasefile">databasefile</a></span></dt><dt><span class="sect2"><a href="Starting.html
-#options">options</a></span></dt></dl></dd></dl></div><p>The most common way how to start <span class="application">Sqliteman</span> is
-to run it from your desktop menu. But there are some
-command line options you can use too.
+#options">options</a></span></dt></dl></dd></dl></div><p>The most common way to start <span class="application">sqliteman</span>
+is to run it from your desktop menu.
+Alternatively you can start it from the commnd line.
 </p>
 <div class="sect1" lang="en">
     <div class="titlepage">
@@ -18,10 +18,21 @@ command line options you can use too.
             databasefile
         </h3></div></div></div>
     <p>
-    An optional argument. A Sqlite3 file with absolute or relative path.
-    This file will be loaded into the application directly. If no database
-    is specified,
-    <span class="application">Sqliteman</span>
+    This optional argument must be the absolute or relative path to an sqlite3
+    database file, which will be loaded into the application directly.
+    If the file does not exist,
+    <span class="application">sqliteman</span>
+    will exit with an error message.
+    If the file exists and is empty, it is a valid sqlite3 database
+    with no tables or views, and
+    <span class="application">sqliteman</span>
+    will open it.
+    If the file exists and is not empty, but is not a valid sqlite3 database,
+    <span class="application">sqliteman</span>
+    will start up and display its User Interface with an error message
+    saying that the file is not a database.
+    If no database is specified,
+    <span class="application">sqliteman</span>
     will either load the last used database or nothing
     according to the setting in
     <a href="prefs.html">Preferences.</a>
@@ -30,7 +41,7 @@ command line options you can use too.
     <div class="titlepage">
         <div><div><h3 class="title"><a name="options"></a>
             options
-            </h3></div></div></div>
+        </h3></div></div></div>
     <p>
     Optional arguments. You can specify some switches to setup
     the application. Option list:
@@ -62,10 +73,27 @@ command line options you can use too.
         loads scriptfile into the
         <a href="SQLeditor.html">SQL Editor.</a>
         If this option is not used,
-        <span class="application">Sqliteman</span>
+        <span class="application">sqliteman</span>
         will either load the last used script file or nothing
-        according to the setting in
-        <a href="prefs.html">Preferences.</a>
+        according to the setting in the
+        <a href="prefs.html">Preferences dialog.</a>
+    </p></li>
+    <li><p>
+        <span><strong class="command">
+            -x scriptfile
+        </strong></span>
+        loads scriptfile into the
+        <a href="SQLeditor.html">SQL Editor and executes it.</a>
+        The scriptfile will only be executed if a 
+        <span><strong class="command">databasefile</strong></span>
+        is specified on the command line.
+        This is to protect you against running a script on the wrong
+        database by mistake.
+        If this option is not used (or ignored),
+        <span class="application">sqliteman</span>
+        will either load the last used script file or nothing
+        according to the setting in the
+        <a href="prefs.html">Preferences dialog.</a>
     </p></li>
     <li><p>
         <span><strong class="command">
@@ -80,10 +108,11 @@ command line options you can use too.
             sqliteman --lang cs
         </strong></span>
 </p><p>
-<span class="application">Sqliteman</span> checks your environment and tries to setup itself
-by your locale settings. It affects the GUI language – it should be in your
+<span class="application">Sqliteman</span> checks your environment and tries to set itself up
+by your locale settings. This affects the GUI language – it should be in your
 language if there is a translation available. If you wish to use this application
-in English use <span><strong class="command">--lang en</strong></span> or use <a href="prefs.html" title="Preferences">Preferences dialog</a>.
+in English use <span><strong class="command">--lang en</strong></span> or use the
+<a href="prefs.html" title="Preferences">Preferences dialog</a>.
 </p></li><li><p>
 <span><strong class="command">--langs</strong></span> or <span><strong class="command">-la</strong></span> lists available languages and exits
 </p></li></ul></div><p>There are standard Qt4 options available too.</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="Issues.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="Overview.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 2. Sqlite Specific Issues </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> Chapter 4. The First Overview</td></tr></table></div></body></html>

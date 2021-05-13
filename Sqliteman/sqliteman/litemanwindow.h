@@ -40,7 +40,8 @@ class LiteManWindow : public QMainWindow
 		Q_OBJECT
 	public:
 		LiteManWindow(
-            const QString & fileToOpen = 0, const QString & scriptToOpen = 0);
+            const QString & fileToOpen = 0, const QString & scriptToOpen = 0,
+            bool executeScript = false);
 		~LiteManWindow();
 
 		//! \brief Set the chosen language (used in the translator) to localize help too.

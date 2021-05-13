@@ -102,7 +102,6 @@ class SqlEditor : public QMainWindow
 		void actionRun_SQL_triggered();
 		void actionRun_Explain_triggered();
 		void actionRun_ExplainQueryPlan_triggered();
-		void actionRun_as_Script_triggered();
 		void action_Open_triggered();
 		void action_Save_triggered();
 		void action_New_triggered();
@@ -123,6 +122,7 @@ class SqlEditor : public QMainWindow
 		//
 		void scriptCancelled();
     public slots:
+		void actionRun_as_Script_triggered();
         void updateVisibility();
         void handleToolBar();
 

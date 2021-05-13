@@ -104,11 +104,9 @@ toSQLParse::statement::statement(const statement &stat)
 	Line = stat.Line;
 	if (stat.SubTokens)
 	{
-		SubTokens = new std::list<statement>;
-		(*SubTokens) = (*stat.SubTokens);
+        SubTokens = new std::list<statement>(*stat.SubTokens);
 	}
-	else
-		SubTokens = NULL;
+	else { SubTokens = NULL; }
 }
 
 const toSQLParse::statement &toSQLParse::statement::operator = (const statement & stat)
