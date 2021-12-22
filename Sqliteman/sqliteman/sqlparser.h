@@ -20,12 +20,13 @@ schema is known to be valid, we do not always detect bad syntax.
 #endif
 
 ENUM(tokenType)
+ENUMVALUE(tokenWhitespace) // whitespace between tokens
 ENUMVALUE(tokenQuotedIdentifier) // "identifier"
 ENUMVALUE(tokenSquareIdentifier) // [identifier]
 ENUMVALUE(tokenBackQuotedIdentifier) //`identifier`
 ENUMVALUE(tokenStringLiteral) // 'anything'
 ENUMVALUE(tokenBlobLiteral)
-ENUMVALUE(tokenIdentifier)
+ENUMVALUE(tokenIdentifier) // unquoted identifier
 ENUMVALUE(tokenOperatorA) // binary operator (alphanumeric)
 ENUMVALUE(tokenPostfixA) // (see QStringList posts)
 ENUMVALUE(tokenPrefixA) // NOT, NOT EXISTS
@@ -177,10 +178,12 @@ typedef struct Token {
 } Token;
 
 typedef struct Expression {
+    QString preSpacing;
 	enum exprType type;
 	struct Expression * left;
 	Token terminal;
 	struct Expression * right;
+    QString postSpacing;
 } Expression;
 
 typedef struct FieldInfo {

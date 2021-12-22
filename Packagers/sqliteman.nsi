@@ -2,9 +2,9 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "Sqliteman"
-!define PRODUCT_VERSION "1.2.0"
-!define PRODUCT_PUBLISHER "Petr Vanek"
-!define PRODUCT_WEB_SITE "http://sqliteman.com"
+!define PRODUCT_VERSION "1.6.1"
+!define PRODUCT_PUBLISHER "Richard Parkins"
+!define PRODUCT_WEB_SITE "https:\\github.com\rparkins999\sqliteman"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\sqliteman.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"

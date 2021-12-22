@@ -537,7 +537,9 @@ Expression * SqlParser::internalParser(
                 } else {
                     t = m_tokens.takeFirst(); // m_tokens isn't empty now
                 }
-                if (t.type == tokenClose) {
+                if (t.type == tokenWhitespace) {
+                    continue;
+                } else if (t.type == tokenClose) {
                     if (level == 1) { // empty arglist
                         return &nullExpression;
                     } else { return NULL; } // "()" expression or unmatched ')'
@@ -601,7 +603,9 @@ Expression * SqlParser::internalParser(
                 } else {
                     t = m_tokens.takeFirst(); // m_tokens isn't empty now
                 }
-                if (t.type == tokenClose) {
+                if (t.type == tokenWhitespace) {
+                    continue;
+                } else if (t.type == tokenClose) {
                     return NULL; // premature end of expression
                 }
                 /*FALLTHRU*/ // no need to set state, it isn't read
@@ -643,8 +647,12 @@ Expression * SqlParser::internalParser(
                         if (t.name.compare(
                             "CASE", Qt::CaseInsensitive) == 0)
                         {
+                            QString sp;
                             if (m_tokens.isEmpty()) { return NULL; }
-                            else if (m_tokens.at(0).name.compare(
+                            else if (m_tokens.at(0).type == tokenWhitespace) {
+                                sp = m_tokens.takeFirst.name;
+                                if (m_tokens.isEmpty()) { return NULL; }
+                            } else if (m_tokens.at(0).name.compare(
                                      "WHEN", Qt::CaseInsensitive) == 0)
                             {
                                 m_tokens.removeFirst();
@@ -1035,7 +1043,8 @@ SqlParser::SqlParser(QString input)
 	{
         Token t = m_tokens.at(0);
 		QString s;
-        if (t.type == tokenIdentifier) { s = t.name; } else { s = ""; }
+        if (t.type == tokenWhitespace) { continue; }
+        else if (t.type == tokenIdentifier) { s = t.name; } else { s = ""; }
 		switch (state)
 		{
 			case expectCREATE: // we only parse CREATE statements so far
