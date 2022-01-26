@@ -29,9 +29,9 @@
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 
-#include <qmap.h>
+#include <QtCore/qmap.h>
 #include <qpixmap.h>
-#include <qstring.h>
+#include <QtCore/qstring.h>
 
 #include "Platform.h"
 

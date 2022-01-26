@@ -15,7 +15,7 @@
 
 #include <QApplication>
 #include <QFontMetrics>
-#include <QMargins>
+#include <QtCore/QMargins>
 #include <QStyle>
 #include <QStyleOption>
 

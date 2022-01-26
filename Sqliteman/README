@@ -49,7 +49,7 @@ Available options for cmake (cmake options .):
     build application with the debug symbols
 -DWANT_RESOURCES=1
     build application with all icons, docs and translation files compiled in
-    as one binary file. It's useful e.g. for "portable" distribution or fo
+    as one binary file. It's useful e.g. for "portable" distribution or for
     Mac dmg files.
     This option is set automatically on Windows.
 -DWANT_INTERNAL_QSCINTILLA=1

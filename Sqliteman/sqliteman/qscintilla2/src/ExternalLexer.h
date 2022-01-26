@@ -11,7 +11,7 @@
 #if PLAT_WIN
 #define EXT_LEXER_DECL __stdcall
 #elif PLAT_QT
-#include <qglobal.h>
+#include <QtCore/qglobal.h>
 #if defined(Q_OS_WIN32) || defined(Q_OS_WIN64)
 #define	EXT_LEXER_DECL __stdcall
 #else

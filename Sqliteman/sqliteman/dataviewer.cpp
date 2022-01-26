@@ -8,12 +8,12 @@ for which a new license (GPL+exception) is in place.
 #include <QApplication>
 #include <QClipboard>
 #include <QCursor>
-#include <QDateTime>
-#include <QtDebug> //qDebug
+#include <QtCore/QDateTime>
+#include <QtCore/QtDebug> //qDebug
 #include <QHeaderView>
 #include <QInputDialog>
 #include <QKeyEvent>
-#include <QLocale>
+#include <QtCore/QLocale>
 #include <QMessageBox>
 #include <QResizeEvent>
 #include <QSqlField>

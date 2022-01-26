@@ -17,7 +17,7 @@ This is a QT bug.
 #include <QSqlError>
 #include <QSqlField>
 #include <QSqlQuery>
-#include <QVariant>
+#include <QtCore/QVariant>
 
 #include "database.h"
 #include "preferences.h"

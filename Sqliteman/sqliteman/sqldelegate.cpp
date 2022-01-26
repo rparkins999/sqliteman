@@ -6,17 +6,17 @@ for which a new license (GPL+exception) is in place.
 */
 #include <QApplication>
 #include <QFocusEvent>
-#include <QModelIndex>
+#include <QtCore/QModelIndex>
 #include <QPainter>
 #include <QPalette>
-#include <QRect>
-#include <QSize>
-#include <QSizeF>
+#include <QtCore/QRect>
+#include <QtCore/QSize>
+#include <QtCore/QSizeF>
 #include <QStyle>
 #include <QStyleOptionViewItemV4>
 #include <QTextOption>
 #include <QToolButton>
-#include <QVector>
+#include <QtCore/QVector>
 
 #include "sqldelegate.h"
 #include "utils.h"

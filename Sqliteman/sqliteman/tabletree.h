@@ -49,7 +49,6 @@ class TableTree : public QTreeWidget
 		void buildTriggers(QTreeWidgetItem *triggersItem, const QString & schema, const QString & table);
 		void buildViews(QTreeWidgetItem * viewsItem, const QString & schema);
 		void buildCatalogue(QTreeWidgetItem * systemItem, const QString & schema);
-
 		QString trDatabase;
 		QString trTables;
 		QString trIndexes;
@@ -60,7 +59,7 @@ class TableTree : public QTreeWidget
 		QString trCols;
 
 		QList<QTreeWidgetItem*> searchMask(const QString & trStr);
-
+        
 	public slots:
 		void buildTree();
 		void buildViewTree(QString schema, QString name);
@@ -71,9 +70,11 @@ class TableTree : public QTreeWidget
 		QString trLabel(const QString & trStr);
 
 		QPoint m_dragStartPosition;
+        bool m_pressed;
 
 		void mousePressEvent(QMouseEvent *event);
 		void mouseMoveEvent(QMouseEvent *event);
+        void mouseReleaseEvent(QMouseEvent *event);
 
         // these are only valid immediately after a call to buildDatabase()
         QTreeWidgetItem * lastTablesItem;

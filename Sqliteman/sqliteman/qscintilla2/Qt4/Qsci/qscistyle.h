@@ -37,7 +37,7 @@ extern "C++" {
 
 #include <qcolor.h>
 #include <qfont.h>
-#include <qstring.h>
+#include <QtCore/qstring.h>
 
 #include <Qsci/qsciglobal.h>
 

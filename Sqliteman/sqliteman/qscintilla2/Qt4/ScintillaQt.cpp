@@ -34,11 +34,11 @@
 #include <qevent.h>
 #include <qpainter.h>
 #include <qscrollbar.h>
-#include <qstring.h>
+#include <QtCore/qstring.h>
 
-#include <qbytearray.h>
+#include <QtCore/qbytearray.h>
 #include <qdrag.h>
-#include <qmimedata.h>
+#include <QtCore/qmimedata.h>
 
 #include "Qsci/qsciscintillabase.h"
 #include "ScintillaQt.h"

@@ -32,6 +32,7 @@ TableTree::TableTree(QWidget * parent) : QTreeWidget(parent)
 	setDragEnabled(true);
 	setDropIndicatorShown(true);
 	setAcceptDrops(false);
+    m_pressed = false;
 }
 
 void TableTree::buildTree()
@@ -302,8 +303,10 @@ void TableTree::buildTableTree(QString schema)
 
 void TableTree::mousePressEvent(QMouseEvent *event)
 {
-	if (event->button() == Qt::LeftButton)
+	if (event->button() == Qt::LeftButton) {
 		m_dragStartPosition = event->pos();
+        m_pressed = true;
+    }
 	QTreeWidget::mousePressEvent(event);
 }
 
@@ -312,26 +315,53 @@ void TableTree::mousePressEvent(QMouseEvent *event)
 void TableTree::mouseMoveEvent(QMouseEvent *event)
 {
 #if QT_VERSION >= 0x040300
-	if (!(event->buttons() & Qt::LeftButton)) { ; /*do nothing*/ }
+    if (!m_pressed) { ; /*do nothing*/ }
+	else if (!(event->buttons() & Qt::LeftButton)) { ; /*do nothing*/ }
 	else if ((event->pos() - m_dragStartPosition).manhattanLength()
 			< QApplication::startDragDistance())
     { ; /*do nothing*/ }
-	else if (!currentItem()) { ; /*do nothing*/ }
-	else if (   (currentItem()->type() == TableTree::TableType)
-             || (currentItem()->type() == TableTree::ViewType)
-             || (currentItem()->type() == TableTree::DatabaseItemType)
-             || (currentItem()->type() != TableTree::IndexType)
-             || (currentItem()->type() != TableTree::TriggerType)
-             || (currentItem()->type() != TableTree::SystemType)
-             || (currentItem()->type() != TableTree::ColumnType))
-    {
-        QDrag *drag = new QDrag(this);
-        QMimeData *mimeData = new QMimeData;
+	else {
+        // Even there isn't something we can drag, it's still not a click
+        m_pressed = false;
+        if (!currentItem()) {  ; /*do nothing*/ }
+        else if (   (currentItem()->type() == TableTree::TableType)
+                 || (currentItem()->type() == TableTree::ViewType)
+                 || (currentItem()->type() == TableTree::DatabaseItemType)
+                 || (currentItem()->type() != TableTree::IndexType)
+                 || (currentItem()->type() != TableTree::TriggerType)
+                 || (currentItem()->type() != TableTree::SystemType)
+                 || (currentItem()->type() != TableTree::ColumnType))
+        {
+            QDrag *drag = new QDrag(this);
+            QMimeData *mimeData = new QMimeData;
 
-        mimeData->setText(currentItem()->text(0));
-        drag->setMimeData(mimeData);
-        drag->exec(Qt::CopyAction);
+            mimeData->setText(currentItem()->text(0));
+            drag->setMimeData(mimeData);
+            drag->exec(Qt::CopyAction);
+        }
     }
 #endif
 	QTreeWidget::mouseMoveEvent(event);
+}
+
+void TableTree::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (m_pressed) {
+        m_pressed = false;
+        if (event->button() == Qt::LeftButton)
+        {
+            /* We should check the style here, but our ultimate ancestor
+             * QWidget doesn't seem to inherit it. */
+            QPoint pos = event->pos();
+            if (
+                (pos - m_dragStartPosition).manhattanLength()
+                < QApplication::startDragDistance())
+            {
+                QPersistentModelIndex index = indexAt(pos);
+                emit activated(index);
+                return;
+            }
+        }
+    }
+	QTreeWidget::mouseReleaseEvent(event);
 }

@@ -19,7 +19,7 @@ for which a new license (GPL+exception) is in place.
 
 #include <QSqlQuery>
 #include <QSqlError>
-#include <QTextStream>
+#include <QtCore/QTextStream>
 #include <QTreeWidgetItem>
 
 #include "database.h"

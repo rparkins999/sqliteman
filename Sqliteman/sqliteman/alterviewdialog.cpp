@@ -8,7 +8,7 @@ for which a new license (GPL+exception) is in place.
 #include <QPushButton>
 #include <QSqlQuery>
 #include <QSqlError>
-#include <QtDebug>
+#include <QtCore/QtDebug>
 
 #include "alterviewdialog.h"
 #include "database.h"

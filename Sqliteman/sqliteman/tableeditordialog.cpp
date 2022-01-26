@@ -13,7 +13,7 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QTableWidget>
-#include <QTimer>
+#include <QtCore/QTimer>
 #include <QTreeWidgetItem>
 
 #include "litemanwindow.h"

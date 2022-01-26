@@ -14,14 +14,14 @@ for which a new license (GPL+exception) is in place.
 #endif
 
 #include <QApplication>
+#include <QtCore/QDir>
 #include <QIcon>
-#include <QDir>
-#include <QLocale>
-#include <QTranslator>
-#include <QStyleFactory>
+#include <QtCore/QLocale>
 #include <QMessageBox>
-#include <QTextStream>
-#include <QtDebug> //qDebug
+#include <QStyleFactory>
+#include <QtCore/QtDebug> //qDebug
+#include <QtCore/QTextStream>
+#include <QtCore/QTranslator>
 
 #include "litemanwindow.h"
 #include "preferences.h"

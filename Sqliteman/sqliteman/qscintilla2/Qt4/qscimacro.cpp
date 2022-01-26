@@ -30,7 +30,7 @@
 
 #include "Qsci/qscimacro.h"
 
-#include <qstringlist.h>
+#include <QtCore/qstringlist.h>
 
 #include "Qsci/qsciscintilla.h"
 

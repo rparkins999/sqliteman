@@ -32,7 +32,7 @@
 
 #include <qcolor.h>
 #include <qfont.h>
-#include <qsettings.h>
+#include <QtCore/qsettings.h>
 
 #include "Qsci/qscilexerjavascript.h"
 #include "Qsci/qscilexerpython.h"

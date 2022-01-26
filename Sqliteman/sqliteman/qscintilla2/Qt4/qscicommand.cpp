@@ -30,7 +30,7 @@
 
 #include "Qsci/qscicommand.h"
 
-#include <qnamespace.h>
+#include <QtCore/qnamespace.h>
 #include <qapplication.h>
 
 #include "Qsci/qsciscintilla.h"

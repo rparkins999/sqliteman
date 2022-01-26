@@ -35,8 +35,8 @@
 #include <string.h>
 #include <qapplication.h>
 #include <qcolor.h>
-#include <qiodevice.h>
-#include <qpoint.h>
+#include <QtCore/qiodevice.h>
+#include <QtCore/qpoint.h>
 
 #include "Qsci/qsciabstractapis.h"
 #include "Qsci/qscicommandset.h"

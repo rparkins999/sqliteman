@@ -37,9 +37,9 @@ extern "C++" {
 
 #include <qcolor.h>
 #include <qfont.h>
-#include <qmap.h>
-#include <qobject.h>
-#include <qstring.h>
+#include <QtCore/qmap.h>
+#include <QtCore/qobject.h>
+#include <QtCore/qstring.h>
 
 #include <Qsci/qsciglobal.h>
 

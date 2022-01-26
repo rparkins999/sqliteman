@@ -18,6 +18,9 @@ QueryStringModels are used in "swap" items views.
 class QueryStringModel : public QStringListModel
 {
 	Q_OBJECT
+	
+private:
+    QVariant variant;
 
 	public:
 		QueryStringModel(QObject * parent = 0);
@@ -29,6 +32,8 @@ class QueryStringModel : public QStringListModel
 		void append(const QString & value);
         //! remove (all occurrences of) a string from the model
         void removeAll(const QString & value);
+        bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role);
+        QVariant headerData(int section, Qt::Orientation orientation, int role);
 };
 
 #endif //QUERYSTRINGMODEL_H

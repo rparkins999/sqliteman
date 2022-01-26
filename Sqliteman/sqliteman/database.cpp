@@ -9,9 +9,9 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlQuery>
 #include <QSqlRecord>
 #include <QSqlError>
-#include <QTextStream>
-#include <QVariant>
-#include <QFile>
+#include <QtCore/QTextStream>
+#include <QtCore/QVariant>
+#include <QtCore/QFile>
 #include <QMessageBox>
 
 #include "database.h"

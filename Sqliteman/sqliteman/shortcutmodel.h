@@ -7,8 +7,8 @@ for which a new license (GPL+exception) is in place.
 #ifndef SHORTCUTMODEL_H
 #define SHORTCUTMODEL_H
 
-#include <QAbstractTableModel>
-#include <QPair>
+#include <QtCore/QAbstractTableModel>
+#include <QtCore/QPair>
 
 
 /*! \brief A model for sQL editor shortcuts.

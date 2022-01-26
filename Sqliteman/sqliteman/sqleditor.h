@@ -9,7 +9,7 @@ for which a new license (GPL+exception) is in place.
 #define SQLEDITOR_H
 
 #include <QWidget>
-#include <QFileSystemWatcher>
+#include <QtCore/QFileSystemWatcher>
 
 #include "litemanwindow.h"
 #include "ui_sqleditor.h"

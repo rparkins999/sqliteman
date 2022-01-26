@@ -33,7 +33,7 @@
 #include <qapplication.h>
 #include <qcolor.h>
 #include <qfont.h>
-#include <qsettings.h>
+#include <QtCore/qsettings.h>
 
 #include "Qsci/qsciapis.h"
 #include "Qsci/qsciscintilla.h"

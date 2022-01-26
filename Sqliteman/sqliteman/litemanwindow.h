@@ -9,8 +9,8 @@ for which a new license (GPL+exception) is in place.
 #define LITEMANWINDOW_H
 
 #include <QMainWindow>
-#include <QPointer>
-#include <QMap>
+#include <QtCore/QPointer>
+#include <QtCore/QMap>
 
 class QAction;
 class QLabel;

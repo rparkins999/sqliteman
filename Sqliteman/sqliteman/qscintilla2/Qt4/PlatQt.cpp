@@ -37,11 +37,11 @@
 #include <qfont.h>
 #include <qpixmap.h>
 #include <qimage.h>
-#include <qstring.h>
-#include <qdatetime.h>
+#include <QtCore/qstring.h>
+#include <QtCore/qdatetime.h>
 #include <qpainter.h>
 #include <qcursor.h>
-#include <qlibrary.h>
+#include <QtCore/qlibrary.h>
 
 #include <qdesktopwidget.h>
 #include <qpolygon.h>

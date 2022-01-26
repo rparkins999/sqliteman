@@ -8,9 +8,9 @@ for which a new license (GPL+exception) is in place.
 #include <QCheckBox>
 #include <QClipboard>
 #include <QCompleter>
-#include <QDir>
+#include <QtCore/QDir>
 #include <QDirModel>
-#include <QFile>
+#include <QtCore/QFile>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressDialog>
@@ -18,7 +18,7 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlQuery>
 #include <QSqlQueryModel>
 #include <QSqlRecord>
-#include <QTextCodec>
+#include <QtCore/QTextCodec>
 
 #include "database.h"
 #include "dataexportdialog.h"

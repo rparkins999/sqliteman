@@ -36,12 +36,12 @@
 extern "C++" {
 #endif
 
-#include <qobject.h>
-#include <qstringlist.h>
+#include <QtCore/qobject.h>
+#include <QtCore/qstringlist.h>
 
-#include <QByteArray>
-#include <QList>
-#include <QPointer>
+#include <QtCore/QByteArray>
+#include <QtCore/QList>
+#include <QtCore/QPointer>
 
 #include <Qsci/qsciglobal.h>
 #include <Qsci/qscidocument.h>

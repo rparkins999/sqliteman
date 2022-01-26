@@ -32,7 +32,7 @@
 #ifndef _SCICLASSES_H
 #define _SCICLASSES_H
 
-#include <qglobal.h>
+#include <QtCore/qglobal.h>
 #include <qwidget.h>
 
 
@@ -62,7 +62,7 @@ private:
 // A popup menu where options correspond to a numeric command.
 
 #include <QMenu>
-#include <QSignalMapper>
+#include <QtCore/QSignalMapper>
 
 class SciPopup : public QMenu
 {

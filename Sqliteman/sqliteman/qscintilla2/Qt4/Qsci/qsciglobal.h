@@ -35,7 +35,7 @@
 extern "C++" {
 #endif
 
-#include <qglobal.h>
+#include <QtCore/qglobal.h>
 
 
 #define QSCINTILLA_VERSION      0x020404

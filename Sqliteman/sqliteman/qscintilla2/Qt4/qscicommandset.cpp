@@ -30,7 +30,7 @@
 
 #include "Qsci/qscicommandset.h"
 
-#include <qsettings.h>
+#include <QtCore/qsettings.h>
 
 #include "Qsci/qsciscintilla.h"
 #include "Qsci/qsciscintillabase.h"

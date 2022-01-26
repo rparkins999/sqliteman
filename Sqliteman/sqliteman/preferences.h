@@ -8,12 +8,12 @@ for which a new license (GPL+exception) is in place.
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
 
-#include <QByteArray>
+#include <QtCore/QByteArray>
 #include <QColor>
 #include <QFont>
-#include <QMap>
-#include <QObject>
-#include <QVariant>
+#include <QtCore/QMap>
+#include <QtCore/QObject>
+#include <QtCore/QVariant>
 
 class Preferences : public QObject
 {

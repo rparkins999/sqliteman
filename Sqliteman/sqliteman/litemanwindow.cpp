@@ -10,7 +10,7 @@ for which a new license (GPL+exception) is in place.
 #include <QSplitter>
 #include <QMenuBar>
 #include <QMenu>
-#include <QTime>
+#include <QtCore/QTime>
 
 #include <QInputDialog>
 #include <QMessageBox>
@@ -20,14 +20,14 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlError>
 #include <QSqlQuery>
 
-#include <QCoreApplication>
+#include <QtCore/QCoreApplication>
 #include <QCloseEvent>
-#include <QFileInfo>
+#include <QtCore/QFileInfo>
 #include <QAction>
-#include <QFile>
-#include <QDir>
-#include <QProcess>
-#include <QtDebug>
+#include <QtCore/QFile>
+#include <QtCore/QDir>
+#include <QtCore/QProcess>
+#include <QtCore/QtDebug>
 
 #include "altertabledialog.h"
 #include "altertriggerdialog.h"

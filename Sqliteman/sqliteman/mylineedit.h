@@ -16,8 +16,8 @@
 #ifndef MYLINEEDIT_H
 #define MYLINEEDIT_H
 
-#include <QSize>
-#include <QObject>
+#include <QtCore/QSize>
+#include <QtCore/QObject>
 #include <QLineEdit>
 
 class MyLineEdit : public QLineEdit

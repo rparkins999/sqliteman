@@ -9,7 +9,7 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QTreeWidgetItem>
-#include <QSettings>
+#include <QtCore/QSettings>
 
 #include "createtriggerdialog.h"
 #include "database.h"

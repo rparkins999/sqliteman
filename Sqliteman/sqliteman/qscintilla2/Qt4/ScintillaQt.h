@@ -32,7 +32,7 @@
 #define	SCINTILLAQT_H
 
 
-#include <qtimer.h>
+#include <QtCore/qtimer.h>
 #include <qclipboard.h>
 
 // These are needed because scintilla class header files don't seem to manage

@@ -32,7 +32,7 @@
 
 #include <qcolor.h>
 #include <qfont.h>
-#include <qsettings.h>
+#include <QtCore/qsettings.h>
 
 
 // The ctor.

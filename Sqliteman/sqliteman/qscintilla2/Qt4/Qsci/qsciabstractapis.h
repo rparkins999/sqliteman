@@ -35,10 +35,10 @@
 extern "C++" {
 #endif
 
-#include <qobject.h>
-#include <qstringlist.h>
+#include <QtCore/qobject.h>
+#include <QtCore/qstringlist.h>
 
-#include <QList>
+#include <QtCore/QList>
 
 #include <Qsci/qsciglobal.h>
 #include <Qsci/qsciscintilla.h>

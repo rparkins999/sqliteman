@@ -31,7 +31,7 @@
 #undef PLAT_QT
 #define PLAT_QT  1
 // This is needed to work around an HP-UX bug with Qt4.
-#include <qnamespace.h>
+#include <QtCore/qnamespace.h>
 
 #elif defined(__WX__)
 #undef PLAT_WX

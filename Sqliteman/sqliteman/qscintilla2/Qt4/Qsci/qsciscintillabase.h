@@ -35,12 +35,12 @@
 extern "C++" {
 #endif
 
-#include <qglobal.h>
+#include <QtCore/qglobal.h>
 
 #include <QAbstractScrollArea>
 
-#include <qpoint.h>
-#include <qtimer.h>
+#include <QtCore/qpoint.h>
+#include <QtCore/qtimer.h>
 
 #include <Qsci/qsciglobal.h>
 

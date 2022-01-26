@@ -12,8 +12,8 @@ schema is known to be valid, we do not detect all cases of bad syntax.
 sqlite_master and describe table leave any quotes around types, but pragma table_info removes them.
 */
 
-#include <QStringList>
-#include <QMap>
+#include <QtCore/QStringList>
+#include <QtCore/QMap>
 
 #include "pd.h" // debugging
 #include "sqlparser.h"
@@ -32,9 +32,9 @@ namespace { // local to this file (and therefore static)
     QStringList afterNOTs({"BETWEEN", "GLOB", "IN", "LIKE",
                            "MATCH", "REGEXP"});
     // used to save creating one whenever needed
-    Expression nullExpression = {exprNull, NULL, {"", tokenNone}, NULL};
-    // used to save creating one whenever needed
     Token nullToken = {"", tokenNone};
+    // used to save creating one whenever needed
+    Expression nullExpression = {"", exprNull, NULL, nullToken, NULL, ""};
     // Last token used as argument for tosString(),
     // used to insert spaces when needed to separate tokens.
     Token m_lastToString;
@@ -650,7 +650,7 @@ Expression * SqlParser::internalParser(
                             QString sp;
                             if (m_tokens.isEmpty()) { return NULL; }
                             else if (m_tokens.at(0).type == tokenWhitespace) {
-                                sp = m_tokens.takeFirst.name;
+                                sp = m_tokens.takeFirst().name;
                                 if (m_tokens.isEmpty()) { return NULL; }
                             } else if (m_tokens.at(0).name.compare(
                                      "WHEN", Qt::CaseInsensitive) == 0)

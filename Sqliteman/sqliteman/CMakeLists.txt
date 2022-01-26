@@ -370,3 +370,10 @@ ELSE (WIN32)
 ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/buildtime.h COMMAND date '+static const char * buildtime = \"Built %c\"\;' > ${CMAKE_CURRENT_SOURCE_DIR}/buildtime.h DEPENDS ${SQLITEMAN_SRC} ${SQLITEMAN_MOC_SRC} ${SQLITEMAN_UI_HDRS} ${SQLITEMAN_RC_RCS} COMMENT "Creating timestamp in buildtime.h")
 ENDIF (WIN32)
 SET_PROPERTY(SOURCE litemanwindow.cpp PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/buildtime.h)
+set_property(TARGET sqliteman APPEND PROPERTY
+    INTERFACE_SYSTEM_INCLUDE_DIRECTORIES
+      /home/rparkins/Downloads/qt/4.8.7/include/Qt/
+)
+MESSAGE("set_property(TARGET sqliteman APPEND PROPERTY
+    INTERFACE_SYSTEM_INCLUDE_DIRECTORIES
+    /home/rparkins/Downloads/qt/4.8.7/include/Qt/")

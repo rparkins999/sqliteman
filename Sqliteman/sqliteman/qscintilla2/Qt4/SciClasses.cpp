@@ -33,7 +33,7 @@
 
 #include <qevent.h>
 #include <qpainter.h>
-#include <QCoreApplication>
+#include <QtCore/QCoreApplication>
 
 #include "ScintillaQt.h"
 #include "ListBoxQt.h"

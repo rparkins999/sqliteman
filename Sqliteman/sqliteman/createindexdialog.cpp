@@ -14,7 +14,7 @@ New version built on tableeditordialog
 #include <QGridLayout>
 #include <QLabel>
 #include <QLayoutItem>
-#include <QList>
+#include <QtCore/QList>
 #include <QMessageBox>
 #include <QTreeWidgetItem>
 

@@ -33,7 +33,7 @@
 #include <qprinter.h>
 #include <qpainter.h>
 
-#include <qstack.h>
+#include <QtCore/qstack.h>
 
 #include "Qsci/qsciscintillabase.h"
 

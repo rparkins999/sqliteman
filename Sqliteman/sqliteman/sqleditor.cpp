@@ -6,8 +6,8 @@ for which a new license (GPL+exception) is in place.
 	FIXME handle very long lines better
 */
 #include <QMessageBox>
-#include <QFile>
-#include <QTextStream>
+#include <QtCore/QFile>
+#include <QtCore/QTextStream>
 #include <QFileDialog>
 #include <QLabel>
 #include <QProgressDialog>
@@ -15,7 +15,7 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QShortcut>
-#include <QDateTime>
+#include <QtCore/QDateTime>
 
 #include <qscilexer.h>
 

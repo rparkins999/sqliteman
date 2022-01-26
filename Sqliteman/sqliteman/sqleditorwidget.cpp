@@ -21,7 +21,7 @@ for which a new license (GPL+exception) is in place.
 // #include "sqlkeywords.h"
 #include "utils.h"
 
-#include <QtDebug>
+#include <QtCore/QtDebug>
 SqlEditorWidget::SqlEditorWidget(QWidget * parent)
 	: QsciScintilla(parent),
       m_searchText(""),

@@ -35,9 +35,9 @@
 extern "C++" {
 #endif
 
-#include <qglobal.h>
+#include <QtCore/qglobal.h>
 
-#include <QList>
+#include <QtCore/QList>
 
 #include <Qsci/qsciglobal.h>
 #include <Qsci/qscicommand.h>

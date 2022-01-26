@@ -35,7 +35,7 @@
 extern "C++" {
 #endif
 
-#include <qobject.h>
+#include <QtCore/qobject.h>
 
 #include <Qsci/qsciglobal.h>
 #include <Qsci/qscilexercpp.h>

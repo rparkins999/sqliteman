@@ -35,7 +35,7 @@
 extern "C++" {
 #endif
 
-#include <qstring.h>
+#include <QtCore/qstring.h>
 
 #include <Qsci/qsciglobal.h>
 

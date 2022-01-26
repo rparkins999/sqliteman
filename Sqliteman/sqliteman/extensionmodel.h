@@ -7,8 +7,8 @@ for which a new license (GPL+exception) is in place.
 #ifndef EXTENSIONMODEL_H
 #define EXTENSIONMODEL_H
 
-#include <QAbstractTableModel>
-#include <QStringList>
+#include <QtCore/QAbstractTableModel>
+#include <QtCore/QStringList>
 
 
 /*! \brief A model for extensions dipslay.

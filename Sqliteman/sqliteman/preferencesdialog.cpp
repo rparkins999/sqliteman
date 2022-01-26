@@ -5,7 +5,7 @@ a copyright and/or license notice that predates the release of Sqliteman
 for which a new license (GPL+exception) is in place.
 */
 
-#include <QDir>
+#include <QtCore/QDir>
 #include <QStyleFactory>
 #include <QColorDialog>
 #include <QFileDialog>

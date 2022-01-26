@@ -7,7 +7,7 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QHeaderView>
-#include <QDateTime>
+#include <QtCore/QDateTime>
 #include <QMessageBox>
 #include <math.h>
 

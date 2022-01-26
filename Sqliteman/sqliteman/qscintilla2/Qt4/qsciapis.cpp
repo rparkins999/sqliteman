@@ -33,15 +33,15 @@
 #include "Qsci/qsciapis.h"
 
 #include <qapplication.h>
-#include <qdatastream.h>
-#include <qdir.h>
+#include <QtCore/qdatastream.h>
+#include <QtCore/qdir.h>
 #include <qevent.h>
-#include <qfile.h>
-#include <qmap.h>
-#include <qtextstream.h>
-#include <qthread.h>
+#include <QtCore/qfile.h>
+#include <QtCore/qmap.h>
+#include <QtCore/qtextstream.h>
+#include <QtCore/qthread.h>
 
-#include <QLibraryInfo>
+#include <QtCore/QLibraryInfo>
 
 #include "Qsci/qscilexer.h"
 

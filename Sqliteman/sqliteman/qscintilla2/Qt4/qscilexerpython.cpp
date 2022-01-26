@@ -32,7 +32,7 @@
 
 #include <qcolor.h>
 #include <qfont.h>
-#include <qsettings.h>
+#include <QtCore/qsettings.h>
 
 
 // The list of Python keywords that can be used by other friendly lexers.

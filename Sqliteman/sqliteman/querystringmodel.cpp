@@ -35,3 +35,16 @@ void QueryStringModel::removeAll(const QString & value)
 	l.removeAll(value);
 	setStringList(l);
 }
+
+bool QueryStringModel::setHeaderData(int section, Qt::Orientation orientation, const QVariant &value,
+                               int role = Qt::EditRole)
+{
+    variant = value;
+    return true;
+}
+
+QVariant QueryStringModel::headerData(int section, Qt::Orientation orientation,
+                                int role = Qt::DisplayRole)
+{
+    return variant;
+}

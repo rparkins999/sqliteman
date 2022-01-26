@@ -9,9 +9,9 @@ for which a new license (GPL+exception) is in place.
 #define DATAEXPORTDIALOG_H
 
 #include <QDialog>
-#include <QTextStream>
+#include <QtCore/QTextStream>
 #include <QSqlTableModel>
-#include <QFile>
+#include <QtCore/QFile>
 
 #include "ui_dataexportdialog.h"
 

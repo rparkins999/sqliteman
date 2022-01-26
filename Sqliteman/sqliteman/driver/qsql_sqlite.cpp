@@ -41,15 +41,15 @@
 
 #include "qsql_sqlite.h"
 
-#include <qcoreapplication.h>
-#include <qvariant.h>
+#include <QtCore/qcoreapplication.h>
+#include <QtCore/qvariant.h>
 #include <qsqlerror.h>
 #include <qsqlfield.h>
 #include <qsqlindex.h>
 #include <qsqlquery.h>
-#include <qstringlist.h>
-#include <qvector.h>
-#include <qdebug.h>
+#include <QtCore/qstringlist.h>
+#include <QtCore/qvector.h>
+#include <QtCore/qdebug.h>
 
 #if defined Q_OS_WIN
 # include <qt_windows.h>
@@ -163,7 +163,7 @@ void QSQLiteResultPrivate::initColumns(bool emptyResultset)
 
     for (int i = 0; i < nCols; ++i) {
         QString colName = QString(reinterpret_cast<const char *>(
-                    sqlite3_column_name16(stmt, i))
+                    sqlite3_column_name(stmt, i))
                     ).remove(QLatin1Char('"'));
 
         // must use typeName for resolving the type to match QSqliteDriver::record

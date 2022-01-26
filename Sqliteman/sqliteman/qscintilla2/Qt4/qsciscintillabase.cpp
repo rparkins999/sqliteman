@@ -42,8 +42,8 @@
 #include <QDragLeaveEvent>
 #include <QFocusEvent>
 #include <QKeyEvent>
-#include <QList>
-#include <QMimeData>
+#include <QtCore/QList>
+#include <QtCore/QMimeData>
 #include <QMouseEvent>
 #include <QPaintEvent>
 

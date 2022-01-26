@@ -7,7 +7,7 @@ for which a new license (GPL+exception) is in place.
 #include <QClipboard>
 #include <QDataWidgetMapper>
 #include <QGridLayout>
-#include <QMimeData>
+#include <QtCore/QMimeData>
 #include <QSqlQueryModel>
 #include <QSqlRecord>
 #include <QTableView>
