@@ -63,7 +63,7 @@ void TermsTabWidget::moreTerms()
 	QLineEdit * value = new QLineEdit();
 	ui.termsTable->setCellWidget(i, 2, value);
 	ui.termsTable->resizeColumnsToContents();
-	ui.termLessButton->setEnabled((i > 1) || m_noTermsAllowed);
+	ui.termLessButton->setEnabled((i > 0) || m_noTermsAllowed);
 	update();
 }
 
