@@ -4,6 +4,7 @@ to the COPYING file provided with the program. Following this notice may exist
 a copyright and/or license notice that predates the release of Sqliteman
 for which a new license (GPL+exception) is in place.
 */
+#include <QAction>
 #include <QClipboard>
 #include <QDataWidgetMapper>
 #include <QGridLayout>
@@ -87,6 +88,11 @@ void SqlItemView::setModel(QAbstractItemModel * model)
 		actPasteOver->setShortcutContext(Qt::WidgetWithChildrenShortcut);
 	    connect(actPasteOver, SIGNAL(triggered()), this,
 				SLOT(doPasteOver()));
+		actSelectAll = new QAction(tr("Select Whole"), layoutWidget);
+		actSelectAll->setShortcut(QKeySequence("Ctrl+A"));
+		actSelectAll->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+	    connect(actSelectAll, SIGNAL(triggered()), this,
+				SLOT(doSelectAll()));
 		actInsertNull = new QAction(Utils::getIcon("setnull.png"),
 									tr("Insert NULL"), layoutWidget);
 		actInsertNull->setShortcut(QKeySequence("Ctrl+Alt+N"));
@@ -124,6 +130,7 @@ void SqlItemView::setModel(QAbstractItemModel * model)
 			w->addAction(actCut);
 			w->addAction(actPaste);
 			w->addAction(actPasteOver);
+			w->addAction(actSelectAll);
 			w->addAction(actInsertNull);
 			w->addAction(actOpenMultiEditor);
 		}
@@ -306,14 +313,14 @@ void SqlItemView::toLast()
 	SqlTableModel * table = qobject_cast<SqlTableModel *>(m_model);
 	if (table)
 	{
-		while (table->canFetchMore()) { table->fetchMore(); }
+		table->fetchAll();
 	}
 	else
 	{
 		SqlQueryModel * q = qobject_cast<SqlQueryModel *>(m_model);
 		if (q)
 		{
-			while (q->canFetchMore()) { q->fetchMore(); }
+			q->fetchAll();
 		}
 	}
 	int row = findDown(m_model->rowCount());
@@ -410,6 +417,16 @@ void SqlItemView::doPasteOver()
 	if (te && mimeData->hasText())
 	{
 		te->setText(mimeData->text());
+	}
+}
+
+void SqlItemView::doSelectAll()
+{
+	QWidget * w = m_gridLayout->itemAtPosition(m_column, 1)->widget();
+	QTextEdit * te = qobject_cast<QTextEdit *>(w);
+	if (te)
+	{
+		te->selectAll();
 	}
 }
 

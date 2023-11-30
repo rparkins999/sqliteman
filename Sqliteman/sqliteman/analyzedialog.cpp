@@ -29,16 +29,19 @@ AnalyzeDialog::~AnalyzeDialog()
     Preferences * prefs = Preferences::instance();
     prefs->setanalyzeHeight(height());
     prefs->setanalyzeWidth(width());
+	ui.Results->setText("");
 }
 
 void AnalyzeDialog::dropButton_clicked()
 {
 	Database::execSql("delete from sqlite_stat1;");
+	ui.Results->setText("");
 }
 
 void AnalyzeDialog::allButton_clicked()
 {
 	Database::execSql("analyze;");
+	ui.Results->setText(tr("Results are in table ")+"sqlite_stat1");
 }
 
 void AnalyzeDialog::tableButton_clicked()
@@ -48,7 +51,11 @@ void AnalyzeDialog::tableButton_clicked()
 	{
 		if (!Database::execSql(QString("analyze %1;")
 							   .arg(Utils::q(list.at(i)->text()))))
+		{
 			break;
+		} else {
+			ui.Results->setText(tr("Results are in table ")+"sqlite_stat1");
+		}
 	}
 }
 

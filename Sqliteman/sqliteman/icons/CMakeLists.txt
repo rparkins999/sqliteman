@@ -4,7 +4,7 @@ ${CMAKE_SOURCE_DIR}/sqliteman
 )
 
 IF (WANT_RESOURCES)
-    MESSAGE(STATUS "Icons are not installed as you are using Qt4 resources for it")
+    MESSAGE(STATUS "Icons are not installed as you are using Qt resources for it")
 ELSE (WANT_RESOURCES)
 
 INSTALL(FILES

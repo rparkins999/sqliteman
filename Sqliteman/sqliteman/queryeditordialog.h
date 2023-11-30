@@ -32,10 +32,18 @@ class QueryEditorDialog : public QDialog
 		~QueryEditorDialog();
 		void setItem(QTreeWidgetItem * item);
 		//! \brief generates a valid SQL statement using the values in the dialog
-		QString statement();
+		QString statement(bool elide);
 		QString deleteStatement();
-		void treeChanged();
+		bool queryingTable();
+
+		void setSchema(QString schema, QString table,
+                       bool schemaMayChange, bool tableMayChange);
+		void schemaAdded(QString schema);
+		void tableCreated();
 		void tableAltered(QString oldName, QTreeWidgetItem * item);
+		void tableDropped(QString oldName);
+		void schemaGone(QString schema);
+		void treeChanged();
 };
 
 #endif //QUERYEDITORDIALOG_H

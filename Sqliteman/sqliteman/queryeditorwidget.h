@@ -24,62 +24,77 @@ class QueryStringModel;
 class QueryEditorWidget : public QWidget
 {
 	Q_OBJECT
-
     private:
+		/* This is the name of the database that we're doing a query on,
+		 * usually "main", but not always: we can have attached databases
+		 * or the temp database may exist.
+		 */
 		QString m_schema;
+		/* This is true if we are part of a QueryEditorDialog invoked
+		 * from the Database menu, and the user can select a schema
+		 * (if there is more than one).
+		 */
+		bool m_canChangeSchema;
+		/* This is the name of the table or view that we're doing a query on.
+		 */
 		QString m_table;
+		/* This is true if we are part of a QueryEditorDialog invoked
+		 * from the context menu of a schema, and the user can select
+		 * a table or a view (if there is more than one).
+		 */
+		bool m_canChangeTable;
 		QueryStringModel * columnModel;
 		QueryStringModel * selectModel;
 		QString m_rowid;
 		bool resizeWanted; // tables, not window
-		QString findTable(QString name, bool allowChange);
 
     private slots:
 		void tableSelected(const QString & table);
 
-        // this isn't actually signaled, but it's here to preserve the order
-		void resetTableList(QString name, bool allowChange);
-		void schemaSelected(const QString & schema);
-		// Fields tab
-		void addAllSelect();
-		void addSelect();
-		void removeAllSelect();
-		void removeSelect();
-		// Order by tab
-		void moreOrders();
-		void lessOrders();
-		void copySql();
+	private:
+		QString findTable(QString name, bool allowChange);
+
+	public:
+		// True if we're querying a table rather than a view.
+		bool m_queryingTable;
+
+		Ui::QueryEditorWidget ui;
+
+		void resetTableList();
 
     protected:
 		void paintEvent(QPaintEvent * event);
 		void resizeEvent(QResizeEvent * event);
 
+    private slots:
+		void addAllSelect();
+		void addSelect();
+		void removeAllSelect();
+		void removeSelect();
+		void moreOrders();
+		void lessOrders();
+		void schemaSelected(const QString & schema);
+
 	public:
-        Ui::QueryEditorWidget ui;
         /*!
 		 * @brief Creates the query editor.
 		 * @param parent The parent widget.
 		 */
 		QueryEditorWidget(QWidget * parent = 0);
-
         QString whereClause();
-
-		//! \brief generates a valid SELECT statemen
-        // using the values in the dialog
-		QString statement();
-
-		//! \brief generates a valid DELETE statement
-        // using the values in the dialog
+		QString statement(bool elide);
 		QString deleteStatement();
-
+		void tableGone(QString oldName, QString newName);
 		void setSchema(QString schema, QString table,
-                       bool schemaMayChange, bool tableMayChange);
+					   bool schemaMayChange, bool tableMayChange);
+		void resetSchemaList();
 		void treeChanged();
-		void tableAltered(QString oldName, QTreeWidgetItem * item);
-		void addSchema(const QString & schema);
+
+	private:
+		void copySql(bool elide);
 
     public slots:
-		void resetClicked(); // called, not signalled, by CreatetableDialog
+		void copySql();
 
 };
 

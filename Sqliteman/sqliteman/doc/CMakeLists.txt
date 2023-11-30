@@ -1,5 +1,5 @@
 IF (WANT_RESOURCES)
-    MESSAGE(STATUS "Documentation is not installed as you are using Qt4 resources for it")
+    MESSAGE(STATUS "Documentation is not installed as you are using Qt resources for it")
 ELSE (WANT_RESOURCES)
     ADD_SUBDIRECTORY(en)
     ADD_SUBDIRECTORY(manpages)

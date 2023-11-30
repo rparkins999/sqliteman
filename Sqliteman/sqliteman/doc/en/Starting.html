@@ -72,11 +72,6 @@ Alternatively you can start it from the commnd line.
         </strong></span>
         loads scriptfile into the
         <a href="SQLeditor.html">SQL Editor.</a>
-        If this option is not used,
-        <span class="application">sqliteman</span>
-        will either load the last used script file or nothing
-        according to the setting in the
-        <a href="prefs.html">Preferences dialog.</a>
     </p></li>
     <li><p>
         <span><strong class="command">
@@ -89,7 +84,8 @@ Alternatively you can start it from the commnd line.
         is specified on the command line.
         This is to protect you against running a script on the wrong
         database by mistake.
-        If this option is not used (or ignored),
+        If neither <span><strong class="command">scriptfile</strong></span> option is used
+        (or <span><strong class="command">-x scriptfile</strong></span> is ignored),
         <span class="application">sqliteman</span>
         will either load the last used script file or nothing
         according to the setting in the
@@ -110,9 +106,33 @@ Alternatively you can start it from the commnd line.
 </p><p>
 <span class="application">Sqliteman</span> checks your environment and tries to set itself up
 by your locale settings. This affects the GUI language – it should be in your
-language if there is a translation available. If you wish to use this application
+language if there is a translation available. Some User Interface text has not yet been translated
+into languages other than English and French, the two languages spoken by the current maintainer.
+Assiatance with translation into other langauges will be gratefully accepted.
+Acknowledgements to translators can be found
+<a href="Credits.html#id2528675">here</a>.
+If you wish to use this application
 in English use <span><strong class="command">--lang en</strong></span> or use the
 <a href="prefs.html" title="Preferences">Preferences dialog</a>.
 </p></li><li><p>
 <span><strong class="command">--langs</strong></span> or <span><strong class="command">-la</strong></span> lists available languages and exits
-</p></li></ul></div><p>There are standard Qt4 options available too.</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="Issues.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="Overview.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 2. Sqlite Specific Issues </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> Chapter 4. The First Overview</td></tr></table></div></body></html>
+</p></li></ul></div><p>There are standard Qt options available too.</p></div></div>
+<div class="sect1" lang="en">
+    <div class="titlepage">
+        <div><div><h2 class="title" style="clear: both"><a name="cli-usage"></a>
+        Starting from file browser
+    </h2></div></div></div>
+<p>
+    You may be able to configure your file browser to invoke
+    <span class="application">sqliteman</span>
+    as the application to open database files.
+    Please refer to your file browser's documentation for
+    instructions on how to do this.
+    The standard extension for sqlite databases is
+    <span class="application">.sqlite</span>,
+    but you can use whatever extension you want.
+    <span class="application">Sqliteman</span>
+    just tries to open the file it has been told to open,
+    and will show an error message if it isn't an sqlite database.
+</p>
+</div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="Issues.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="Overview.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 2. Sqlite Specific Issues </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> Chapter 4. The First Overview</td></tr></table></div></body></html>

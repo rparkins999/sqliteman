@@ -17,6 +17,7 @@ This is a QT bug.
 #include <QSqlError>
 #include <QSqlField>
 #include <QSqlQuery>
+#include <QStyle>
 #include <QtCore/QVariant>
 
 #include "database.h"
@@ -53,6 +54,8 @@ QVariant SqlTableModel::data(const QModelIndex & item, int role) const
 		return QVariant(Qt::AlignTop);
 	}
 
+	Preferences * prefs = Preferences::instance();
+	bool useNull = prefs->nullHighlight();
 	if (role == Qt::BackgroundColorRole)
     {
 		// QSqlTableModel::isDirty() always returns true for an inserted
@@ -61,20 +64,33 @@ QVariant SqlTableModel::data(const QModelIndex & item, int role) const
 		int row = item.row();
 		if (m_insertCache.contains(row))
 		{
-			if (m_insertCache.value(row)) { return QVariant(Qt::cyan); }
+			if (m_insertCache.value(row))
+			{
+
+				return QVariant(QColor("cyan"));
+			}
 		}
 		else
 		{
 	        for (int i = 0; i < columnCount(); ++i)
 	        {
-	            if (isDirty(index(row, i))) { return QVariant(Qt::cyan); }
+	            if (isDirty(index(row, i)))
+				{
+					return QVariant(QColor("cyan"));
+				}
 	        }
+		}
+		if (curr.isNull() && useNull)
+		{
+			return prefs->nullHighlightColor();
+		}
+		else
+		{
+			QColor c = m_palette.color(QPalette::Base);
+			return c;
 		}
     }
 
-	Preferences * prefs = Preferences::instance();
-	bool useNull = prefs->nullHighlight();
-	QColor nullColor = prefs->nullHighlightColor();
 	QString nullText = prefs->nullHighlightText();
 	bool useBlob = prefs->blobHighlight();
 	QColor blobColor = prefs->blobHighlightColor();
@@ -86,13 +102,8 @@ QVariant SqlTableModel::data(const QModelIndex & item, int role) const
 	{
 		if (role == Qt::ToolTipRole)
 			return QVariant(tr("NULL value"));
-		if (useNull)
-		{
-			if (role == Qt::BackgroundColorRole)
-				return QVariant(nullColor);
-			if (role == Qt::DisplayRole)
+		if (useNull && (role == Qt::DisplayRole))
 				return QVariant(nullText);
-		}
 	}
 
 	// blobs
@@ -111,17 +122,12 @@ QVariant SqlTableModel::data(const QModelIndex & item, int role) const
 		}
 	}
 
-	if (role == Qt::BackgroundColorRole)
-	{
-		return QColor(255, 255, 255);
-	}
-
 	// advanced tooltips
 	if (role == Qt::ToolTipRole)
 		return QVariant("<qt>" + curr + "</qt>");
 
 	if (role == Qt::DisplayRole && cropColumns)
-		return QVariant(curr.length() > 20 ? curr.left(20)+"..." : curr);
+		return QVariant(curr.length() > 23 ? curr.left(20)+"..." : curr);
 
 	return QSqlTableModel::data(item, role);
 }
@@ -536,39 +542,43 @@ void SqlTableModel::detach (SqlTableModel * model)
 void SqlTableModel::fetchAll()
 {
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-    bool moreFetched = false;
+    bool fetched = false;
 	if (rowCount() > 0)
 	{
 		while (canFetchMore(QModelIndex()))
 		{
-			fetchMore();
-            moreFetched = true;
+			QSqlTableModel::fetchMore();
+            fetched = true;
 		}
 	}
-	if (moreFetched) { refreshFields(); }
+	if (fetched)
+	{
+		refreshFields();
+		emit moreFetched();
+	}
     QApplication::restoreOverrideCursor();
-}
-
-void SqlTableModel::fetchMore()
-{
-	emit moreFetched();
-	QSqlTableModel::fetchMore();
 }
 
 bool SqlTableModel::select()
 {
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 	bool result = QSqlTableModel::select();
     int readRowsCount = rowsToRead();
-    bool moreFetched = false;
+    bool fetched = false;
 	while (   result &&
 			  canFetchMore(QModelIndex())
 		   && (   (readRowsCount == 0)
 			   || (rowCount() < readRowsCount)))
 	{
-		fetchMore();
-        moreFetched = true;
+		QSqlTableModel::fetchMore();
+        fetched = true;
 	}
-	if (moreFetched) { refreshFields(); }
+	if (fetched)
+	{
+		refreshFields();
+		emit moreFetched();
+	}
+    QApplication::restoreOverrideCursor();
 	return result;
 }
 
@@ -664,16 +674,17 @@ QVariant SqlQueryModel::data(const QModelIndex & item, int role) const
 void SqlQueryModel::initialRead() {
     if (!lastError().isValid()) {
         info = record(); // force column count to be set
-        if (columnCount() > 0)
-        {
-            int readRowsCount = rowsToRead();
-            while (   canFetchMore(QModelIndex())
-                && (   (readRowsCount == 0)
-                    || (rowCount() < readRowsCount)))
-            {
-                fetchMore();
-            }
-        }
+        if (   (columnCount() > 0)
+			&& (rowCount() > 0))
+		{
+			while (canFetchMore(QModelIndex()))
+			{
+				/* note this is QSqlQueryModel::fetchMore()
+				 * since SqlQueryModel doesn't override it.
+				 */
+				fetchMore();
+			}
+		}
     }
 }
 
@@ -704,6 +715,9 @@ void SqlQueryModel::fetchAll()
 	{
 		while (canFetchMore(QModelIndex()))
 		{
+			/* note this is QSqlQueryModel::fetchMore()
+			 * since SqlQueryModel doesn't override it.
+			 */
 			fetchMore();
 		}
 	}

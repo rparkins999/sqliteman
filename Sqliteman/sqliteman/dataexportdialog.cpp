@@ -5,6 +5,7 @@ a copyright and/or license notice that predates the release of Sqliteman
 for which a new license (GPL+exception) is in place.
 */
 
+#include <QApplication>
 #include <QCheckBox>
 #include <QClipboard>
 #include <QCompleter>
@@ -16,8 +17,6 @@ for which a new license (GPL+exception) is in place.
 #include <QProgressDialog>
 #include <QSqlError>
 #include <QSqlQuery>
-#include <QSqlQueryModel>
-#include <QSqlRecord>
 #include <QtCore/QTextCodec>
 
 #include "database.h"
@@ -36,9 +35,9 @@ DataExportDialog::DataExportDialog(DataViewer * parent, const QString & tableNam
 		m_tableName(tableName),
 		file(0)
 {
-	QAbstractItemModel * data = parent->tableData();
-	m_data = qobject_cast<QSqlQueryModel *>(data);
-	m_table = qobject_cast<SqlTableModel *>(data);
+	m_parentData = parent->tableData();
+	m_data = qobject_cast<SqlQueryModel *>(m_parentData);
+	m_table = qobject_cast<SqlTableModel *>(m_parentData);
 	m_header = parent->tableHeader();
 	cancelled = false;
 
@@ -128,11 +127,12 @@ bool DataExportDialog::doExport()
 	connect(progress, SIGNAL(canceled()), this, SLOT(cancel()));
 	progress->setWindowModality(Qt::WindowModal);
 	// export everything
-	while (m_data->canFetchMore())
-		m_data->fetchMore();
+	if (m_table) { m_table->fetchAll(); }
+	else { m_data->fetchAll(); }
 
-	progress->setMaximum(m_data->rowCount());
+	progress->setMaximum(m_parentData->rowCount());
 
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 	QString curr(formats[ui.formatBox->currentText()]);
 	bool res = openStream();
 	if (curr == "csv")
@@ -155,10 +155,11 @@ bool DataExportDialog::doExport()
 	if (res)
 		res &= closeStream();
 
-	progress->setValue(m_data->rowCount());
+	progress->setValue(m_parentData->rowCount());
 	delete progress;
 	progress = 0;
 
+    QApplication::restoreOverrideCursor();
 	return res;
 }
 
@@ -214,6 +215,13 @@ bool DataExportDialog::closeStream()
 	return true;
 }
 
+QSqlRecord DataExportDialog::getRecord(int i)
+{
+	if (m_table) { return m_table->record(i); }
+	else { return m_data->record(i); }
+}
+
+
 bool DataExportDialog::exportCSV()
 {
 	if (header())
@@ -227,11 +235,11 @@ bool DataExportDialog::exportCSV()
 		out << endl();
 	}
 
-	for (int i = 0; i < m_data->rowCount(); ++i)
+	for (int i = 0; i < m_parentData->rowCount(); ++i)
 	{
 		if (!setProgress(i)) { return false; }
 		if (m_table && m_table->isDeleted(i)) { continue; }
-		QSqlRecord r = m_data->record(i);
+		QSqlRecord r = getRecord(i);
 		for (int j = 0; j < m_header.size(); ++j)
 		{
 			if (r.value(j).type() == QVariant::ByteArray)
@@ -264,21 +272,26 @@ bool DataExportDialog::exportHTML()
 	{
 		out << "<tr>";
 		for (int i = 0; i < m_header.size(); ++i)
-			out << "<th>" << Qt::escape(m_header.at(i)) << "</th>";
+			out << "<th>"
+			<< m_header.at(i).toHtmlEscaped()
+			<< "</th>";
 		out << "</tr>" << endl();
 	}
 
-	for (int i = 0; i < m_data->rowCount(); ++i)
+	for (int i = 0; i < m_parentData->rowCount(); ++i)
 	{
 		if (!setProgress(i)) { return false; }
 		if (m_table && m_table->isDeleted(i)) { continue; }
 		out << "<tr>";
-		QSqlRecord r = m_data->record(i);
+		QSqlRecord r = getRecord(i);
 		for (int j = 0; j < m_header.size(); ++j)
-			out << "<td>" << Qt::escape(r.value(j).toString()) << "</td>";
+			out << "<td>"
+				<< r.value(j).toString().toHtmlEscaped()
+				<< "</td>";
 		out << "</tr>" << endl();
 	}
-	out << "</table>" << endl() << "</body>" << endl() << "</html>";
+	out << "</table>" << endl() << "</body>" << endl()
+		<< "</html>";
 	return true;
 }
 
@@ -297,18 +310,22 @@ bool DataExportDialog::exportExcelXML()
 	{
 		out << "<ss:Row ss:StyleID=\"1\">" << endl();
 		for (int i = 0; i < m_header.size(); ++i)
-			out << "<ss:Cell><ss:Data ss:Type=\"String\">" << Qt::escape(m_header.at(i)) << "</ss:Data></ss:Cell>" << endl();
+			out << "<ss:Cell><ss:Data ss:Type=\"String\">"
+				<< m_header.at(i).toHtmlEscaped()
+				<< "</ss:Data></ss:Cell>" << endl();
 		out << "</ss:Row>" << endl();
 	}
 
-	for (int i = 0; i < m_data->rowCount(); ++i)
+	for (int i = 0; i < m_parentData->rowCount(); ++i)
 	{
 		if (!setProgress(i)) { return false; }
 		if (m_table && m_table->isDeleted(i)) { continue; }
 		out << "<ss:Row>" << endl();
-		QSqlRecord r = m_data->record(i);
+		QSqlRecord r = getRecord(i);
 		for (int j = 0; j < m_header.size(); ++j)
-			out << "<ss:Cell><ss:Data ss:Type=\"String\">" << Qt::escape(r.value(j).toString()) << "</ss:Data></ss:Cell>" << endl();
+			out << "<ss:Cell><ss:Data ss:Type=\"String\">"
+			<< r.value(j).toString().toHtmlEscaped()
+			<< "</ss:Data></ss:Cell>" << endl();
 		out << "</ss:Row>" << endl();
 	}
 
@@ -351,12 +368,12 @@ bool DataExportDialog::exportSql()
 	}
 
 
-	for (int i = 0; i < m_data->rowCount(); ++i)
+	for (int i = 0; i < m_parentData->rowCount(); ++i)
 	{
 		if (!setProgress(i)) { return false; }
 		if (m_table && m_table->isDeleted(i)) { continue; }
 		out << "insert into " << Utils::q(m_tableName) << " (\"" << columns << "\") values (";
-		QSqlRecord r = m_data->record(i);
+		QSqlRecord r = getRecord(i);
 
 		for (int j = 0; j < m_header.size(); ++j)
 		{
@@ -379,12 +396,12 @@ bool DataExportDialog::exportPython()
 {
 	out << "[" << endl();
 
-	for (int i = 0; i < m_data->rowCount(); ++i)
+	for (int i = 0; i < m_parentData->rowCount(); ++i)
 	{
 		if (!setProgress(i)) { return false; }
 		if (m_table && m_table->isDeleted(i)) { continue; }
 		out << "	{ ";
-		QSqlRecord r = m_data->record(i);
+		QSqlRecord r = getRecord(i);
 		for (int j = 0; j < m_header.size(); ++j)
 		{
 			// "key" : """value""" python syntax due the potentional EOLs in the strings
@@ -406,13 +423,14 @@ bool DataExportDialog::exportQoreSelect()
 
     for (int i = 0; i < m_header.count(); ++i)
     {
+		if (m_table && m_table->isDeleted(i)) { continue; }
         out << "$out." << m_header.at(i) << " = ";
 
-        for (int j = 0; j < m_data->rowCount(); ++j)
+        for (int j = 0; j < m_parentData->rowCount(); ++j)
         {
-    		QSqlRecord r = m_data->record(j);
+    		QSqlRecord r = getRecord(j);
             out << strTempl.arg(r.value(i).toString());
-            if (j != m_data->rowCount() - 1)
+            if (j != m_parentData->rowCount() - 1)
                 out << ", ";
         }
         out << ";" << endl();
@@ -424,12 +442,12 @@ bool DataExportDialog::exportQoreSelectRows()
 {
 	out << "my $out = " << endl();
 
-	for (int i = 0; i < m_data->rowCount(); ++i)
+	for (int i = 0; i < m_parentData->rowCount(); ++i)
 	{
 		if (!setProgress(i)) { return false; }
 		if (m_table && m_table->isDeleted(i)) { continue; }
 		out << "	(";
-		QSqlRecord r = m_data->record(i);
+		QSqlRecord r = getRecord(i);
 		for (int j = 0; j < m_header.size(); ++j)
 		{
 			out << "\"" << m_header.at(j) << "\" : \"" << r.value(j).toString() << "\"";
@@ -481,7 +499,7 @@ void DataExportDialog::searchButton_clicked()
 	else
 		Q_ASSERT_X(0, "unhandled export", "fix it!");
 
-	
+
 
 	QString presetPath(ui.fileEdit->text());
 	if (presetPath.isEmpty())

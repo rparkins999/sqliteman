@@ -121,7 +121,7 @@ public:
         int Line;
         /** Create statement
          */
-        statement(type ntype = Token, const QString &token = QString::null, int cline = -1);
+        statement(type ntype = Token, const QString &token = QString(), int cline = -1);
         /** Allocate subtokens if not available and return reference to subtokens
          */
         std::list<statement> &subTokens();

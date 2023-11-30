@@ -11,14 +11,40 @@
     If you built it yourself from the sources, please also provide
     the git commit identifier of the version of the sources
     that you downloaded.
-</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id2528555"></a><a name="id2528557"></a><b>8.2.</b></td><td align="left" valign="top"><p>My editor (data grid or output log etc.) GUI disappeared. Is it broken?</p></td></tr><tr class="answer"><td align="left" valign="top"><b></b></td><td align="left" valign="top"><p>Well... no. Error Log windows may automatically disappear if there is no message to put in them, but will reappear when needed. If some window that should be visible isn't, you're probably using MS Windows (or some strange Qt4 GUI theme). All GUI parts are connected into so-called sliders (mouse-stretchable borders). Unfortunately Windows native (and some more themes) look does not highlight these borders. Try to catch the changed mouse cursor near the window borders or clear <a href="Configuration.html" title="Configuration">your preferences</a>.</p></td></tr></tbody></table></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2528587"></a>Known Issues</h2></div></div></div><div class="qandaset"><dl>
+</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id2528555"></a><a name="id2528557"></a><b>8.2.</b></td><td align="left" valign="top"><p>My editor (data grid or output log etc.) GUI disappeared. Is it broken?</p></td></tr><tr class="answer"><td align="left" valign="top"><b></b></td><td align="left" valign="top"><p>Probably not....<br>
+First try looking under the <span class="guimenu">Database</span> menu:
+some User Interface elements can be switched on or off.
+If you accidentally typed a shortcut key that switches a particular User Interface element,
+you switched it off. Type the shortcut key again or use the menu to make it reappear.
+Error Log windows may automatically disappear if there is no message to put in them, but will reappear when needed. If some window that should definitely be visible isn't, you're probably using MS Windows (or some strange Qt GUI theme). All GUI parts are connected into so-called sliders (mouse-stretchable borders). Unfortunately Windows native (and some more themes) look does not highlight these borders. Try to catch the changed mouse cursor near the window borders or clear <a href="Configuration.html" title="Configuration">your preferences</a>.</p></td></tr></tbody></table></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2528587"></a>Known Issues</h2></div></div></div><div class="qandaset"><dl>
 <dt>1. <a href="Questions.html#id2528597">I'm getting: Query Error: SQL logic error or missing database</a></dt> <dt>2. <a href="Questions.html#id2528615">I cannot update a value in the data grid</a></dt>
 <dt>3. <a href="Questions.html#id2528777">Editing or deleting rows changes or deletes other rows.</a></dt>
 <dt>4. <a href="Questions.html#id2528888">I'm getting: Cannot recreate original trigger</a></dt>
 <dt>5. <a href="Questions.html#id2528999">Sqliteman's window suddenly disappears.</a></dt>
 </dl><br/><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody>
 <tr class="question"><td align="left" valign="top"><a name="id2528597"></a><a name="id2528600"></a><b>1.</b></td><td align="left" valign="top"><p>I'm getting: Query Error: SQL logic error or missing database</p></td></tr><tr class="answer"><td align="left" valign="top"><b></b></td><td align="left" valign="top"><p>You can get this error on some INSERT statement in the database with triggers. It's a bug in some versions of the Qt library toolkit. It should be fixed in the Qt 4.2.3 and later.</p></td></tr>
-<tr class="question"><td align="left" valign="top"><a name="id2528615"></a><a name="id2528617"></a><b>2.</b></td><td align="left" valign="top"><p>I cannot update a value in the data grid</p></td></tr><tr class="answer"><td align="left" valign="top"><b></b></td><td align="left" valign="top"><p>You cannot edit the data in a view or in a read-only database. If editing fails in a table in a writeable database, this may be a problem with older versions of the Qt library which send an empty string ('') to the database for fields that have a value of NULL and SQLite doesn't seem to like this. This has been fixed some time before Qt 4.8.6.</p></td></tr>
+<tr class="question"><td align="left" valign="top"><a name="id2528615"></a><a name="id2528617"></a><b>2.</b></td><td align="left" valign="top"><p>I cannot update a value in the data grid</p></td></tr>
+<tr class="answer">
+    <td align="left" valign="top"><b></b></td>
+    <td align="left" valign="top">
+        <p>
+            You cannot edit the data in a view
+            or in the result of running a query
+            or in a read-only database.
+            If you were trying to edit in the result of running a query,
+            you probably needed
+            <span class="application">sqliteman</span>'s
+            <a href="Find.html">Find</a>
+            function instead of the query.
+            If editing fails in a table in a writeable database,
+            this may be a problem with older versions of the Qt library
+            which send an empty string ('') to the database
+            for fields that have a value of NULL
+            and SQLite doesn't seem to like this.
+            This has been fixed some time before Qt 4.8.6.
+        </p>
+    </td>
+</tr>
 <tr class="question"><td align="left" valign="top"><a name="id2528777"></a></a><b>3.</b></td><td align="left" valign="top"><p>Editing or deleting rows changes or deletes other rows</p></td></tr><tr class="answer"><td align="left" valign="top"><b></b></td><td align="left" valign="top"><p>This problem occurs if you put two or more rows with the exact same field contents into the database. The Qt library gets confused by this. <a href="http://bugreports.qt.io/browse/QTBUG-48448">The bug has been reported</a>, but the Qt maintainers won't fix it
 because they think that multiple rows with the same content are invalid in
 a database. This author's view is that if they provide a library interface

@@ -4,8 +4,20 @@
       <a href="CreateView.html" title="View related dialogs">See full Create View documentation</a>.</span></p></dd>
     <dt>
         <span class="term">
-            <span class="guimenu">Database</span>-&gt;<span
-                class="guimenuitem">Build Query...</dfn></span> (<span><strong class="shortcut"><span><strong class="keycap">Ctrl</strong></span>+<span><strong class="keycap">R</strong></span></strong></span>)</span></dt><dd><p><span class="action">Raise a dialog to build and execute a simple query on any table. This is the same dialog as in the Context menu, but you can choose the table.
+            <span class="guimenu">Database</span>-&gt;
+            <span class="guimenuitem">Build Query...</dfn></span>
+			(<span><strong class="shortcut">
+				<span><strong class="keycap">Ctrl</strong></span>
+				+<span><strong class="keycap">R</strong></span>
+			</strong></span>)
+		</span>
+	</dt>
+	<dd>
+		<p><span class="action">
+			Raise a dialog to build and execute a simple query on any table or view.
+			This is the same dialog as in the Context menu,
+			but you can choose the table or view and the schema
+			if one or more additonal databases are attached.
       <a href="QueryBuilder.html">See full Query Builder documentation</a>.
       </span></p></dd>
 	<dt>
@@ -60,8 +72,41 @@
 			</span>
 		</p>
 	</dd>
-	<dt><span class="term"><span class="guimenu">Database</span>-&gt;<span class="guimenuitem">Export Schema...</span></span></dt><dd><p><span class="action">Export only structure of the database. The result is only
-                  "create database" script.</span></p></dd><dt><span class="term"><span class="guimenu">Database</span>-&gt;<span class="guimenuitem">Dump Database...</span></span></dt><dd><p><span class="action">Export structure and data of the database. The result is the
-                  "create database" script and data inserts too.</span></p></dd><dt><span class="term"><span class="guimenu">Database</span>-&gt;<span class="guimenuitem">Import Table Data...</span></span></dt><dd><p><span class="action">Import data into specified table. The import dialog with guided
+	<dt>
+		<span class="term">
+			<span class="guimenu">Database</span>-&gt;
+			<span class="guimenuitem">Export Schema...</span>
+		</span>
+	</dt>
+	<dd>
+		<p>
+			<span class="action">
+				Generate an SQL script containing a transaction
+				which creates all of the tables, views, indexes,
+				and triggers in this database, but no data.
+				It will first raise a dialog asking you
+				where to save the output.
+			</span>
+		</p>
+	</dd>
+	<dt>
+		<span class="term">
+			<span class="guimenu">Database</span>-&gt;
+			<span class="guimenuitem">Dump Database...</span>
+		</span>
+	</dt>
+	<dd>
+		<p>
+			<span class="action">
+				Generate an SQL script containing a transaction
+				which creates all of the tables, views, indexes,
+				and triggers in this database,
+				and inserts the data into all of the tables.
+				It will first raise a dialog asking you
+				where to save the output.
+			</span>
+		</p>
+	</dd>
+	<dt><span class="term"><span class="guimenu">Database</span>-&gt;<span class="guimenuitem">Import Table Data...</span></span></dt><dd><p><span class="action">Import data into specified table. The import dialog with guided
                 steps is shown.</span></p></dd></dl></div><p>
 </p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ContextMenu.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="MenuStructure.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="SystemMenu.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">The <span class="guimenu">Context</span> Menu </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> The <span class="guimenu">System</span> Menu</td></tr></table></div></body></html>

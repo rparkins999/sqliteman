@@ -3,7 +3,7 @@
   </p>
   <h3 class="important">Important</h3>
   <div class="indent">
-  The built-in <span class="application">sqlite</span> ALTER TABLE command is very limited since it can only rename the table or rename or add a single column at a time.
+  The built-in <span class="application">sqlite</span> ALTER TABLE command is very limited since it can only rename the table or rename or add or drop a single column at a time.
   </div>
   <p>
     <span class="application">Sqliteman</span> provides a more general ALTER TABLE by creating a new table, copying the data, and dropping the old table. If necessary the old table is renamed out of the way first. However <span class="application">sqliteman</span> has limited understanding of the many possible table structures and some information is lost in some cases.
@@ -34,7 +34,7 @@ If the table is changed other than by just renaming it, and the table is a
 <em>parent table</em> (a foreign key constraint in some
 other table references it), the Alter Table function may fail.
 </p></div><p>In this dialog you can <span class="guibutton">Add</span> and <span class="guibutton">Remove</span> table
-  columns and set the options for new ones.</p><p>
+  columns and set the options for new ones. You can also reorder the columns using the up and down arrows.</p><p>
 The Alter button is enabled
 only when at least something has changed from the original table definition,
 and the table name is nonempty,

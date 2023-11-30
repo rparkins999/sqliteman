@@ -15,6 +15,7 @@ for which a new license (GPL+exception) is in place.
 #include <QKeyEvent>
 #include <QtCore/QLocale>
 #include <QMessageBox>
+#include <QMimeData>
 #include <QResizeEvent>
 #include <QSqlField>
 #include <QSqlQuery>
@@ -102,38 +103,107 @@ void DataViewer::updateButtons()
 	{
 		canPreview = false;
 	}
-	ui.actionFind->setEnabled(table && (m_finder == 0));
-	ui.actionNew_Row->setEnabled(editable);
-	ui.actionCopy_Row->setEnabled(editable && rowSelected);
-	if (haveBuiltQuery)
+	if (table && (m_finder == 0))
 	{
-		ui.actionRemove_Row->setIcon(Utils::getIcon("delete_multiple.png"));
+		ui.actionFind->setEnabled(true);
+		ui.actionFind->setToolTip(tr("Find... ") + "(Ctrl+Alt+F)");
+	} else {
+		ui.actionFind->setEnabled(false);
+		ui.actionFind->setToolTip("(disabled)");
+	}
+	if (editable)
+	{
+		ui.actionNew_Row->setEnabled(true);
+		ui.actionNew_Row->setToolTip(tr("New Row ") + "(Ctrl+Alt+N)");
+	} else {
+		ui.actionNew_Row->setEnabled(false);
+		ui.actionNew_Row->setToolTip("(disabled)");
+	}
+	if (editable && rowSelected)
+	{
+		ui.actionCopy_Row->setEnabled(true);
+		ui.actionCopy_Row->setToolTip(tr("Duplicate Row ") + "(Ctrl+Alt+=)");
+	} else {
+		ui.actionCopy_Row->setEnabled(false);
+		ui.actionCopy_Row->setToolTip("(disabled)");
+	}
+	if (haveBuiltQuery && haveRows)
+	{
 		ui.actionRemove_Row->setEnabled(true);
-	}
-	else
-	{
+		ui.actionRemove_Row->setIcon(Utils::getIcon("delete_multiple.png"));
+		ui.actionRemove_Row->setToolTip(
+			tr("Delete these rows from the table ") + "(Ctrl+Alt+D)");
+	} else {
 		ui.actionRemove_Row->setIcon(Utils::getIcon("delete_table_row.png"));
-		ui.actionRemove_Row->setEnabled(editable && rowSelected);
+		if (editable && rowSelected) {
+			ui.actionRemove_Row->setEnabled(true);
+			ui.actionRemove_Row->setToolTip(
+				tr("Delete selected row ") + "(Ctrl+Alt+D)");
+		} else {
+			ui.actionRemove_Row->setEnabled(false);
+			ui.actionRemove_Row->setToolTip(tr("(disabled)"));
+		}
 	}
-	ui.actionCommit->setEnabled(pending);
-	ui.actionCommit->setToolTip(autoCommit
-		? "Commit unsaved changes in this table to the database"
-		: "Write unsaved changes in this table to the pending database transaction");
-	ui.actionRollback->setEnabled(pending);
+	if (pending)
+	{
+		ui.actionCommit->setEnabled(true);
+		ui.actionCommit->setToolTip("<html><head/><body><p>" + tr((autoCommit
+			? "Commit unsaved changes in this table to the database "
+			: "Write unsaved changes in this table to the pending database transaction "))
+			+ "Ctrl+Alt+C)</p></body></html>");
+		ui.actionRollback->setEnabled(true);
+		ui.actionRollback->setToolTip(
+			"<html><head/><body><p>"
+			+ tr("Roll back unsaved changes in this table ")
+			+ "(Ctrl+Alt+R)</p></body></html>");
+	} else {
+		ui.actionCommit->setEnabled(false);
+		ui.actionCommit->setToolTip(tr("(disabled)"));
+		ui.actionRollback->setEnabled(false);
+		ui.actionRollback->setToolTip(tr("(disabled)"));
+	}
 	if (canPreview || ui.actionBLOB_Preview->isChecked())
 	{
 		ui.actionBLOB_Preview->setEnabled(true);
 		ui.blobPreviewBox->setVisible(
 			canPreview && ui.actionBLOB_Preview->isChecked());
+		ui.actionBLOB_Preview->setToolTip(tr("Hide BLOB preview  ") + "(Ctrl+Alt+B)");
 	}
 	else
 	{
 		ui.actionBLOB_Preview->setEnabled(false);
 		ui.blobPreviewBox->setVisible(false);
+		if (canPreview)
+		{
+			ui.actionBLOB_Preview->setToolTip(tr("Show BLOB preview ") + "(Ctrl+Alt+B)");
+		} else {
+			ui.actionBLOB_Preview->setToolTip(tr("(disabled)"));
+		}
 	}
-	ui.actionExport_Data->setEnabled(haveRows);
-	ui.action_Goto_Line->setEnabled(haveRows && (tab != 2));
-	ui.actionRipOut->setEnabled(haveRows && isTopLevel);
+	if (haveRows)
+	{
+		ui.actionExport_Data->setEnabled(true);
+		ui.actionExport_Data->setToolTip(tr("Export Data ") + "(Ctrl+Alt+X)");
+	} else {
+		ui.actionExport_Data->setEnabled(false);
+		ui.actionExport_Data->setToolTip(tr("(disabled)"));
+	}
+	if (haveRows && (tab != 2))
+	{
+		ui.action_Goto_Line->setEnabled(true);
+		ui.action_Goto_Line->setToolTip(tr("Go to record number ") + "(Ctrl+Alt+G)");
+	} else {
+		ui.action_Goto_Line->setEnabled(false);
+		ui.action_Goto_Line->setToolTip(tr("(disabled)"));
+	}
+	if (haveRows && isTopLevel)
+	{
+		ui.actionRipOut->setEnabled(true);
+		ui.actionRipOut->setToolTip(tr("Table Snapshot ") + "(Ctrl+Alt+T)");
+	} else {
+		ui.actionRipOut->setEnabled(false);
+		ui.actionRipOut->setToolTip(tr("(disabled)"));
+	}
 	ui.tabWidget->setTabEnabled(1, rowSelected);
 	ui.tabWidget->setTabEnabled(2, ui.scriptEdit->lines() > 1);
 	
@@ -539,7 +609,8 @@ void DataViewer::copyHandler()
 	}
 
 	if (out.size() != 0)
-		QApplication::clipboard()->setText(out.join(QString::null));
+		QApplication::clipboard()
+			->setText(out.join(QString()));
 }
 
 void DataViewer::openStandaloneWindow()
@@ -790,10 +861,12 @@ void DataViewer::doPasteOver()
 	QSqlTableModel * model =
 		qobject_cast<QSqlTableModel*>(ui.tableView->model());
 	QModelIndex index(ui.tableView->currentIndex());
-	const QMimeData *mimeData = QApplication::clipboard()->mimeData();
+	const QMimeData *mimeData =
+		QApplication::clipboard()->mimeData();
 	if (model && index.isValid() && mimeData->hasText())
 	{
-		model->setData(index, mimeData->text(), Qt::EditRole);
+		model->setData(
+			index, mimeData->text(), Qt::EditRole);
 	}
 }
 
@@ -933,6 +1006,7 @@ DataViewer::DataViewer(LiteManWindow * parent)
 
 	activeRow = -1;
 	columnSelected = -1;
+	updateButtons();
 }
 
 DataViewer::~DataViewer()
@@ -1029,6 +1103,7 @@ bool DataViewer::setTableModel(QAbstractItemModel * model, bool showButtons)
 			m_doneFindAll = false;
 			m_finder->setup(stm->schema(), stm->objectName());
 		}
+		stm->setPalette(ui.tableView->palette());
 	}
 	else if (m_finder)
 	{

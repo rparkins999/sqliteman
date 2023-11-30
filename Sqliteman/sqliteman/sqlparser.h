@@ -162,7 +162,7 @@ ENUMVALUE(IexpectColumnList)
 ENUMVALUE(IexpectIndexedColumn)
 ENUMVALUE(IexpectWHERE)
 ENUMVALUE(IexpectWhereExpression)
-// here we should ahev finished, so any more tokens are an error
+// here we should have finished, so any more tokens are an error
 ENUMLAST(expectStatementEnd)
 
 #ifndef ENUMSKIP
@@ -221,7 +221,7 @@ class SqlParser
 		int m_depth;
         enum itemType m_type;
         QList<Token> m_tokens;
-		QList<Token> tokenise(QString input);
+		static QList<Token> tokenise(QString input);
 		void destroyExpression(Expression * e);
         Expression * internalParser(int state, int level, QStringList ends);
         Expression * parseExpression(QString input);
@@ -247,6 +247,7 @@ class SqlParser
         bool isValidDefault(QString input);
 		QString toString();
  		bool replace(QMap<QString,QString> map, QString newTableName);
+		static bool isNumber(QString input);
 };
 
 #endif // ENUMSKIP

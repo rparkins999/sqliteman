@@ -25,7 +25,7 @@
      <item>
       <widget class="QLabel" name="aTTQlabel">
        <property name="text">
-        <string>Table to query:</string>
+        <string>Table or View to query:</string>
        </property>
       </widget>
      </item>
@@ -51,7 +51,7 @@
        <item>
         <widget class="QLabel" name="DatabaseName">
          <property name="text">
-          <string>Table Name:</string>
+          <string>Table or View Name:</string>
          </property>
         </widget>
        </item>

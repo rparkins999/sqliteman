@@ -73,6 +73,7 @@ class SqlItemView : public QWidget, public Ui::SqlItemView
         QAction * actCut;
         QAction * actPaste;
         QAction * actPasteOver;
+		QAction * actSelectAll;
         QAction * actInsertNull;
         QAction * actOpenMultiEditor;
 
@@ -91,6 +92,7 @@ class SqlItemView : public QWidget, public Ui::SqlItemView
 		void doCut();
 		void doPaste();
 		void doPasteOver();
+		void doSelectAll();
 
 	public slots:
 		void textChanged();

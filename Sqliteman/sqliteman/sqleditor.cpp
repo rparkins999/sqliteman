@@ -259,6 +259,7 @@ void SqlEditor::actionRun_SQL_triggered()
     QString sql(query(false));
     if (!sql.isNull()) {
         if (creator->doExecSql(sql, false)) {
+			if (Utils::detaches(sql)) { creator->detaches(); }
             if (Utils::updateObjectTree(sql)) { emit buildTree(); }
             if (Utils::updateTables(sql)) { emit refreshTable(); }
             appendHistory(sql);
@@ -291,6 +292,7 @@ void SqlEditor::actionRun_as_Script_triggered()
 {
 	if ((!creator) || !(creator->checkForPending())) { return; }
 	SqlQueryModel * model = 0;
+	bool callDetaches = false;
 	bool rebuildTree = false;
 	bool updateTable = false;
 	m_scriptCancelled = false;
@@ -353,6 +355,7 @@ void SqlEditor::actionRun_as_Script_triggered()
         }
         else
         {
+            if (Utils::detaches(sql)) { callDetaches = true; }
             if (Utils::updateObjectTree(sql)) { rebuildTree = true; }
             if (Utils::updateTables(sql)) { updateTable = true; }
             emit showSqlScriptResult("-- " + tr("No error"));
@@ -369,6 +372,7 @@ void SqlEditor::actionRun_as_Script_triggered()
         delete dialog;
         if (!isError)
             emit showSqlScriptResult("-- " + tr("Script finished"));
+		if (callDetaches) { creator->detaches(); }
         if (rebuildTree) { emit buildTree(); }
         if (updateTable) { emit refreshTable(); }
         if (model)
@@ -485,6 +489,10 @@ void SqlEditor::actionShow_History_triggered()
 {
 	emit showSqlScriptResult("");
 	ui.historyTreeWidget->setVisible(ui.actionShow_History->isChecked());
+	ui.actionShow_History->setToolTip(tr(
+		ui.historyTreeWidget->isVisible()
+			? "Hide SQL statement history (Ctrl+Shift+H)"
+			: "Show sql statment history (Ctrl+Shift+H)"));
 }
 
 void SqlEditor::action_Save_triggered()
@@ -602,8 +610,10 @@ void SqlEditor::actionSearch_triggered()
 	if (!ui.searchFrame->isVisible())
 	{
 		ui.sqlTextEdit->setFocus();
+		ui.actionSearch->setToolTip(tr("Search in the SQL file (Ctrl+Shift+F)"));
 		return;
 	}
+	ui.actionSearch->setToolTip(tr("Hide search bar (Ctrl+Shift+F)"));
 	ui.searchEdit->selectAll();
 	ui.searchEdit->setFocus();
 }

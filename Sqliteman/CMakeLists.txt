@@ -2,33 +2,29 @@
 # This is the base config/build file for Sqliteman
 # for more info about available options read: README
 #
-OPTION(WANT_INTERNAL_SQLDRIVER "Use internal sqlite3 driver instead of system one. It enables more features (extensions, r-tree, etc.)" ON)
+MESSAGE(STATUS "Entering Sqliteman/CMakeLists.txt")
+OPTION(WANT_INTERNAL_SQLDRIVER "Use internal sqlite3 driver instead of system one. It enables more features (extensions, r-tree, etc.)" OFF)
 OPTION(WANT_DEBUG "Set the debug build and possible additional outputs" OFF)
 OPTION(WANT_INTERNAL_QSCINTILLA "Use internal/bundled QScintilla2 source" OFF)
 OPTION(WANT_BUNDLE "Enable Mac OS X bundle build" OFF)
 OPTION(WANT_BUNDLE_STANDALONE "Do not copy required libs and tools into bundle (WANT_BUNDLE)" ON)
 
-
-CMAKE_MINIMUM_REQUIRED( VERSION 2.6.0 )
-# sets for bleeding edge cmake
-if(COMMAND cmake_policy)
-#    cmake_policy(SET CMP0003 OLD)
-    cmake_policy(SET CMP0005 OLD)
-endif(COMMAND cmake_policy)
+CMAKE_MINIMUM_REQUIRED( VERSION 3.0 )
 
 #Pretty colors
 SET(CMAKE_COLOR_MAKEFILE ON)
-#Dont force verbose
+
+#Force verbose to investigate problems with build.make
+#SET(CMAKE_VERBOSE_MAKEFILE ON)
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
-#Include current dir
-# SET(CMAKE_INCLUDE_CURRENT_DIR TRUE)
+
 #Set the custom CMake module directory where our include/lib finders are
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 #PROJECT SETUP
 PROJECT(sqliteman)
 SET (VERSION_MAJOR "1")
-SET (VERSION_MINOR "6")
+SET (VERSION_MINOR "8")
 SET (VERSION_PATCH "1")
 SET (VERSION_SUFFIX "")
 SET (VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}${VERSION_SUFFIX})
@@ -92,24 +88,41 @@ ELSE (WANT_RESOURCES)
     SET (ICON_DIR "${CMAKE_INSTALL_PREFIX}/share/sqliteman/icons")
 ENDIF (WANT_RESOURCES)
 
+SET (QTVERSION "Qt5")
+SET (QTLCVERSION "qt5")
+SET (QT_MT_REQUIRED true)
+SET( QT_USE_QTSQL TRUE )
+SET( QT_USE_QTXML TRUE )
+find_package(${QTVERSION} COMPONENTS Widgets Sql REQUIRED)
+MESSAGE(STATUS "Qt version: "
+    ${${QTVERSION}Core_VERSION_MAJOR}.
+    ${${QTVERSION}Core_VERSION_MINOR}.
+    ${${QTVERSION}Core_VERSION_PATCH})
+
+include_directories(
+    ${${QTVERSION}Widgets_INCLUDE_DIRS}
+    ${${QTVERSION}Sql_INCLUDE_DIRS})
+
+add_definitions(${${QTVERSION}Core_DEFINITIONS})
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # defines for compiler based on the previous setup
-ADD_DEFINITIONS("-DTRANSLATION_DIR=\\\"${TRANSLATION_DIR}\\\"")
-ADD_DEFINITIONS("-DDOC_DIR=\\\"${DOC_DIR}\\\"")
-ADD_DEFINITIONS("-DICON_DIR=\\\"${ICON_DIR}\\\"")
+add_definitions(-DTRANSLATION_DIR="${TRANSLATION_DIR}")
+add_definitions(-DDOC_DIR="${DOC_DIR}")
+add_definitions(-DICON_DIR="${ICON_DIR}")
 # defines for compiler
-# ADD_DEFINITIONS("-DSQLITE_BINARY=\\\"${SQLITE_BIN}\\\"")
-ADD_DEFINITIONS("-DSQLITEMAN_VERSION=\\\"${VERSION}\\\"")
+add_definitions(-DSQLITEMAN_VERSION="${VERSION}")
 IF (WANT_RESOURCES)
-    ADD_DEFINITIONS("-DWANT_RESOURCES")
+    add_definitions("-DWANT_RESOURCES")
 ENDIF (WANT_RESOURCES)
 
 IF (WANT_INTERNAL_SQLDRIVER)
     MESSAGE(STATUS "Sqliteman will be built with internal Sqlite driver.")
-    ADD_DEFINITIONS("-DINTERNAL_SQLDRIVER")
+    add_definitions("-DINTERNAL_SQLDRIVER")
     SET (ENABLE_EXTENSIONS 1)
 ELSE (WANT_INTERNAL_SQLDRIVER)
-    MESSAGE(STATUS "Sqliteman will be built with standard Qt4 Sqlite driver.")
+    MESSAGE(STATUS "Sqliteman will be built with standard Qt Sqlite driver.")
 ENDIF (WANT_INTERNAL_SQLDRIVER)
 
 IF (DISABLE_SQLITE_EXTENSIONS)
@@ -120,13 +133,12 @@ IF (FORCE_SQLITE_EXTENSIONS)
 ENDIF (FORCE_SQLITE_EXTENSIONS)
 IF (ENABLE_EXTENSIONS)
     MESSAGE(STATUS "Sqliteman will be built with extension support.")
-    ADD_DEFINITIONS("-DENABLE_EXTENSIONS")
+    add_definitions("-DENABLE_EXTENSIONS")
     MESSAGE(STATUS "Sqliteman will be built with R-Tree support.")
-    ADD_DEFINITIONS("-DSQLITE_ENABLE_RTREE=1")
+    add_definitions("-DSQLITE_ENABLE_RTREE=1")
 ELSE (ENABLE_EXTENSIONS)
     MESSAGE(STATUS "Sqliteman will be built without extension support.")
 ENDIF (ENABLE_EXTENSIONS)
-
 
 #uninstall
 CONFIGURE_FILE(
@@ -137,7 +149,6 @@ CONFIGURE_FILE(
 ADD_CUSTOM_TARGET(uninstall
     "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
 
-
 IF (WANT_DEBUG)
     SET (CMAKE_BUILD_TYPE Debug)
     MESSAGE (STATUS " *** Debug build ***")
@@ -145,7 +156,6 @@ ELSE(WANT_DEBUG)
     SET(CMAKE_BUILD_TYPE RELEASE)
     MESSAGE(STATUS " *** Release build (use -DWANT_DEBUG=1 for debug one) ***")
 ENDIF(WANT_DEBUG)
-
 
 # Lets disable Wall warnings due the MSVC too much talkative
 # output. Wall can slow down compiletion up to hours and
@@ -157,43 +167,18 @@ ELSE (MSVC)
     SET (CXX_WARNINGS "-Wall")
 ENDIF (MSVC)
 
-
 SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -fkeep-inline-functions ${CXX_WARNINGS}")
 SET(CMAKE_C_FLAGS_DEBUG "-O0 -g3 ${CXX_WARNINGS}")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O2 ${CXX_WARNINGS}")
 SET(CMAKE_C_FLAGS_RELEASE "-O2 ${CXX_WARNINGS}")
 
-
-SET (QT_MT_REQUIRED true)
-SET (QT_MIN_VERSION "4.4.0")
-SET( QT_USE_QTSQL TRUE )
-SET( QT_USE_QTXML TRUE )
-FIND_PACKAGE( Qt4 REQUIRED )
-MESSAGE(STATUS Qt4 version: ${QT_VERSION_MAJOR}.${QT_VERSION_MINOR}.${QT_VERSION_PATCH})
-# suggest Qt upgrade
-# if (QT_VERSION_MINOR LESS 3)
-#     MESSAGE(STATUS "")
-#     MESSAGE(STATUS "__ BIG FAT WARNING! _______________________________")
-#     MESSAGE(STATUS "Your Qt version seems older than it should be.")
-#     MESSAGE(STATUS "Althought will be Sqliteman compilled successfully,")
-#     MESSAGE(STATUS "it will be limited in its features.")
-#     MESSAGE(STATUS "There are some important bugs in older Qt versions.")
-#     MESSAGE(STATUS "Please upgrade to the current Qt version.")
-#     MESSAGE(STATUS "___________________________________________________")
-#     MESSAGE(STATUS "")
-# endif (QT_VERSION_MINOR LESS 3)
-
-INCLUDE( ${QT_USE_FILE} )
-
-
 IF (WANT_INTERNAL_QSCINTILLA)
     MESSAGE(STATUS "QSci: Building with internal copy of QScintilla.")
     MESSAGE(STATUS "QSci: It's recomended to use external library for it")
 ELSE (WANT_INTERNAL_QSCINTILLA)
-
     FIND_PACKAGE(QScintilla REQUIRED)
     IF (QSCINTILLA_FOUND)
-        MESSAGE("QScintilla2 Found OK")
+        MESSAGE(STATUS "QScintilla2 Found OK")
         ADD_DEFINITIONS("-DQT -DSCI_LEXER")
     ELSE (QSCINTILLA_FOUND)
         MESSAGE(STATUS "QSci: No QScintilla2 libraries found")
@@ -202,7 +187,6 @@ ELSE (WANT_INTERNAL_QSCINTILLA)
     ENDIF (QSCINTILLA_FOUND)
 
 ENDIF (WANT_INTERNAL_QSCINTILLA)
-
 
 FIND_PACKAGE (Sqlite)
 IF (SQLITE_FOUND)
@@ -213,8 +197,6 @@ ELSE (SQLITE_FOUND)
 ENDIF (SQLITE_FOUND)
 MESSAGE(STATUS "SQLITE_INCLUDE_DIR:  ${SQLITE_INCLUDE_DIR}")
 MESSAGE(STATUS "SQLITE_LIBRARIES:  ${SQLITE_LIBRARIES}")
-MESSAGE(STATUS "SQLITE_DEFINITIONS:  ${SQLITE_DEFINITIONS}")
-
 
 ADD_SUBDIRECTORY( sqliteman )
 
@@ -233,8 +215,14 @@ ELSE (WIN32)
         )
     ENDIF (NOT WANT_BUNDLE)
 ENDIF (WIN32)
-MESSAGE(STATUS "Qt4 includes: '${QT_INCLUDES}'")
-MESSAGE(STATUS "Qt4 libs: '${QT_LIBRARY_DIR}'")
-MESSAGE(STATUS "QT_QTCORE_LIBRARY_RELEASE '${QT_QTCORE_LIBRARY_RELEASE}'")
-MESSAGE(STATUS "QT_QTCORE_LIBRARY_DEBUG '${QT_QTCORE_LIBRARY_DEBUG}'")
-MESSAGE(STATUS "Qt moc executable '${QT_MOC_EXECUTABLE}'")
+
+# Check that we have set things up correctly
+# Can't print a property directly
+get_directory_property(TEMP INCLUDE_DIRECTORIES)
+MESSAGE(STATUS "INCLUDE_DIRECTORIES = '${TEMP}'")
+get_directory_property(TEMP COMPILE_DEFINITIONS)
+MESSAGE(STATUS "COMPILE_DEFINITIONS = '${TEMP}'")
+get_directory_property(TEMP COMPILE_OPTIONS)
+MESSAGE(STATUS "COMPILE_OPTIONS = '${TEMP}'")
+MESSAGE(STATUS "Qt moc executable = '${QT_MOC_EXECUTABLE}'")
+MESSAGE(STATUS "Leaving Sqliteman/CMakeLists.txt")

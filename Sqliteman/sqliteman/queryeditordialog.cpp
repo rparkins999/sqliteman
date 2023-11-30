@@ -1,5 +1,6 @@
 /*
-For general Sqliteman copyright and licensing information please refer
+For general Sqliteman copy
+right and licensing information please refer
 to the COPYING file provided with the program. Following this notice may exist
 a copyright and/or license notice that predates the release of Sqliteman
 for which a new license (GPL+exception) is in place.
@@ -38,27 +39,31 @@ QueryEditorDialog::~QueryEditorDialog()
 void QueryEditorDialog::setItem(QTreeWidgetItem * item)
 {
     QString databaseName;
-    bool schemaMayChange = true;
+    bool schemaMayChange;
     QString tableName;
-    bool tableMayChange = true;
+    bool tableMayChange;
     if (item) {
         databaseName = item->text(1);
         schemaMayChange = false;
 		if (   (item->type() == TableTree::TableType)
-//            building query on view valid but not yet supported
-//            || (item->type() == TableTree::ViewType)
-        ) {
+            || (item->type() == TableTree::ViewType))
+        {
                 tableName = item->text(0);
                 tableMayChange = false;
+        } else {
+            tableMayChange = true;
         }
+    } else {
+        schemaMayChange = true;
+        tableMayChange = true;
     }
 	ui.queryEditor->setSchema(
         databaseName, tableName, schemaMayChange, tableMayChange);
 }
 
-QString QueryEditorDialog::statement()
+QString QueryEditorDialog::statement(bool elide)
 {
-	return ui.queryEditor->statement();
+	return ui.queryEditor->statement(elide);
 }
 
 QString QueryEditorDialog::deleteStatement()
@@ -66,12 +71,42 @@ QString QueryEditorDialog::deleteStatement()
 	return ui.queryEditor->deleteStatement();
 }
 
-void QueryEditorDialog::treeChanged()
+bool QueryEditorDialog::queryingTable()
 {
-	ui.queryEditor->treeChanged();
+    return ui.queryEditor->m_queryingTable;
+}
+
+void QueryEditorDialog::setSchema(QString schema, QString table,
+                       bool schemaMayChange, bool tableMayChange)
+{
+    ui.queryEditor->setSchema(schema, table, schemaMayChange, tableMayChange);
+}
+
+void QueryEditorDialog::schemaAdded(QString schema)
+{
+    ui.queryEditor->resetSchemaList();
+}
+
+void QueryEditorDialog::tableCreated()
+{
+	ui.queryEditor->resetTableList();
 }
 
 void QueryEditorDialog::tableAltered(QString oldName, QTreeWidgetItem * item)
 {
-	ui.queryEditor->tableAltered(oldName, item);
+	ui.queryEditor->tableGone(oldName, item->text(0));
+}
+
+void QueryEditorDialog::tableDropped(QString oldName)
+{
+	ui.queryEditor->tableGone(oldName, QString());
+}
+
+void QueryEditorDialog::schemaGone(QString schema) {
+	ui.queryEditor->resetSchemaList();
+}
+
+void QueryEditorDialog::treeChanged()
+{
+	ui.queryEditor->treeChanged();
 }

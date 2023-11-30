@@ -37,12 +37,21 @@
 				</h2>
 			</div>
 		<p>
-			The Query Builder enables you to interactively build and execute
-			simple queries on a table without having to write SQL. This is
-			distinct from the
+			The Query Builder enables you to interactively
+			build and execute simple queries on a table or a view
+			without having to write any SQL code.
+			This is distinct from the
 			<a href="SQLeditor.html">SQL Editor</a>
-			which allows you to create any SQL statement you want, but you have
-			to understand the SQL syntax to use it.
+			which allows you to create ands execute any SQL statements
+			you want, but you have
+			to understand the SQL syntax and semantics to use it.
+			It is also distinct from the
+			<a href="Find.html">Find dialog</a>
+			which allows you to redisplay the current table
+			(it doesn't work on a view or the result of a query),
+			with only the rows which match a simple query visible
+			(and editable). The result of a query cannot be edited
+			because sqlite only allows you to edit real tables.
 		</p>
 		<p></p>
 		<p>
@@ -50,7 +59,9 @@
 			<span class="application">sqliteman</span> session.
 			It is still there even if it is not being shown, and it remembers
 			the last query that you built with it: this means that query will
-			reappear if you open the dialog again. This can be useful if you did
+			reappear if you open the dialog again unless you do something
+			which would modify the table or view being queried, or you query a
+			different one. This can be useful if you did
 			not get your query quite right and want to modify it. Pressing the
 			<a href="#reset">Reset</a>
 			button will remove the old query if you want to create a completely
@@ -69,7 +80,8 @@
 					name. If you invoked it from the
 					<a href="DatabaseMenu.html">
 						<span class="guimenu">Database</span></a> Menu,
-					you can select an attached database from the dropdown list.
+					and there is more than one database,
+					you can select a database from the dropdown list.
 				</span>
 			</dd>
 			<dt>
@@ -79,12 +91,16 @@
 				<span class="action">
 					If you invoked the Query Builder from the
 					<a href="ContextMenu.html">
-						<span class="guimenu">Context</span></a> Menu,
-					this field will be prefilled with the relevant table
-					name. If you invoked it from the
+						<span class="guimenu">Context</span></a> Menu
+					of a table or a view, this field will be prefilled with
+					the name of the table or view. If you invoked it from the
 					<a href="DatabaseMenu.html">
-						<span class="guimenu">Database</span></a> Menu,
-					you can select a table in the chosen Database from the
+						<span class="guimenu">Database</span></a> Menu or the
+					<a href="ContextMenu.html">
+						<span class="guimenu">Context</span></a> Menu of
+					a particualr database, you can select a table or a view
+					in the chosen Database
+					(if it contains more than one) from the
 					dropdown list.
 				</span>
 			</dd>
@@ -114,8 +130,8 @@
 					The order of the column names in the selected box will
 					become the order of the columns in the query result.
 					Sqlite allows a column to appear more than once in a
-					query result, but this Query Builder does not enable you
-					to build such a query.
+					query result, but this Query Builder does not
+					(currently) enable you to build such a query.
 				</p>
 			</dd>
 			<dt>
@@ -129,11 +145,43 @@
 			<dd>
 				<p>
 					This tab allows you to add match conditions to your
-					query. If you add several terms you can choose whether
-					the query returns rows which match all of them or match
-					any of them. The
+					query. If you add several match conditions you can choose whether
+					the query returns rows which match all of them
+					or rows which match any of them. The
 					<span class="guibutton">More</span>
-					button adds another match condition and the
+					button adds another match condition
+				</p>
+			</dd>
+			<dt>
+				<div class="screenshot">
+					<div class="mediaobject">
+						<img src="queryAddTerm.png" alt="Trem Added">
+					</div>
+				</div>
+			</dt>
+			<dd>
+				<p>
+					For each match condition added:
+					the leftmost dropdown list allows you to select
+					a column to test and you can select any column
+					in the table, including those which were not selected
+					in the fields tab;
+					the dropdown list in the middle allows you to select
+					a test from Contains, Doesn't contain, Starts with,
+					Equals, Not equals, Bigger than, Smaller than,
+					Is null, and Is not null; the text input field
+					at the right (not shown for Is null and Is not null)
+					allows you to type in a comparison value.
+				</p>
+				<p>
+					For the Bigger than and Smaller than comparisons,
+					if the comparison value and the actual value from
+					the table are both numbers, a numeric
+					comparison will be done, and otherwise a string
+					comparison will be done.
+				</p>
+				<p>
+					The
 					<span class="guibutton">Less</span>
 					button deletes the last match condition.
 				</p>

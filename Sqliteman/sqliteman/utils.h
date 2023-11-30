@@ -52,6 +52,9 @@ namespace Utils {
 
     QString getTranslator(const QString & localeName);
 
+    //! \brief Check if sql statement could detach a database
+    bool detaches(const QString & sql);
+
     //! \brief Check if the object tree should be refilled depending on sql statement
     bool updateObjectTree(const QString & sql);
 

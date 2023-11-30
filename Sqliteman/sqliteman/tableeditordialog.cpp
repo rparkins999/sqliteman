@@ -322,7 +322,7 @@ QString TableEditorDialog::getSQLfromGUI(QWidget * w)
 	if (w == ui.designTab) {
 		return getSQLfromDesign();
 	} else if (w == ui.queryTab) {
-		return ui.queryEditor->statement();
+		return ui.queryEditor->statement(m_tableOrView.compare("TABLE"));
 	} else {
 		return ui.textEdit->text();
 	}

@@ -338,7 +338,7 @@ void ImportTableDialog::updateButton()
 
 char ImportTableDialog::hexValue(QChar c)
 {
-	char a = c.toAscii();
+	char a = c.toLatin1();
 	if ((a >= '0') && (a <= '9')) { return a - '0'; }
 	else if ((a >= 'A') && (a <= 'F')) { return a - 'A' + 10; }
 	else if ((a >= 'a') && (a <= 'f')) { return a - 'a' + 10; }

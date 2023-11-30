@@ -103,6 +103,7 @@ class LiteManWindow : public QMainWindow
 		void describeObject(QString type);
 		void updateContextMenu(QTreeWidgetItem * item);
         QString getOSName();
+		void doBuildQuery();
 
 	protected:
 		/*! \brief This method handles closing of the main window by saving the window's state and accepting
@@ -124,7 +125,7 @@ class LiteManWindow : public QMainWindow
 		void preferences();
 
 		void buildQuery();
-		void execSql(QString query, bool isBuilt);
+		void buildAnyQuery();
 		void exportSchema();
 		void dumpDatabase();
 
@@ -172,6 +173,9 @@ class LiteManWindow : public QMainWindow
 		void doMultipleDeletion();
         void tableTreeSelectionChanged();
 
+	public:
+		void detaches();
+
 	private:
 		QStringList recentDocs;
 
@@ -183,6 +187,7 @@ class LiteManWindow : public QMainWindow
 		QTreeWidgetItem * m_currentItem;
 		QLabel * m_sqliteVersionLabel;
 		bool tableTreeTouched;
+		bool m_isOpen;
 
 		DataViewer * dataViewer;
 		QSplitter * splitter;
@@ -232,6 +237,7 @@ class LiteManWindow : public QMainWindow
 		QAction * schemaBrowserAct;
 		QAction * dataViewerAct;
 		QAction * buildQueryAct;
+		QAction * buildAnyQueryAct;
 		QAction * contextBuildQueryAct;
 		QAction * exportSchemaAct;
 		QAction * dumpDatabaseAct;

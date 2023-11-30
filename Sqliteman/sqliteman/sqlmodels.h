@@ -10,6 +10,7 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlRecord>
 #include <QSqlTableModel>
 #include <QItemDelegate>
+#include <QPalette>
 #include <QSqlRecord>
 
 #include "sqlparser.h"
@@ -38,6 +39,7 @@ class SqlTableModel : public QSqlTableModel
 		QMap<int,IndexType> m_header;
         QList<FieldInfo> m_fields;
         QSqlRecord m_copyThis;
+		QPalette m_palette;
 
 		// ****ing broken QSqlTableModel....
 		// This map contains an entry for each inserted row:
@@ -62,6 +64,7 @@ class SqlTableModel : public QSqlTableModel
 
         void refreshFields();
 
+
 	private slots:
 		/*! \brief Called when is new row created in the view
         (not in the model).
@@ -77,6 +80,8 @@ class SqlTableModel : public QSqlTableModel
 
 		void setSchema(const QString & schema) { m_schema = schema; };
 		QString schema() { return m_schema; };
+
+		void setPalette(QPalette palette) { m_palette = palette; };
 
 		bool pendingTransaction() { return m_pending; };
 
@@ -103,7 +108,6 @@ class SqlTableModel : public QSqlTableModel
 		// add a user
 		void attach() { m_useCount++; }
 		void fetchAll();
-		void fetchMore();
 
 		bool isDeleted(int row);
 		bool isNewRow(int row);

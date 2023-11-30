@@ -416,6 +416,12 @@ QList<Token> SqlParser::tokenise(QString input)
 	return result;
 }
 
+bool SqlParser::isNumber(QString input)
+{
+	QList<Token> l = tokenise(input);
+	return (l.count() == 1) && (l[0].type == tokenNumeric);
+}
+
 // Stringify token, inserting space if necessary to separate from previous one
 QString SqlParser::tos(const Token t)
 {

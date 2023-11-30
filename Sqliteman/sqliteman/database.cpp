@@ -19,20 +19,37 @@ for which a new license (GPL+exception) is in place.
 #include "sqlparser.h"
 #include "utils.h"
 
+/* Internal error handling
+ * User errors should be reported in the status area.
+ */
 void Database::exception(const QString & message)
 {
-	QMessageBox::critical(0, tr("SQL Error"), message);
+	QMessageBox::critical(0, tr("Sqliteman internal Error"),
+		message
+		+ tr("\nPlease report in ")
+		+ "https://github.com/rparkins999/sqliteman/issues "
+		+ tr("with as much information as possible about what you were doing when the error occurred."));
+}
+
+QSqlQuery Database::doSql(QString statement)
+{
+	return QSqlQuery(statement, QSqlDatabase::database(SESSION_NAME));
+}
+QSqlQuery Database::runSql(QString statement)
+{
+	QSqlQuery query(statement, QSqlDatabase::database(SESSION_NAME));
+	if (query.lastError().isValid())
+	{
+		exception(query.lastQuery());
+		query.clear();
+	}
+	return query;
 }
 
 bool Database::execSql(QString statement)
 {
-	QSqlQuery query(statement, QSqlDatabase::database(SESSION_NAME));
-	if(query.lastError().isValid())
-	{
-		exception(tr("Error executing: %1.").arg(query.lastError().text()));
-		return false;
-	}
-	return true;
+	QSqlQuery query = runSql(statement);
+	return !query.isActive();
 }
 
 QString Database::sessionName(const QString & schema)
@@ -494,6 +511,11 @@ sqlite3 * Database::sqlite3handle()
 
 bool Database::setEnableExtensions(bool enable)
 {
+	QVariant v = QSqlDatabase::database(SESSION_NAME).driver()->handle();
+	if (v.isValid())
+	{
+		return false;
+	}
 	sqlite3 * handle = Database::sqlite3handle();
 	if (handle && sqlite3_enable_load_extension(handle, enable ? 1 : 0) != SQLITE_OK)
 	{

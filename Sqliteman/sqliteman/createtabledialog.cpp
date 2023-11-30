@@ -86,7 +86,7 @@ void CreateTableDialog::createButton_clicked()
 	m_updated = true;
     // == OK here because sqlite uses lower case for it
     if (m_noTemp && (m_databaseName == "temp")) {
-        ui.queryEditor->addSchema("temp");
+        ui.queryEditor->resetSchemaList();
     }
 	emit rebuildTableTree(ui.databaseCombo->currentText());
 	resultAppend(tr("Table created successfully"));

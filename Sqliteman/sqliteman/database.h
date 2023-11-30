@@ -10,12 +10,17 @@ for which a new license (GPL+exception) is in place.
 
 #include <QtCore/QCoreApplication>
 #include <QSqlDatabase>
+#include <QSqlQuery>
 #include <QtCore/QStringList>
 
 #include "sqlite3.h"
 #include "sqlparser.h"
 
-
+/* The connection with this name is created using
+ * QSqlDatabase::addDatabase in litemanwindow.cpp.
+ * Subseqeuntly the connection is obtained statically
+ * when needed by using QSqlDatabase::database(SESSION_NAME).
+ */
 #define SESSION_NAME "sqliteman-db"
 
 /*! \brief This struct is a sqlite3 table column representation.
@@ -43,14 +48,14 @@ typedef QMap<QString,QString> DbObjects;
 /*!
  * @brief The database manager
  * 
- * The %Database class represents a single database file/object, and provides convinient methods
- * for accessing specific elements in it (currently only tables and views). Though the application
- * still doesn't use this capability, it is completly safe to have multipile %Database object managing
- * diffirent databases in the same time.
+ * The %Database class represents a single database connection.
+ * Multiple database files of the same kind (this application only uses sqlite)
+ * can be attached to a database connection.
+ * These are sometimes referred to as databases and sometimes as schemas.
  * 
  * Internally, the class uses the QtSQL API for manipulating the database.
  *
- * Almost all methods here are static so it's not needed to create a Database instance.
+ * All methods here are static so it's not needed to create a Database instance.
  *
  * \author Igor Khanin
  * \author Petr Vanek <petr@scribus.info>
@@ -90,10 +95,29 @@ class Database
 		*/
 		static QStringList getSysIndexes(const QString & table, const QString & schema);
 
-		/*! \brief Execute a SQL statement with no DB returns.
-		\param statement a SQL command like INSERT/CREATE/DROP. Selects are not important here.
-		\retval bool true on succes, false on error. Error are reported in this method
-		             already. */
+		/*! \brief Execute a SQL statement which can fail as a result of user error.
+			\param statement an SQL statement which should return a table.
+			\retval QSqlQuery an executed query
+			which can be examined for errors or returned data.
+		 */
+		static QSqlQuery doSql(QString statement);
+
+		/*! \brief Execute a SQL statement which is not expected to fail.
+		 *  failure is a programming error rather than a user error.
+			\param statement an SQL statement which should return a table.
+			\retval QSqlQuery the executed query
+			if there was an error, which has been reported to the user,
+			the returned query has been cleared and query.isActive() is false.
+		 */
+		static QSqlQuery runSql(QString statement);
+
+		//FIXME all calls to this should be replaced by calls to doSql.
+		/*! \brief Execute an SQL statement which is not expected to fail.
+		 * 	failure is a programming error rather than a user error.
+		\param statement an SQl statement which should not return a result.
+		\retval bool true on success, false if there was an error,
+			which has been reported to the user,
+		 */
 		static bool execSql(QString statement);
 
 		/*! \brief Create a session name for the new DB connection.
@@ -181,12 +205,14 @@ class Database
 
         /*! \brief Enable or disable extension loading.
         \param enable true enables; false disables.
+        * This can be called when no database has been opened yet
         */
         static bool setEnableExtensions(bool enable);
 
 		/*! \brief Try to load given extensions
 		\param list a QStringList with full paths to load in loop
 		\retval QStringList list of the really loaded extensions
+        * This can't be called until a database has been opened
 		*/
 		static QStringList loadExtension(const QStringList & list);
 

@@ -36,6 +36,15 @@ QString Utils::getTranslator(const QString & localeName)
 		   + ".qm";
 }
 
+bool Utils::detaches(const QString & sql)
+{
+	if (sql.isNull())
+		return false;
+	QString tmp(sql.trimmed().toUpper());
+	return (   tmp.startsWith("DETACH")
+		    || tmp.contains("EXEC")); // crude, but will work for now
+}
+
 bool Utils::updateObjectTree(const QString & sql)
 {
 	if (sql.isNull())

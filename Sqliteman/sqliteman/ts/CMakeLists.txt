@@ -1,5 +1,5 @@
 IF (WANT_RESOURCES)
-    MESSAGE(STATUS "Translations are not installed as you are using Qt4 resources for it")
+    MESSAGE(STATUS "Translations are not installed as you are using Qt resources for it")
 ELSE (WANT_RESOURCES)
 
 INSTALL(FILES

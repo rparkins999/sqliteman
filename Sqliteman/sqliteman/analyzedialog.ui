@@ -1,56 +1,50 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>AnalyzeDialog</class>
- <widget class="QDialog" name="AnalyzeDialog" >
-  <property name="geometry" >
+ <widget class="QDialog" name="AnalyzeDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>437</width>
+    <width>547</width>
     <height>536</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Analyze Database</string>
   </property>
-  <layout class="QGridLayout" >
-   <property name="margin" >
+  <layout class="QGridLayout">
+   <property name="margin" stdset="0">
     <number>9</number>
    </property>
-   <property name="spacing" >
+   <property name="spacing">
     <number>6</number>
    </property>
-   <item row="2" column="0" >
-    <widget class="QGroupBox" name="groupBox_3" >
-     <property name="title" >
+   <item row="2" column="0">
+    <widget class="QGroupBox" name="groupBox_3">
+     <property name="title">
       <string>Compute Statistics for Selected Tables</string>
      </property>
-     <layout class="QGridLayout" >
-      <property name="margin" >
+     <layout class="QGridLayout">
+      <property name="margin" stdset="0">
        <number>9</number>
       </property>
-      <property name="spacing" >
+      <property name="spacing">
        <number>6</number>
       </property>
-      <item row="0" column="0" colspan="2" >
-       <widget class="QListWidget" name="tableList" >
-        <property name="selectionMode" >
+      <item row="0" column="0" colspan="2">
+       <widget class="QListWidget" name="tableList">
+        <property name="selectionMode">
          <enum>QAbstractItemView::ExtendedSelection</enum>
         </property>
        </widget>
       </item>
-      <item row="1" column="1" >
-       <widget class="QPushButton" name="tableButton" >
-        <property name="text" >
-         <string>&amp;Compute</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0" >
+      <item row="1" column="0">
        <spacer>
-        <property name="orientation" >
+        <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-        <property name="sizeHint" >
+        <property name="sizeHint" stdset="0">
          <size>
           <width>40</width>
           <height>20</height>
@@ -58,44 +52,54 @@
         </property>
        </spacer>
       </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="tableButton">
+        <property name="text">
+         <string>&amp;Compute</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="Results"/>
+      </item>
      </layout>
     </widget>
    </item>
-   <item row="3" column="0" >
-    <widget class="QDialogButtonBox" name="buttonBox" >
-     <property name="orientation" >
+   <item row="3" column="0">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
-     <property name="standardButtons" >
+     <property name="standardButtons">
       <set>QDialogButtonBox::Close</set>
      </property>
     </widget>
    </item>
-   <item row="1" column="0" >
-    <widget class="QGroupBox" name="groupBox_2" >
-     <property name="title" >
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
       <string>Compute All Statistics</string>
      </property>
-     <layout class="QGridLayout" >
-      <property name="margin" >
+     <layout class="QGridLayout">
+      <property name="margin" stdset="0">
        <number>9</number>
       </property>
-      <property name="spacing" >
+      <property name="spacing">
        <number>6</number>
       </property>
-      <item row="1" column="1" >
-       <widget class="QPushButton" name="allButton" >
-        <property name="text" >
+      <item row="1" column="1">
+       <widget class="QPushButton" name="allButton">
+        <property name="text">
          <string>Calculate &amp;All</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="0" >
+      <item row="1" column="0">
        <spacer>
-        <property name="orientation" >
+        <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-        <property name="sizeHint" >
+        <property name="sizeHint" stdset="0">
          <size>
           <width>141</width>
           <height>20</height>
@@ -103,9 +107,9 @@
         </property>
        </spacer>
       </item>
-      <item row="0" column="0" colspan="2" >
-       <widget class="QLabel" name="label_2" >
-        <property name="text" >
+      <item row="0" column="0" colspan="2">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
          <string>Recalculate the statistics for all objects in the DB.</string>
         </property>
        </widget>
@@ -113,31 +117,31 @@
      </layout>
     </widget>
    </item>
-   <item row="0" column="0" >
-    <widget class="QGroupBox" name="groupBox" >
-     <property name="title" >
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
       <string>Drop Statistics</string>
      </property>
-     <layout class="QGridLayout" >
-      <property name="margin" >
+     <layout class="QGridLayout">
+      <property name="margin" stdset="0">
        <number>9</number>
       </property>
-      <property name="spacing" >
+      <property name="spacing">
        <number>6</number>
       </property>
-      <item row="1" column="1" >
-       <widget class="QPushButton" name="dropButton" >
-        <property name="text" >
+      <item row="1" column="1">
+       <widget class="QPushButton" name="dropButton">
+        <property name="text">
          <string>&amp;Drop</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="0" >
+      <item row="1" column="0">
        <spacer>
-        <property name="orientation" >
+        <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-        <property name="sizeHint" >
+        <property name="sizeHint" stdset="0">
          <size>
           <width>40</width>
           <height>20</height>
@@ -145,10 +149,10 @@
         </property>
        </spacer>
       </item>
-      <item row="0" column="0" colspan="2" >
-       <widget class="QLabel" name="label" >
-        <property name="text" >
-         <string>&lt;qt>Statistics for all objects in the database will be dropped.&lt;/qt></string>
+      <item row="0" column="0" colspan="2">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>&lt;qt&gt;Statistics for all objects in the database will be dropped.&lt;/qt&gt;</string>
         </property>
        </widget>
       </item>
@@ -165,11 +169,11 @@
    <receiver>AnalyzeDialog</receiver>
    <slot>accept()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>248</x>
      <y>254</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>157</x>
      <y>274</y>
     </hint>
@@ -181,11 +185,11 @@
    <receiver>AnalyzeDialog</receiver>
    <slot>reject()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>316</x>
      <y>260</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>286</x>
      <y>274</y>
     </hint>

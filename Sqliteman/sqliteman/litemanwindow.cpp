@@ -65,17 +65,8 @@ LiteManWindow::LiteManWindow(
 	m_lastDB(""),
 	m_lastSqlFile(scriptToOpen)
 {
-#if QT_VERSION < 0x040300
-	if (Preferences::instance()->checkQtVersion())
-	{
-		QMessageBox::warning(this, m_appName,
-						 tr("Sqliteman is using Qt %1. Some features will be disabled.")
-							.arg(qVersion()));
-		qDebug() << "Sqliteman is using Qt %1. Some features will be disabled.";
-	}
-#endif
-
     m_currentItem = NULL;
+	m_isOpen = false;
 	tableTreeTouched = false;
 	recentDocs.clear();
 	initUI();
@@ -236,6 +227,7 @@ void LiteManWindow::initActions()
 	recentAct->setMenu(recentFilesMenu);
 
 	preferencesAct = new QAction(tr("&Preferences..."), this);
+	preferencesAct->setShortcut(tr("Ctrl+P"));
 	connect(preferencesAct, SIGNAL(triggered()), this, SLOT(preferences()));
 
 	exitAct = new QAction(Utils::getIcon("close.png"), tr("E&xit"), this);
@@ -243,6 +235,7 @@ void LiteManWindow::initActions()
 	connect(exitAct, SIGNAL(triggered()), this, SLOT(close()));
 
 	aboutAct = new QAction(tr("&About..."), this);
+	aboutAct->setShortcut(tr("Ctrl+A"));
 	connect(aboutAct, SIGNAL(triggered()), this, SLOT(about()));
 
 	aboutQtAct = new QAction(tr("About &Qt..."), this);
@@ -283,12 +276,14 @@ void LiteManWindow::initActions()
 	buildQueryAct->setShortcut(tr("Ctrl+R"));
 	connect(buildQueryAct, SIGNAL(triggered()), this, SLOT(buildQuery()));
 
+	buildAnyQueryAct = new QAction(tr("&Build Query..."), this);
+	connect(buildAnyQueryAct, SIGNAL(triggered()), this, SLOT(buildAnyQuery()));
+
 	exportSchemaAct = new QAction(tr("&Export Schema..."), this);
 	connect(exportSchemaAct, SIGNAL(triggered()), this, SLOT(exportSchema()));
 
 	dumpDatabaseAct = new QAction(tr("&Dump Database..."), this);
 	connect(dumpDatabaseAct, SIGNAL(triggered()), this, SLOT(dumpDatabase()));
-// 	dumpDatabaseAct->setEnabled(m_sqliteBinAvailable);
 
 	createTableAct = new QAction(Utils::getIcon("table.png"),
 								 tr("&Create Table..."), this);
@@ -318,6 +313,7 @@ void LiteManWindow::initActions()
 
 	createIndexAct = new QAction(Utils::getIcon("index.png"),
 								 tr("&Create Index..."), this);
+	createIndexAct->setShortcut(tr("Ctrl+I"));
 	connect(createIndexAct, SIGNAL(triggered()), this, SLOT(createIndex()));
 
 	dropIndexAct = new QAction(tr("&Drop Index"), this);
@@ -396,7 +392,7 @@ void LiteManWindow::initMenus()
 	databaseMenu->addAction(createTableAct);
 	databaseMenu->addAction(createViewAct);
 	databaseMenu->addSeparator();
-	databaseMenu->addAction(buildQueryAct);
+	databaseMenu->addAction(buildAnyQueryAct);
 	databaseMenu->addAction(execSqlAct);
 	databaseMenu->addAction(actToggleSqlEditorToolBar);
 	databaseMenu->addAction(schemaBrowserAct);
@@ -565,24 +561,21 @@ void LiteManWindow::openDatabase(const QString & fileName)
 {
 	if (!checkForPending()) { return; }
 	
-	bool isOpened = false;
-
 	/* This messy bit of logic is necessary to ensure that db has gone out of
 	 * scope by the time removeDatabase() gets called, otherwise it thinks that
 	 * there is an outstanding reference and prints a warning message.
 	 */
-	bool isValid = false;
 	{
 		QSqlDatabase old = QSqlDatabase::database(SESSION_NAME);
 		if (old.isValid())
 		{
-			isValid = true;
 			removeRef("temp");
 			removeRef("main");
 			old.close();
+			QSqlDatabase::removeDatabase(SESSION_NAME);
+			m_isOpen = false;
 		}
 	}
-	if (isValid) { QSqlDatabase::removeDatabase(SESSION_NAME); }
 
 #ifdef INTERNAL_SQLDRIVER
 	QSqlDatabase db =
@@ -620,7 +613,7 @@ void LiteManWindow::openDatabase(const QString & fileName)
 	}
 	else
 	{
-		isOpened = true;
+		m_isOpen = true;
 		dataViewer->removeErrorMessage();
 
 		// check for sqlite library version
@@ -633,14 +626,14 @@ void LiteManWindow::openDatabase(const QString & fileName)
 				ver = q.value(0).toString();
 			}
 			else
-				ver = "n/a";
+				ver = tr("cannot get version");
 		}
 		else
-			ver = "n/a";
+			ver = tr("cannot get version");
 		m_sqliteVersionLabel->setText("Sqlite: " + ver);
 
 #ifdef ENABLE_EXTENSIONS
-		// load startup exceptions
+		// load startup extensions
 		bool loadE = Preferences::instance()->allowExtensionLoading();
 		handleExtensions(loadE);
 		if (loadE && Preferences::instance()->extensionList().count() != 0)
@@ -661,7 +654,6 @@ void LiteManWindow::openDatabase(const QString & fileName)
 		// Build tree & clean model
 		schemaBrowser->tableTree->buildTree();
 		schemaBrowser->buildPragmasTree();
-        if (queryEditor) { queryEditor->treeChanged(); }
 		dataViewer->setBuiltQuery(false);
 		dataViewer->setTableModel(new QSqlQueryModel(), false);
 		m_activeItem = 0;
@@ -671,19 +663,21 @@ void LiteManWindow::openDatabase(const QString & fileName)
 	}
 
 	// Enable UI
-	schemaBrowser->setEnabled(isOpened);
-	databaseMenu->setEnabled(isOpened);
-	adminMenu->setEnabled(isOpened);
-	sqlEditor->setEnabled(isOpened);
-	dataViewer->setEnabled(isOpened);
-	int n = Database::makeUserFunctions();
-	if (n)
-	{
-		dataViewer->setStatusText(
-			tr("Cannot create user function exec")
-			+ ":<br/><span style=\" color:#ff0000;\">"
-			+ sqlite3_errstr(n)
-			+ "<br/></span>");
+	schemaBrowser->setEnabled(m_isOpen);
+	databaseMenu->setEnabled(m_isOpen);
+	adminMenu->setEnabled(m_isOpen);
+	sqlEditor->setEnabled(m_isOpen);
+	dataViewer->setEnabled(m_isOpen);
+	if (m_isOpen) {
+		int n = Database::makeUserFunctions();
+		if (n)
+		{
+			dataViewer->setStatusText(
+				tr("Cannot create user function exec")
+				+ ":<br/><span style=\" color:#ff0000;\">"
+				+ sqlite3_errstr(n)
+				+ "<br/></span>");
+		}
 	}
 }
 
@@ -778,9 +772,9 @@ void LiteManWindow::about()
         + "Qt " + tr("Version ") + qVersion() + "<br/>"
         + getOSName()
         + tr("Parts")
-        + "(c) 2007 Petr Vanek, "
+        + " © 2007 Petr Vanek, "
         + tr("Parts")
-        + "(c) 2021 Richard Parkins<br/>");
+        + " © 2021-2023 Richard Parkins<br/>");
 }
 
 void LiteManWindow::aboutQt()
@@ -796,18 +790,28 @@ void LiteManWindow::help()
 	helpBrowser->show();
 }
 
-void LiteManWindow::buildQuery()
+void LiteManWindow::doBuildQuery()
 {
 	dataViewer->removeErrorMessage();
-    // OK if m_currentItem is NULL
-	queryEditor->setItem(m_currentItem);
 	int ret = queryEditor->exec();
 
 	if (ret == QDialog::Accepted)
 	{
-		/*runQuery*/
-		execSql(queryEditor->statement(), true);
+		bool isTable = queryEditor->queryingTable();
+		doExecSql(queryEditor->statement(!isTable), isTable);
 	}
+}
+
+void LiteManWindow::buildQuery()
+{
+	queryEditor->setItem(m_currentItem);
+	doBuildQuery();
+}
+
+void LiteManWindow::buildAnyQuery()
+{
+	queryEditor->setItem(0);
+	doBuildQuery();
 }
 
 void LiteManWindow::handleSqlEditor()
@@ -826,11 +830,6 @@ void LiteManWindow::handleDataViewer()
 {
 	dataViewer->setVisible(!dataViewer->isVisible());
 	dataViewerAct->setChecked(dataViewer->isVisible());
-}
-
-void LiteManWindow::execSql(QString query, bool isBuilt)
-{
-    (void)doExecSql(query, isBuilt);
 }
 
 void LiteManWindow::exportSchema()
@@ -905,7 +904,7 @@ void LiteManWindow::createTable()
 			}
 		}
 		checkForCatalogue();
-		queryEditor->treeChanged();
+		queryEditor->tableCreated();
 	}
 }
 
@@ -998,10 +997,11 @@ void LiteManWindow::dropTable()
     }
 
 	bool isActive = m_activeItem == m_currentItem;
+	QString table = m_currentItem->text(0);
 
 	int ret = QMessageBox::question(this, m_appName,
 					tr("Are you sure that you wish to drop the table \"%1\"?")
-					.arg(m_currentItem->text(0)),
+					.arg(table),
 					QMessageBox::Yes, QMessageBox::No);
 
 	if (ret == QMessageBox::Yes)
@@ -1010,14 +1010,14 @@ void LiteManWindow::dropTable()
 		QString sql = QString("DROP TABLE ")
 					  + Utils::q(m_currentItem->text(1))
 					  + "."
-					  + Utils::q(m_currentItem->text(0))
+					  + Utils::q(table)
 					  + ";";
 		QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
 		if (query.lastError().isValid())
 		{
 			dataViewer->setStatusText(
 				tr("Cannot drop table ")
-				+ m_currentItem->text(1) + tr(".") + m_currentItem->text(0)
+				+ m_currentItem->text(1) + tr(".") + table
 				+ ":<br/><span style=\" color:#ff0000;\">"
 				+ query.lastError().text()
 				+ "<br/></span>" + tr("using sql statement:")
@@ -1027,7 +1027,7 @@ void LiteManWindow::dropTable()
 		{
 			schemaBrowser->tableTree->buildTables(
                 m_currentItem->parent(), m_currentItem->text(1), false);
-			queryEditor->treeChanged();
+			queryEditor->tableDropped(table);
 			checkForCatalogue();
 			dataViewer->setBuiltQuery(false);
 			if (isActive)
@@ -1101,7 +1101,7 @@ void LiteManWindow::createView()
 	if (dlg.m_updated)
 	{
 		checkForCatalogue();
-		queryEditor->treeChanged();
+		queryEditor->tableCreated();
 	}
 	disconnect(&dlg, SIGNAL(rebuildViewTree(QString, QString)),
 			schemaBrowser->tableTree, SLOT(buildViewTree(QString, QString)));
@@ -1119,7 +1119,7 @@ void LiteManWindow::createViewFromSql(QString query)
 	if (dlg.m_updated)
 	{
 		checkForCatalogue();
-		queryEditor->treeChanged();
+		queryEditor->tableCreated();
 	}
 }
 
@@ -1128,6 +1128,9 @@ void LiteManWindow::setTableModel(SqlQueryModel * model)
 	dataViewer->setTableModel(model, false);
 }
 
+/* isBuilt is true if we're executing a query on a table from the query builder.
+ * Return true if the query was successfuly executed.
+ */
 bool LiteManWindow::doExecSql(QString query, bool isBuilt)
 {
 	if (query.isNull() || query.trimmed().isEmpty())
@@ -1170,16 +1173,16 @@ bool LiteManWindow::doExecSql(QString query, bool isBuilt)
 			+ tr("using sql statement:")
 			+ "<br/><tt>"
 			+ query);
-        return false;
+        return false; // invalid query
 	} else if (!dataViewer->setTableModel(model, false)) {
-        return false;
+        return false; // valid query didn't generate a table
     } else {
 		dataViewer->setBuiltQuery(isBuilt && (model->rowCount() != 0));
 		dataViewer->rowCountChanged();
 		if (Utils::updateObjectTree(query))
 		{
 			schemaBrowser->tableTree->buildTree();
-			queryEditor->treeChanged();
+			queryEditor->setSchema(QString(), QString(), true, true);
 		}
 		return true;
 	}
@@ -1262,11 +1265,12 @@ void LiteManWindow::dropView()
         return;
     }
 	bool isActive = m_activeItem == m_currentItem;
+	QString view(m_currentItem->text(0));
 	// Can't have pending update on a view, so no checkForPending() here
 	// Ask the user for confirmation
 	int ret = QMessageBox::question(this, m_appName,
 					tr("Are you sure that you wish to drop the view \"%1\"?")
-					.arg(m_currentItem->text(0)),
+					.arg(view),
 					QMessageBox::Yes, QMessageBox::No);
 
 	if(ret == QMessageBox::Yes)
@@ -1274,14 +1278,14 @@ void LiteManWindow::dropView()
 		QString sql = QString("DROP VIEW")
 					  + Utils::q(m_currentItem->text(1))
 					  + "."
-					  + Utils::q(m_currentItem->text(0))
+					  + Utils::q(view)
 					  + ";";
 		QSqlQuery query(sql, QSqlDatabase::database(SESSION_NAME));
 		if (query.lastError().isValid())
 		{
 			dataViewer->setStatusText(
 				tr("Cannot drop view ")
-				+ m_currentItem->text(1) + tr(".") + m_currentItem->text(0)
+				+ m_currentItem->text(1) + tr(".") + view
 				+ ":<br/><span style=\" color:#ff0000;\">"
 				+ query.lastError().text()
 				+ "<br/></span>" + tr("using sql statement:")
@@ -1291,7 +1295,7 @@ void LiteManWindow::dropView()
 		{
 			schemaBrowser->tableTree->buildViews(
                 m_currentItem->parent(), m_currentItem->text(1));
-			queryEditor->treeChanged();
+			queryEditor->tableDropped(view);
 			checkForCatalogue();
 			if (isActive)
 			{
@@ -1346,7 +1350,7 @@ void LiteManWindow::dropIndex()
 					.arg(m_currentItem->text(0)),
 					QMessageBox::Yes, QMessageBox::No);
 
-	if(ret == QMessageBox::Yes)
+	if (ret == QMessageBox::Yes)
 	{
 		QString sql = QString("DROP INDEX")
 					  + Utils::q(m_currentItem->text(1))
@@ -1469,6 +1473,7 @@ void LiteManWindow::updateContextMenu(QTreeWidgetItem * cur)
 				contextMenu->addAction(detachAct);
 			contextMenu->addAction(createTableAct);
 			contextMenu->addAction(createViewAct);
+			contextMenu->addAction(buildQueryAct);
 			break;
 
 		case TableTree::TablesItemType:
@@ -1505,6 +1510,7 @@ void LiteManWindow::updateContextMenu(QTreeWidgetItem * cur)
 			break;
 
 		case TableTree::ViewType:
+			contextMenu->addAction(buildQueryAct);
 			contextMenu->addAction(createViewAct);
 			contextMenu->addAction(describeViewAct);
 			contextMenu->addAction(alterViewAct);
@@ -1655,7 +1661,7 @@ void LiteManWindow::attachDatabase()
 		else
 		{
 			schemaBrowser->tableTree->buildDatabase(schema);
-			queryEditor->treeChanged();
+			queryEditor->schemaAdded(schema);
 		}
 	}
 }
@@ -1692,7 +1698,7 @@ void LiteManWindow::detachDatabase()
 		// this removes the item from the tree as well as deleting it
 		delete m_currentItem;
         m_currentItem = NULL;
-		queryEditor->treeChanged();
+		queryEditor->schemaGone(dbname);
 		dataViewer->setBuiltQuery(false);
 	}
 }
@@ -1867,6 +1873,11 @@ void LiteManWindow::reindex()
     }
 }
 
+/* FIXME We really ought to do better than this.
+ * It's called from the SQL editor which does some basic parsing
+ * of any SQL code that it executes, so we can make a reasonable
+ * guess at what might have changed.
+ */
 void LiteManWindow::refreshTable()
 {
 	/* SQL code in the SQL editor may have modified or even removed
@@ -1893,7 +1904,7 @@ void LiteManWindow::doMultipleDeletion()
 			QMessageBox::Yes, QMessageBox::No);
 		if (com == QMessageBox::Yes)
 		{
-			execSql(sql, false);
+			doExecSql(sql, false);
 			dataViewer->setTableModel(new QSqlQueryModel(), false);
 		}
 	}
@@ -1908,7 +1919,10 @@ void LiteManWindow::preferences()
 		{
 			emit prefsChanged();
 #ifdef ENABLE_EXTENSIONS
-			handleExtensions(Preferences::instance()->allowExtensionLoading());
+			if (m_isOpen) {
+				handleExtensions(
+					Preferences::instance()->allowExtensionLoading());
+			}
 #endif
 		}
 }
@@ -1924,4 +1938,10 @@ void LiteManWindow::tableTreeSelectionChanged() {
             schemaBrowser->tableTree->currentItem();
         updateContextMenu(currentitem);
     }
+}
+
+// Called by sqleditor if it executes a DETACH or an EXEC
+// which might contain a DETACH
+void LiteManWindow::detaches() {
+	queryEditor->schemaGone(QString());
 }

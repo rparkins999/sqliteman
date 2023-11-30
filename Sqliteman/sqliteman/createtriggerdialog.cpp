@@ -27,31 +27,37 @@ CreateTriggerDialog::CreateTriggerDialog(QTreeWidgetItem * item,
     Preferences * prefs = Preferences::instance();
 	resize(prefs->createtriggerWidth(), prefs->createtriggerHeight());
 
+	/* BEFORE and AFTER triggers are only available on tables.
+	 * INSTEAD OF triggers are only available on views.
+	 * FOR EACH STATEMENT has been removed
+	 * because sqlite currently does not support i.
+	 */
 	if (item->type() == TableTree::TableType)
 	{
 		ui.textEdit->setText(
 			QString("-- sqlite3 simple trigger template\n"
-					"CREATE TRIGGER [IF NOT EXISTS] ")
+					"CREATE TRIGGER [IF NOT EXISTS ]")
 			+ Utils::q(item->text(1))
-			+ ".\"<trigger_name>\"\n[ BEFORE | AFTER ]\n"
-		    + "DELETE | INSERT | UPDATE | UPDATE OF <column-list>\n ON "
+			+ ".\"<trigger_name>\"\n[BEFORE | AFTER]\n"
+		    + "DELETE | INSERT | UPDATE | UPDATE OF <column-list>\nON "
 			+ Utils::q(item->text(0))
-			+ "\n[ FOR EACH ROW | FOR EACH STATEMENT ] [ WHEN expression ]\n"
+			+ "\n[FOR EACH ROW] [WHEN expression]\n"
 			+ "BEGIN\n<statement-list>\nEND;");
         connect(ui.createButton, SIGNAL(clicked()),
 			this, SLOT(createButton_clicked()));
 	}
-	else if (item->type() == TableTree::TableType)
+	else if (item->type() == TableTree::ViewType)
 	{
 		ui.textEdit->setText(
 			QString("-- sqlite3 simple trigger template\n"
-					"CREATE TRIGGER [IF NOT EXISTS] ")
+					"CREATE TRIGGER [IF NOT EXISTS ]")
 			+ Utils::q(item->text(1))
-			+ ".\"<trigger_name>\"\nINSTEAD OF "
-			+ "[DELETE | INSERT | UPDATE | UPDATE OF <column-list>]\nON "
+			+ ".\"<trigger_name>\"\n"
+			+ "INSTEAD OF "
+			+ "DELETE | INSERT | UPDATE | UPDATE OF <column-list>\nON "
 			+ Utils::q(item->text(0))
-			+ "\n[ FOR EACH ROW | FOR EACH STATEMENT ] [ WHEN expression ]\n"
-			 + "BEGIN\n<statement-list>\nEND;");
+			+ "\n[FOR EACH ROW] [WHEN expression]\n"
+			+ "BEGIN\n<statement-list>\nEND;");
         connect(ui.createButton, SIGNAL(clicked()),
 			this, SLOT(createButton_clicked()));
 	}

@@ -27,13 +27,19 @@ SqlEditorWidget::SqlEditorWidget(QWidget * parent)
       m_searchText(""),
       m_searchIndicator(9) // see QsciScintilla docs
 {
+	QsciLexerSQL * lexer = new QsciLexerSQL(this);
 	m_prefs = Preferences::instance();
+
+	QFont baseFont(m_prefs->sqlFont());
+	baseFont.setPointSize(m_prefs->sqlFontSize());
+
+	lexer->setFont(baseFont);
+	setFont(baseFont);
 
 	setMarginLineNumbers(0, true);
 	setBraceMatching(SloppyBraceMatch);
 	setAutoIndent(true);
 
-	QsciLexerSQL * lexer = new QsciLexerSQL(this);
 
 	QsciAPIs * api = new QsciAPIs(lexer);
 	if (!api->load(":/api/sqlite.api"))
@@ -180,11 +186,6 @@ void SqlEditorWidget::cursorPositionChanged(int line, int)
 
 void SqlEditorWidget::prefsChanged()
 {
-	QFont baseFont(m_prefs->sqlFont());
-	baseFont.setPointSize(m_prefs->sqlFontSize());
-
-	lexer()->setFont(baseFont);
-	setFont(baseFont);
 
 	// syntax highlighting
 	lexer()->setColor(m_prefs->syDefaultColor(), QsciLexerSQL::Default);

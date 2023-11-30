@@ -8,16 +8,17 @@ for which a new license (GPL+exception) is in place.
 #ifndef DATAEXPORTDIALOG_H
 #define DATAEXPORTDIALOG_H
 
+// QAbstractItemModel is included indirectly by SqlQueryModel
 #include <QDialog>
+#include <QSqlRecord>
 #include <QtCore/QTextStream>
-#include <QSqlTableModel>
 #include <QtCore/QFile>
 
 #include "ui_dataexportdialog.h"
 
 class DataViewer;
 class QProgressDialog;
-class QSqlQueryModel;
+class SqlQueryModel;
 class SqlTableModel;
 
 
@@ -36,7 +37,8 @@ class DataExportDialog : public QDialog
 	private:
 		const QString m_tableName;
 		bool cancelled;
-		QSqlQueryModel * m_data;
+		QAbstractItemModel * m_parentData;
+		SqlQueryModel * m_data;
 		SqlTableModel * m_table;
 		QStringList m_header;
 		QProgressDialog * progress;
@@ -49,6 +51,7 @@ class DataExportDialog : public QDialog
 		Ui::DataExportDialog ui;
 		QMap<QString,QString> formats;
 
+		QSqlRecord getRecord(int i);
 		bool exportCSV();
 		bool exportHTML();
 		bool exportExcelXML();
