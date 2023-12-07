@@ -257,6 +257,11 @@ p, h1, h2, h3, h4, h5, h6, td, th {
   font-family: monospace;
 }
 
+.fileref {
+  font-family: monospace;
+  color: rgb(150,150,150);
+}
+
 /* Visual cues for GUI elements etc in the text */
 
 .guimenu, .guimenuitem, .guisubmenu { 

@@ -1,54 +1,116 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Alter Table</title><link rel="stylesheet" href="kde-default.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.67.2"><meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database"><link rel="start" href="index.html" title="The Sqliteman Handbook"><link rel="up" href="FeaturesDialogs.html" title="Chapter 7. Features and Dialogs"><link rel="prev" href="CreateTable.html" title="Create Table"><link rel="next" href="ImportTable.html" title="Import Table Data"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Alter Table</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="CreateTable.html">Prev</a> </td><th width="60%" align="center">Chapter 7. Features and Dialogs</th><td width="20%" align="right"> <a accesskey="n" href="ImportTable.html">Next</a></td></tr></table><hr></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="alterTable"></a>Alter Table</h2></div></div></div><p>
-  Raise a dialog for table changing. This dialog looks quite similar to the "Create Table" one except for a few things:
-  </p>
-  <h3 class="important">Important</h3>
-  <div class="indent">
-  The built-in <span class="application">sqlite</span> ALTER TABLE command is very limited since it can only rename the table or rename or add or drop a single column at a time.
-  </div>
-  <p>
-    <span class="application">Sqliteman</span> provides a more general ALTER TABLE by creating a new table, copying the data, and dropping the old table. If necessary the old table is renamed out of the way first. However <span class="application">sqliteman</span> has limited understanding of the many possible table structures and some information is lost in some cases.
-    </p>
-<p>Triggers on the the table itself are preserved (but cannot be modified) as
-long as any columns to which they refer are not deleted or renamed. Indexes
-on the table are preserved (but cannot be modified) unless a column to which
-an index refers is deleted: renaming indexed columns is handled.
-</p><p>
-If the table is renamed without any other changes and you are using sqlite
-library version 3.25.0 or later, and PRAGMA legacy_alter_table is OFF, views and
-triggers referencing the table will be re-attached to it with its new name.
-If the table is modified without changing its name, views and triggers
-referencing it will remain attached to it. However a view or a trigger may no
-longer be valid if it refers to a column which has had its name changed
-or has been deleted. In all other cases,
-views and triggers referencing the table will no longer reference it.
-</p><p>
-If the table is changed other than by just renaming it, Constraint names,
-conflict clauses, foreign key clauses, DESC tags, UNIQUE constraints,
-CHECK constraints, and COLLATE constraints are all lost.
-These can be preserved by manually renaming the old table, doing
-"Describe Table", copying and pasting the description into the SQL editor,
-modifying it as required and creating a new table, copying the data,
-and then dropping the old table.
-</p><p>
-If the table is changed other than by just renaming it, and the table is a
-<em>parent table</em> (a foreign key constraint in some
-other table references it), the Alter Table function may fail.
-</p></div><p>In this dialog you can <span class="guibutton">Add</span> and <span class="guibutton">Remove</span> table
-  columns and set the options for new ones. You can also reorder the columns using the up and down arrows.</p><p>
-The Alter button is enabled
-only when at least something has changed from the original table definition,
-and the table name is nonempty,
-and the table name is not the same (ignoring case) at the name of any
-index, view, or <i>other</i> table,
-and all column names are different (ignoring case),
-and if there is an AUTOINCREMENT column its type is INTEGER
-and no other column is a PRIMARY KEY,
-and if Without rowid is checked there is at least one PRIMARY KEY column,
-and any column default values are admissible
-(see <a href="DefaultValues.html">Appendix B</a>).</p>
-  <p><span class="application">Sqlite</span> will permit a table to be created with a table name which contains non-alphanumeric characters or with an empty string as a column name, so <span class="application">sqlitema</span>n allows these. However in both of these cases it asks if you really want to do it, since the underlying library doesn't display such tables correctly.</p><p>
-          </p><div class="screenshot"><div class="mediaobject"><img src="alterTable.png" alt="Alter table dialog"></div></div><p>
-          </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2526118"></a>Steps to alter table</h3></div></div></div><div class="orderedlist"><ol type="1"><li><p>Remember triggers and indexes from the original table</p></li><li><p>Rename the original table with temporary name if it is a case-insensitive match for the new name</p></li><li><p>Create new table with new name containing new column structure</p></li><li><p>Perform INSERT INTO new table SELECT FROM (possibly renamed) old table</p></li><li><p>Drop old table</p></li><li><p>Try to recreate original indexes and triggers</p></li></ol></div><p>When there is no change other than the name, only the rename
-    is performed.</p>
-    <p>The whole process is performed within a SAVEPOINT: if any error occurs the database is rolled back to the savepoint, reinstating the original table.</p>
-    </div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="CreateTable.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="FeaturesDialogs.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ImportTable.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Create Table </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> Import Table Data</td></tr></table></div></body></html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Alter Table</title>
+        <link rel="stylesheet" href="kde-default.css" type="text/css">
+        <meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database">
+        <link rel="start" href="index.html" title="The Sqliteman Handbook">
+        <link rel="up" href="FeaturesDialogs.html" title="Chapter 7. Features and Dialogs">
+        <link rel="prev" href="CreateTable.html" title="Create Table">
+        <link rel="next" href="ImportTable.html" title="Import Table Data">
+    </head>
+    <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+        <div class="navheader">
+            <table width="100%" summary="Navigation header">
+                    <td width="20%" align="left"></td>
+                    <th width="60%" align="center">
+                        Chapter 7. Features and Dialogs
+                    </th>
+                    <td width="20%" align="right"></td>
+                </tr>
+                <tr>
+                    <td width="20%" align="left">
+                        <a accesskey="p" href="CreateTable.html">
+                            Prev
+                        </a>
+                    </td>
+                    <th width="60%" align="center">
+                        Alter Table
+                    </th>
+                    <td width="20%" align="right">
+                        <a accesskey="n" href="ImportTable.html">
+                            Next
+                        </a>
+                    </td>
+                </tr>
+            </table>
+            <hr>
+        </div>
+        <div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="alterTable"></a>Alter Table</h2></div></div></div><p>
+        Raise a dialog for table changing. This dialog looks quite similar to the "Create Table" one except for a few things:
+        </p>
+        <h3 class="important">Important</h3>
+        <div class="indent">
+        The built-in <span class="application">sqlite</span> ALTER TABLE command is very limited since it can only rename the table or rename or add or drop a single column at a time.
+        </div>
+        <p>
+            <span class="application">Sqliteman</span> provides a more general ALTER TABLE by creating a new table, copying the data, and dropping the old table. If necessary the old table is renamed out of the way first. However <span class="application">sqliteman</span> has limited understanding of the many possible table structures and some information is lost in some cases.
+            </p>
+        <p>Triggers on the the table itself are preserved (but cannot be modified) as
+        long as any columns to which they refer are not deleted or renamed. Indexes
+        on the table are preserved (but cannot be modified) unless a column to which
+        an index refers is deleted: renaming indexed columns is handled.
+        </p><p>
+        If the table is renamed without any other changes and you are using sqlite
+        library version 3.25.0 or later, and PRAGMA legacy_alter_table is OFF, views and
+        triggers referencing the table will be re-attached to it with its new name.
+        If the table is modified without changing its name, views and triggers
+        referencing it will remain attached to it. However a view or a trigger may no
+        longer be valid if it refers to a column which has had its name changed
+        or has been deleted. In all other cases,
+        views and triggers referencing the table will no longer reference it.
+        </p><p>
+        If the table is changed other than by just renaming it, Constraint names,
+        conflict clauses, foreign key clauses, DESC tags, UNIQUE constraints,
+        CHECK constraints, and COLLATE constraints are all lost.
+        These can be preserved by manually renaming the old table, doing
+        "Describe Table", copying and pasting the description into the SQL editor,
+        modifying it as required and creating a new table, copying the data,
+        and then dropping the old table.
+        </p><p>
+        If the table is changed other than by just renaming it, and the table is a
+        <em>parent table</em> (a foreign key constraint in some
+        other table references it), the Alter Table function may fail.
+        </p></div><p>In this dialog you can <span class="guibutton">Add</span> and <span class="guibutton">Remove</span> table
+        columns and set the options for new ones. You can also reorder the columns using the up and down arrows.</p><p>
+        The Alter button is enabled
+        only when at least something has changed from the original table definition,
+        and the table name is nonempty,
+        and the table name is not the same (ignoring case) at the name of any
+        index, view, or <i>other</i> table,
+        and all column names are different (ignoring case),
+        and if there is an AUTOINCREMENT column its type is INTEGER
+        and no other column is a PRIMARY KEY,
+        and if Without rowid is checked there is at least one PRIMARY KEY column,
+        and any column default values are admissible
+        (see <a href="DefaultValues.html">Appendix B</a>).</p>
+        <p><span class="application">Sqlite</span> will permit a table to be created with a table name which contains non-alphanumeric characters or with an empty string as a column name, so <span class="application">sqlitema</span>n allows these. However in both of these cases it asks if you really want to do it, since the underlying library doesn't display such tables correctly.</p><p>
+            </p><div class="screenshot"><div class="mediaobject"><img src="alterTable.png" alt="Alter table dialog"></div></div><p>
+            </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2526118"></a>Steps to alter table</h3></div></div></div><div class="orderedlist"><ol type="1"><li><p>Remember triggers and indexes from the original table</p></li><li><p>Rename the original table with temporary name if it is a case-insensitive match for the new name</p></li><li><p>Create new table with new name containing new column structure</p></li><li><p>Perform INSERT INTO new table SELECT FROM (possibly renamed) old table</p></li><li><p>Drop old table</p></li><li><p>Try to recreate original indexes and triggers</p></li></ol></div><p>When there is no change other than the name, only the rename
+        is performed.</p>
+        <p>The whole process is performed within a SAVEPOINT: if any error occurs the database is rolled back to the savepoint, reinstating the original table.</p>
+        </div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="CreateTable.html">Prev</a> </td>
+                    <td width="20%" align="center">
+                        <span class="fileref">AlterTable.html</span>
+                    </td>
+                    <td width="40%" align="right">
+                        <a accesskey="n" href="ImportTable.html">Next</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="40%" align="left" valign="top">
+                        Create Table
+                    </td>
+                    <td width="20%" align="center">
+                        <a accesskey="h" href="index.html">
+                            Contents
+                        </a>
+                    </td>
+                    <td width="40%" align="right" valign="top">
+                        Import Table Data
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>

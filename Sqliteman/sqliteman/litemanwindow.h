@@ -186,6 +186,7 @@ class LiteManWindow : public QMainWindow
 		QTreeWidgetItem * m_activeItem;
 		QTreeWidgetItem * m_currentItem;
 		QLabel * m_sqliteVersionLabel;
+		QLabel * m_extensionLabel;
 		bool tableTreeTouched;
 		bool m_isOpen;
 

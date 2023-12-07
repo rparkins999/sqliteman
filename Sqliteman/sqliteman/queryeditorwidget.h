@@ -87,14 +87,13 @@ class QueryEditorWidget : public QWidget
 		void tableGone(QString oldName, QString newName);
 		void setSchema(QString schema, QString table,
 					   bool schemaMayChange, bool tableMayChange);
-		void resetSchemaList();
-		void treeChanged();
 
 	private:
 		void copySql(bool elide);
 
     public slots:
 		void copySql();
+		void resetSchemaList();
 
 };
 

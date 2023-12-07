@@ -73,6 +73,11 @@ ImportTableDialog::ImportTableDialog(LiteManWindow * parent,
 			this, SLOT(createPreview()));
 	connect(skipHeaderCheck, SIGNAL(toggled(bool)),
 			this, SLOT(skipHeaderCheck_toggled(bool)));
+/*    connect(skipHeaderBox, SIGNAL(QOverload<int>::of(&QSpinBox::valueChanged)),
+            this, SLOT(createPreview()));
+            */
+    connect(skipHeaderBox, SIGNAL(textChanged(const QString &)),
+            this, SLOT(createPreview()));
 
 	skipHeaderCheck_toggled(false);
 }
@@ -218,12 +223,12 @@ void ImportTableDialog::slotAccepted()
 
 	// base import
 	bool result = true;
+    bool commitFailed = false;
 	QStringList l;
 	QStringList log;
 	int cols = Database::tableFields(tableComboBox->currentText(),
 									 schemaComboBox->currentText()).count();
 	int row = 0;
-	int success = 0;
 	QStringList binds;
 	for (int i = 0; i < cols; ++i) { binds << "?"; }
 	QString sql = QString("insert into ")
@@ -242,84 +247,95 @@ void ImportTableDialog::slotAccepted()
 	{
 		return;
 	}
-	if (!Database::execSql("SAVEPOINT IMPORT_TABLE;"))
-	{
-		// FIXME emit some failure message here
-		return;
-	}
-	
-    QList<QStringList>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-		++row;
-		if (it->count() != cols)
-		{
-			log.append(tr("Row = %1; Imported values = %2; "
-						  "Table columns count = %3; Values = (%4)")
-					.arg(row).arg(it->count()).arg(cols).arg(it->join(", ")));
-			result = false;
-			continue;
-		}
+	QSqlQuery savepoint = Database::doSql("SAVEPOINT IMPORT_TABLE;");
+    if (savepoint.lastError().isValid())
+    {
+        log.append(QString("SAVEPOINT IMPORT_TABLE: %1")
+                    .arg(query.lastError().text()));
+        result = false;
+        commitFailed = true;
+    } else {
+        QList<QStringList>::const_iterator it;
+        for (it = values.constBegin(); it != values.constEnd(); ++it) {
+            ++row;
+            if (it->count() != cols)
+            {
+                log.append(tr("Row = %1; Imported values = %2; "
+                            "Table columns count = %3; Values = (%4)")
+                        .arg(row).arg(it->count()).arg(cols).arg(it->join(", ")));
+                result = false;
+                continue;
+            }
 
-		query.prepare(sql);
-		for (int i = 0; i < cols ; ++i)
-		{
-			QString s(it->at(i));
-			if (s.isEmpty())
-			{
-				query.addBindValue(QVariant(QVariant::String));
-			}
-			else
-			{
-				if (s.startsWith("X'", Qt::CaseInsensitive))
-				{
-					QByteArray b;
-					while (!s.startsWith("'"))
-					{
-						// blob
-						s = s.remove(0, 2);
-						b.append((hexValue(s[0]) << 4) + hexValue(s[1]));
-					}
-					query.addBindValue(QVariant(b));
-				}
-				else
-				{
-					query.addBindValue(s);
-				}
-			}
-		}
+            query.prepare(sql);
+            for (int i = 0; i < cols ; ++i)
+            {
+                QString s(it->at(i));
+                if (s.isEmpty())
+                {
+                    query.addBindValue(QVariant(QVariant::String));
+                }
+                else
+                {
+                    if (s.startsWith("X'", Qt::CaseInsensitive))
+                    {
+                        QByteArray b;
+                        while (!s.startsWith("'"))
+                        {
+                            // blob
+                            s = s.remove(0, 2);
+                            b.append((hexValue(s[0]) << 4) + hexValue(s[1]));
+                        }
+                        query.addBindValue(QVariant(b));
+                    }
+                    else
+                    {
+                        query.addBindValue(s);
+                    }
+                }
+            }
 
-		query.exec();
-		if (query.lastError().isValid())
-		{
-			log.append(tr("Row = %1; %2")
-					   .arg(row).arg(query.lastError().text()));
-			result = false;
-		}
-		else
-			++success;
-	}
-
-	if (result)
-	{
-		Database::execSql("RELEASE IMPORT_TABLE;");
-		accept();
-	}
-	else
+            query.exec();
+            if (query.lastError().isValid())
+            {
+                log.append(tr("Row = %1; %2")
+                        .arg(row).arg(query.lastError().text()));
+                result = false;
+            }
+        }
+    }
+    if (result)
+    {
+        savepoint = Database::doSql("RELEASE IMPORT_TABLE;");
+        if (savepoint.lastError().isValid())
+        {
+            log.append(QString("RELEASE IMPORT_TABLE: %1")
+                        .arg(query.lastError().text()));
+            result = false;
+            commitFailed = true;
+        }
+    }
+	if (!result)
 	{
 		ImportTableLogDialog dia(log, this);
-		if (dia.exec())
+        if (commitFailed)
+        {
+            // user can't accept if we've already failed to commit
+            dia.buttonBox->setStandardButtons(QDialogButtonBox::No|QDialogButtonBox::NoButton);
+            dia.exec();
+            return;
+        }
+		else if (!dia.exec())
 		{
-			//FIXME need to override errors here
-			if (Database::execSql("RELEASE IMPORT_TABLE;"))
-			{
-				update = m_alteringActive;
-				accept();
-				return;
-			}
+            // we can't meaningfully handle errors here
+            Database::execSql("ROLLBACK TO IMPORT_TABLE;");
+            Database::execSql("RELEASE IMPORT_TABLE;");
+            return;
 		}
-		Database::execSql("ROLLBACK TO IMPORT_TABLE;");
-		Database::execSql("RELEASE IMPORT_TABLE;");
 	}
+    update = m_alteringActive;
+    accept();
+    return;
 }
 
 void ImportTableDialog::updateButton()
@@ -384,6 +400,7 @@ void ImportTableDialog::createPreview(bool)
 void ImportTableDialog::skipHeaderCheck_toggled(bool checked)
 {
 	skipHeaderBox->setEnabled(checked);
+    createPreview();
 }
 
 /*

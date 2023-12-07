@@ -43,7 +43,7 @@ class QueryEditorDialog : public QDialog
 		void tableAltered(QString oldName, QTreeWidgetItem * item);
 		void tableDropped(QString oldName);
 		void schemaGone(QString schema);
-		void treeChanged();
+		void resetSchemaList();
 };
 
 #endif //QUERYEDITORDIALOG_H

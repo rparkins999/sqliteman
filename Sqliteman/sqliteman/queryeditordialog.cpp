@@ -106,7 +106,7 @@ void QueryEditorDialog::schemaGone(QString schema) {
 	ui.queryEditor->resetSchemaList();
 }
 
-void QueryEditorDialog::treeChanged()
+void QueryEditorDialog::resetSchemaList()
 {
-	ui.queryEditor->treeChanged();
+	ui.queryEditor->resetSchemaList();
 }

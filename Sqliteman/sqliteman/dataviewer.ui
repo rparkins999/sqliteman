@@ -137,7 +137,7 @@
     <string>DML Tools</string>
    </property>
    <property name="toolTip">
-    <string>Open a new standalone window with current results</string>
+    <string/>
    </property>
    <property name="orientation">
     <enum>Qt::Horizontal</enum>

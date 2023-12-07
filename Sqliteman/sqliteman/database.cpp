@@ -512,7 +512,7 @@ sqlite3 * Database::sqlite3handle()
 bool Database::setEnableExtensions(bool enable)
 {
 	QVariant v = QSqlDatabase::database(SESSION_NAME).driver()->handle();
-	if (v.isValid())
+	if (!v.isValid())
 	{
 		return false;
 	}

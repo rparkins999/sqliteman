@@ -356,7 +356,7 @@ QueryEditorWidget::QueryEditorWidget(QWidget * parent): QWidget(parent)
 	QPushButton * resetButton = new QPushButton("Reset", this);
     resetButton->setObjectName("Reset");
 	connect(resetButton, SIGNAL(clicked(bool)),
-            this, SLOT(resetClicked()));
+            this, SLOT(resetSchemaList()));
 	ui.tabWidget->setCornerWidget(resetButton, Qt::TopRightCorner);
 }
 
@@ -702,23 +702,6 @@ void QueryEditorWidget::setSchema(QString schema, QString table,
 	}
 }
 
-/* Called when a schema is attached or detached.
- * Also called when some SQL code might have done an ATTACH or DETACH.
- *
- * Currently this is redundant because setSchema() will always be called
- * when this widget is reactivated, but one day I would like
- * to make QueryEditorDialog modeless.
- */
-void QueryEditorWidget::resetSchemaList()
-{
-	setSchema(m_schema, m_table, m_canChangeSchema, m_canChangeTable);
-}
-
-void QueryEditorWidget::treeChanged()
-{
-    setSchema(m_schema, m_table, m_canChangeSchema, m_canChangeTable);
-}
-
 void QueryEditorWidget::copySql(bool elide)
 {
 	QApplication::clipboard()->setText(statement(elide));
@@ -727,4 +710,21 @@ void QueryEditorWidget::copySql(bool elide)
 void QueryEditorWidget::copySql()
 {
 	copySql(!m_queryingTable);
+}
+
+/* Called when we need to reset the query.
+ * This can happen if the user clicks reset or if the current
+ * query has become invalid because the schema has been removed
+ * (or may have been removed by an EXEC)
+ * or because the current table has been removed or altered
+ * (or may have been removed or altered by an EXEC).
+ *
+ * Currently it is also called when the dialog is shown because
+ * some changes might have occurred while the dialog not visible,
+ * but I hope to make it modeless in the future,
+ * so it will need to react to the events listed above.
+ */
+void QueryEditorWidget::resetSchemaList()
+{
+	setSchema(m_schema, m_table, m_canChangeSchema, m_canChangeTable);
 }

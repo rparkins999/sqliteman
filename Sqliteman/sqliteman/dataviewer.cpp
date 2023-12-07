@@ -49,7 +49,6 @@ void DataViewer::updateButtons()
 	QAbstractItemModel * model = ui.tableView->model();
 	SqlTableModel * table = qobject_cast<SqlTableModel *>(model);
 	QModelIndexList indexList = ui.tableView->selectedIndexes();
-	bool autoCommit = model ? Database::isAutoCommit() : true ;
     QModelIndexList::const_iterator i;
     for (i = indexList.constBegin(); i != indexList.constEnd(); ++i) {
 		if (i->isValid())
@@ -147,7 +146,8 @@ void DataViewer::updateButtons()
 	if (pending)
 	{
 		ui.actionCommit->setEnabled(true);
-		ui.actionCommit->setToolTip("<html><head/><body><p>" + tr((autoCommit
+		ui.actionCommit->setToolTip("<html><head/><body><p>"
+            + tr((Database::isAutoCommit()
 			? "Commit unsaved changes in this table to the database "
 			: "Write unsaved changes in this table to the pending database transaction "))
 			+ "Ctrl+Alt+C)</p></body></html>");
@@ -158,7 +158,11 @@ void DataViewer::updateButtons()
 			+ "(Ctrl+Alt+R)</p></body></html>");
 	} else {
 		ui.actionCommit->setEnabled(false);
-		ui.actionCommit->setToolTip(tr("(disabled)"));
+		ui.actionCommit->setToolTip("<html><head/><body><p>"
+            + tr((Database::isAutoCommit()
+			? "(Disabled in Auto Commit mode)"
+			: "(Disabled in Transaction Pending mode)"))
+			+ "</p></body></html>");
 		ui.actionRollback->setEnabled(false);
 		ui.actionRollback->setToolTip(tr("(disabled)"));
 	}

@@ -1,8 +1,164 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Auto Commit and Transaction Pending modes</title><link rel="stylesheet" href="kde-default.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.67.2"><meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database"><link rel="start" href="index.html" title="The Sqliteman Handbook"><link rel="up" href="FeaturesDialogs.html" title="Chapter 7. Features and Dialogs"><link rel="prev" href="UserDefinedFunctions.html" title="User defined functions"><link rel="next" href="CreateTable.html" title="Auto Commit and Transaction Pending modes"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Auto Commit and Transaction Pending modes</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="UserDefinedFunctions.html">Prev</a> </td><th width="60%" align="center">Chapter 7. Features and Dialogs</th><td width="20%" align="right"> <a accesskey="n" href="CreateTable.html">Next</a></td></tr></table><hr></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="Auto Commit and Transaction Pending modes"></a>Auto Commit and Transaction Pending modes</h2></div></div></div>
-<p><span class="application">Sqliteman</span> can operate in Auto Commit mode or in Transaction Pending mode. It starts off in Auto Commit mode. It can go into Transaction Pending mode if the user executes a BEGIN command or a SAVEPOINT name command in the <a href="SQLeditor.html" title="SQL Editor">SQL Editor</a> without a corresponding COMMIT, ROLLBACK, or RELEASE SAVEPOINT command. Executing a COMMIT or ROLLBACK command, or executing a RELEASE SAVEPOINT on the highest level savepoint, will take <span class="application">sqliteman</span> back to Auto Commit mode</p>
-<p>In Auto Commit mode, all actions driven by the menus are committed to the database immediately, if they succeed. Editing fields, adding rows, or deleting rows in the current table (if there is one) result in changes cached inside <span class="application">sqliteman</span> until they are committed by pressing the <a href="DataViewer.html#commit">Commit</a> button or discarded by pressing the <a href="DataViewer.html#rollback">Rollback</a> button. If you leave the current table, or select any menu action which modifies it, <span class="application">sqliteman</span> will ask if you want to commit your changes: the exceptions are Empty Table and Drop table, both of which discard all the data in the table anyway.</p>
-<p>In Transaction Pending mode, all actions driven by the menus are added to the pending transaction. Editing fields, adding rows, or deleting rows in the current table (if there is one) result in changes cached inside <span class="application">sqliteman</span>, but the <a href="DataViewer.html#commit">Commit</a> button only writes the changes to the database, adding them to the pending transaction, and does not commit them in the sqlite sense. The <a href="DataViewer.html#rollback">Rollback</a> button discards the changes as in Auto Commit mode. If you leave the current table, or select any menu action which modifies it, <span class="application">sqliteman</span> will ask if you want to write your changes to the database: the exceptions are Empty Table and Drop table, both of which discard all the data in the table anyway. To commit your changes, you need to execute a COMMIT or ROLLBACK command, or a RELEASE SAVEPOINT on the highest level savepoint, in the <a href="SQLeditor.html" title="SQL Editor">SQL Editor</a>.</p>
-<p>If you try to exit from <span class="application">sqliteman</span>, and some changes are cached, it will ask you if you want to write the changes to the database or discard them or cancel the exit. Next, if <span class="application">sqliteman</span> is in Pending Transaction mode, it will ask you if you want to commit the pending transaction, roll it back, or cancel the exit. <span class="application">Sqliteman</span> cannot tell whether the pending transaction contains any changes to the database, so it asks even if there are no changes.</p>
-<p>You can find out whether <span class="application">sqliteman</span> is in Auto Commit mode by hovering your mouse over the <a href="DataViewer.html#commit">Commit</a> button: the tooltip will tell you that the button will commit changes to the database (Auto Commit mode) or that it will write changes to the pending database transaction (Transaction Pending mode).</p>
-</dd></dl></div></div>
-<div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="UserDefinedFunctions.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="FeaturesDialogs.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="CreateTable.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">User defined functions </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> Create Table</td></tr></table></div></body></html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Auto Commit and Transaction Pending modes</title>
+        <link rel="stylesheet" href="kde-default.css" type="text/css">
+        <meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database">
+        <link rel="start" href="index.html" title="The Sqliteman Handbook">
+        <link rel="up" href="FeaturesDialogs.html" title="Chapter 7. Features and Dialogs">
+        <link rel="prev" href="UserDefinedFunctions.html" title="User defined functions">
+        <link rel="next" href="CreateTable.html" title="Auto Commit and Transaction Pending modes">
+    </head>
+    <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+        <div class="navheader">
+            <table width="100%" summary="Navigation header">
+                <tr>
+                    <td width="20%" align="left"></td>
+                    <th width="60%" align="center">
+                        Chapter 7. Features and Dialogs
+                    </th>
+                    <td width="20%" align="right"></td>
+                </tr>
+                <tr>
+                    <td width="20%" align="left">
+                        <a accesskey="p" href="UserDefinedFunctions.html">Prev</a>
+                        </td>
+                    <th width="60%" align="center">
+                        Auto Commit and Transaction Pending modes
+                    </th>
+                    <td width="20%" align="right">
+                        <a accesskey="n" href="CreateTable.html">Next</a>
+                    </td>
+                </tr>
+            </table>
+            <hr>
+        </div>
+        <div class="sect1" lang="en">
+            <div class="titlepage">
+                <div>
+                    <h2 class="title" style="clear: both">
+                        <a name="Auto Commit and Transaction Pending modes">
+                        </a>
+                        Auto Commit and Transaction Pending modes
+                    </h2>
+                </div>
+            </div>
+            <p>
+                <span class="application">Sqliteman</span>
+                can operate in Auto Commit mode or in Transaction Pending mode.
+                It starts off in Auto Commit mode.
+                It can go into Transaction Pending mode if the user executes
+                a BEGIN command or a SAVEPOINT <i>name</i> command in the
+                <a href="SQLeditor.html" title="SQL Editor">
+                    SQL Editor
+                </a>
+                without a corresponding
+                COMMIT, ROLLBACK, or RELEASE SAVEPOINT command.
+                Executing a COMMIT or ROLLBACK command,
+                or executing a RELEASE SAVEPOINT
+                on the highest level savepoint, will take
+                <span class="application">sqliteman</span>
+                back to Auto Commit mode
+            </p><p>
+                In Auto Commit mode, all actions driven by the menus
+                are committed to the database immediately, if they succeed.
+                Editing fields, adding rows,
+                or deleting rows in the current table
+                (if there is one) result in changes cached inside
+                <span class="application">sqliteman</span>
+                until they are committed by pressing the
+                <a href="DataViewer.html#commit">Commit</a>
+                button or discarded by pressing the
+                <a href="DataViewer.html#rollback">Rollback</a> button.
+                If you leave the current table,
+                or select any menu action which modifies it,
+                <span class="application">sqliteman</span>
+                will ask if you want to commit your changes:
+                the exceptions are Empty Table and Drop table,
+                both of which discard all the data in the table anyway.
+            </p><p>
+                In Transaction Pending mode, all actions driven by the menus
+                are added to the pending transaction. Editing fields,
+                adding rows, or deleting rows in the current table
+                (if there is one) result in changes cached inside
+                <span class="application">sqliteman</span>, but the
+                <a href="DataViewer.html#commit">Commit</a>
+                button only writes the changes to the database,
+                adding them to the pending transaction,
+                and does not commit them in the sqlite sense. The
+                <a href="DataViewer.html#rollback">Rollback</a>
+                button discards the changes as in Auto Commit mode.
+                If you leave the current table,
+                or select any menu action which modifies it,
+                <span class="application">sqliteman</span>
+                will ask if you want to write your changes to the database:
+                the exceptions are Empty Table and Drop table,
+                both of which discard all the data in the table anyway.
+                To commit or roll back your changes, you need to execute
+                a COMMIT or a ROLLBACK command,
+                or a RELEASE SAVEPOINT on the highest level savepoint, in the
+                <a href="SQLeditor.html" title="SQL Editor">SQL Editor</a>.
+            </p><p>
+                If you try to exit from
+                <span class="application">sqliteman</span>,
+                and some changes are cached, it will ask you whether
+                you want to write the changes to the database or discard them
+                or cancel the exit. Next, if
+                <span class="application">sqliteman</span>
+                is in Pending Transaction mode,
+                it will ask you if you want to commit the pending transaction,
+                roll it back, or cancel the exit.
+                <span class="application">Sqliteman</span>
+                cannot tell whether the pending transaction contains
+                any changes to the database,
+                so it asks even if there are no changes.
+            </p><p>
+                You can find out whether
+                <span class="application">sqliteman</span>
+                is in Auto Commit mode by hovering your mouse over the
+                <a href="DataViewer.html#commit">Commit</a> button.
+                If there are unsaved changes in the current table,
+                the tooltip will tell you that the button will commit changes
+                to the database (Auto Commit mode) or that it will write
+                changes to the pending database transaction
+                (Transaction Pending mode).
+                If there are no unsaved changes in the current table,
+                or there is no current table, the button is disabled
+                becausem there is nothing for it to do, but the tooltip
+                will tell you whether it is disabled in Auto Commit mode
+                or disabled in Transaction Pending mode.
+            </p>
+        </div>
+        <div class="navfooter">
+            <hr>
+            <table width="100%" summary="Navigation footer">
+                <tr>
+                    <td width="40%" align="left">
+                        <a accesskey="p" href="UserDefinedFunctions.html">
+                            Prev
+                        </a>
+                    </td>
+                    <td width="20%" align="center">
+                        <span class="fileref">TransactionModes.html</span>
+                    </td>
+                    <td width="40%" align="right">
+                        <a accesskey="n" href="CreateTable.html">
+                            Next
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="40%" align="left" valign="top">
+                        User defined functions
+                    </td>
+                    <td width="20%" align="center">
+                        <a accesskey="h" href="index.html">Contents</a>
+                    </td>
+                    <td width="40%" align="right" valign="top">
+                        Create Table
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>

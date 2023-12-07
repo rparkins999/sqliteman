@@ -1,112 +1,262 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>The Database Menu</title><link rel="stylesheet" href="kde-default.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.67.2"><meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database"><link rel="start" href="index.html" title="The Sqliteman Handbook"><link rel="up" href="MenuStructure.html" title="Chapter 6. Sqliteman Menu Structure"><link rel="prev" href="ContextMenu.html" title="The Context Menu"><link rel="next" href="SystemMenu.html" title="The System Menu"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">The <span class="guimenu">Database</span> Menu</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ContextMenu.html">Prev</a> </td><th width="60%" align="center">Chapter 6. <span class="application">Sqliteman</span> Menu Structure</th><td width="20%" align="right"> <a accesskey="n" href="SystemMenu.html">Next</a></td></tr></table><hr></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="database-menu"></a>The <span class="guimenu">Database</span> Menu</h2></div></div></div><p>Frequently used database tasks are grouped in this menu.</p><p>
-</p><div class="variablelist"><dl><dt><span class="term"><span class="guimenu">Database</span>-&gt;<span class="guimenuitem">Create Table...</span> (<span><strong class="shortcut"><span><strong class="keycap">Ctrl</strong></span>+<span><strong class="keycap">T</strong></span></strong></span>)</span></dt><dd><p><span class="action">The same as in the Context menu.
-      <a href="CreateTable.html" title="Create Table">See full Create Table documentation</a></span></p></dd><dt><span class="term"><span class="guimenu">Database</span>-&gt;<span class="guimenuitem">Create View...</span> (<span><strong class="shortcut"><span><strong class="keycap">Ctrl</strong></span>+<span><strong class="keycap">G</strong></span></strong></span>)</span></dt><dd><p><span class="action">The same as in the Context menu.
-      <a href="CreateView.html" title="View related dialogs">See full Create View documentation</a>.</span></p></dd>
-    <dt>
-        <span class="term">
-            <span class="guimenu">Database</span>-&gt;
-            <span class="guimenuitem">Build Query...</dfn></span>
-			(<span><strong class="shortcut">
-				<span><strong class="keycap">Ctrl</strong></span>
-				+<span><strong class="keycap">R</strong></span>
-			</strong></span>)
-		</span>
-	</dt>
-	<dd>
-		<p><span class="action">
-			Raise a dialog to build and execute a simple query on any table or view.
-			This is the same dialog as in the Context menu,
-			but you can choose the table or view and the schema
-			if one or more additonal databases are attached.
-      <a href="QueryBuilder.html">See full Query Builder documentation</a>.
-      </span></p></dd>
-	<dt>
-		<span class="term">
-			<span class="guimenu">Database</span>-&gt;<span
-				class="guimenuitem">SQL Editor</span>
-			(<span><strong class="shortcut"><span><strong
-				class="keycap">Ctrl</strong></span>+<span><strong
-				class="keycap">E</strong></span></strong></span>)
-		</span>
-	</dt>
-	<dd>
-		<p>
-			<span class="action">
-				Switch On/Off the
-				<a href="SQLeditor.html">SQL Editor</a>
-				in the main window.
-			</span>
-		</p>
-	</dd>
-	<dt>
-		<span class="term">
-			<span class="guimenu">Database</span>-&gt;<span
-				class="guimenuitem">Schema Browser</span>
-			(<span><strong class="shortcut"><span><strong
-				class="keycap">Ctrl</strong></span>+<span><strong
-				class="keycap">B</strong></span></strong></span>)
-		</span>
-	</dt>
-	<dd>
-		<p>
-			<span class="action">Switch On/Off the
-				<a href="SchemaBrowser.html">Schema Browser</a>
-				tree in the main window.
-			</span>
-		</p>
-	</dd>
-	<dt>
-		<span class="term">
-			<span class="guimenu">Database</span>-&gt;<span
-				class="guimenuitem">Data Viewer</span>
-			(<span><strong class="shortcut"><span><strong
-				class="keycap">Ctrl</strong></span>+<span><strong
-				class="keycap">D</strong></span></strong></span>)
-		</span>
-	</dt>
-	<dd>
-		<p>
-			<span class="action">Switch On/Off the
-				<a href="Find.html">Data Viewer</a>
-				in the main window.
-			</span>
-		</p>
-	</dd>
-	<dt>
-		<span class="term">
-			<span class="guimenu">Database</span>-&gt;
-			<span class="guimenuitem">Export Schema...</span>
-		</span>
-	</dt>
-	<dd>
-		<p>
-			<span class="action">
-				Generate an SQL script containing a transaction
-				which creates all of the tables, views, indexes,
-				and triggers in this database, but no data.
-				It will first raise a dialog asking you
-				where to save the output.
-			</span>
-		</p>
-	</dd>
-	<dt>
-		<span class="term">
-			<span class="guimenu">Database</span>-&gt;
-			<span class="guimenuitem">Dump Database...</span>
-		</span>
-	</dt>
-	<dd>
-		<p>
-			<span class="action">
-				Generate an SQL script containing a transaction
-				which creates all of the tables, views, indexes,
-				and triggers in this database,
-				and inserts the data into all of the tables.
-				It will first raise a dialog asking you
-				where to save the output.
-			</span>
-		</p>
-	</dd>
-	<dt><span class="term"><span class="guimenu">Database</span>-&gt;<span class="guimenuitem">Import Table Data...</span></span></dt><dd><p><span class="action">Import data into specified table. The import dialog with guided
-                steps is shown.</span></p></dd></dl></div><p>
-</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ContextMenu.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="MenuStructure.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="SystemMenu.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">The <span class="guimenu">Context</span> Menu </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> The <span class="guimenu">System</span> Menu</td></tr></table></div></body></html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>The Database Menu</title>
+		<link rel="stylesheet" href="kde-default.css" type="text/css">
+		<meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database">
+		<link rel="start" href="index.html" title="The Sqliteman Handbook">
+		<link rel="up" href="MenuStructure.html" title="Chapter 6. Sqliteman Menu Structure">
+		<link rel="prev" href="ContextMenu.html" title="The Context Menu">
+		<link rel="next" href="SystemMenu.html" title="The System Menu">
+	</head>
+	<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+		<div class="navheader">
+			<table width="100%" summary="Navigation header">
+				<tr>
+					<td width="20%" align="left">
+					</td>
+					<th width="60%" align="center">
+						Chapter 6. <span class="application">Sqliteman</span>
+						Menu Structure
+					</th>
+					<td width="20%" align="right">
+					</td>
+				</tr>
+				<tr>
+					<td width="20%" align="left">
+						<a accesskey="p" href="ContextMenu.html">Prev</a>
+					</td>
+					<th cwidth="60%" align="center">
+						The <span class="guimenu">Database</span> Menu
+					</th>
+					<td width="20%" align="right">
+						<a accesskey="n" href="SystemMenu.html">Next</a>
+					</td>
+				</tr>
+			</table>
+			<hr>
+		</div>
+		<div class="sect1" lang="en">
+			<div class="titlepage">
+				<div>
+					<div>
+						<h2 class="title" style="clear: both">
+							<a name="database-menu"></a>
+							The <span class="guimenu">Database</span> Menu
+						</h2>
+					</div>
+				</div>
+			</div>
+            <p>Frequently used database tasks are grouped in this menu.</p>
+            <p></p>
+            <div class="variablelist">
+                <dl>
+                    <dt>
+                        <span class="term">
+                            <span
+                                class="guimenu">Database</span>-&gt;<span
+                                class="guimenuitem">Create Table...</span>
+                            (<span
+                                class="shortcut"><span
+                                    class="keycap">Ctrl</span>+<span
+                                    class="keycap">T</span></span>)
+                        </span>
+                    </dt>
+                    <dd>
+                        <p>
+                            <span class="action">
+                                The same as in the Context menu,
+                                except that you can choose any database
+                                in the current schema in which to create
+                                your table, intead of only the
+                                selected one.
+                                <a href="CreateTable.html" title="Create Table">
+                                    See full Create Table documentation
+                                </a>
+                            </span>
+                        </p>
+                    </dd>
+                    <dt>
+                        <span class="term">
+                            <span
+                                class="guimenu">Database</span>-&gt;<span
+                                class="guimenuitem">Create View...</span>
+                            (<span
+                                class="shortcut"><span
+                                    class="keycap">Ctrl</span>+<span
+                                    class="keycap">G</span></span>)
+                        </span>
+                    </dt>
+                    <dd>
+                        <p>
+                            <span class="action">
+                                The same as in the Context menu,
+                                except that you can choose any database
+                                in the current schema in which to create
+                                your view, intead of only the
+                                selected one.
+                                <a href="CreateView.html" title="View related dialogs">
+                                    See full Create View documentation</a>.
+                            </span>
+                        </p>
+                    </dd>
+                    <dt>
+                        <span class="term">
+                            <span class="guimenu">Database</span>-&gt;<span
+                                class="guimenuitem">Build Query...</span>
+                            (<span
+                                class="shortcut"><span
+                                    class="keycap">Ctrl</span>+<span
+                                    class="keycap">R</span>)
+                        </span>
+                    </dt>
+                    <dd>
+                        <p>
+                            <span class="action">
+                                Raise a dialog to build and execute a simple query
+                                on any table or view.
+                                This is the same dialog as in the Context menu,
+                                but you can choose the table or view and the schema
+                                if one or more additional databases are attached.
+                                <a href="QueryBuilder.html">
+                                    See full Query Builder documentation
+                                </a>.
+                            </span>
+                        </p>
+                    </dd>
+                    <dt>
+                        <span class="term">
+                            <span class="guimenu">Database</span>-&gt;<span
+                                class="guimenuitem">SQL Editor</span>
+                            (<span class="shortcut"><span
+                                class="keycap">Ctrl</span>+<span
+                                class="keycap">E</span></span>)
+                        </span>
+                    </dt>
+                    <dd>
+                        <p>
+                            <span class="action">Toggle On/Off the
+                                <a href="SQLeditor.html">SQL Editor</a>
+                                pane in the main window.
+                            </span>
+                        </p>
+                    </dd>
+                    <dt>
+                        <span class="term">
+                            <span class="guimenu">Database</span>-&gt;<span
+                                class="guimenuitem">Schema Browser</span>
+                            (<span class="shortcut"><span
+                                class="keycap">Ctrl</span>+<span
+                                class="keycap">B</span></span>)
+                        </span>
+                    </dt>
+                    <dd>
+                        <p>
+                            <span class="action">Toggle On/Off the
+                                <a href="SchemaBrowser.html">Schema Browser</a>
+                                pane in the main window.
+                            </span>
+                        </p>
+                    </dd>
+                    <dt>
+                        <span class="term">
+                            <span class="guimenu">Database</span>-&gt;<span
+                                class="guimenuitem">Data Viewer</span>
+                            (<span class="shortcut"><span
+                                class="keycap">Ctrl</span>+<span
+                                class="keycap">D</span></span>)
+                        </span>
+                    </dt>
+                    <dd>
+                        <p>
+                            <span class="action">Toggle On/Off the
+                                <a href="Find.html">Data Viewer</a>
+                                pane in the main window.
+                            </span>
+                        </p>
+                    </dd>
+                    <dt>
+                        <span class="term">
+                            <span class="guimenu">Database</span>-&gt;
+                            <span class="guimenuitem">Export Schema...</span>
+                        </span>
+                    </dt>
+                    <dd>
+                        <p>
+                            <span class="action">
+                                Generate an SQL script containing a transaction
+                                which creates all of the tables, views, indexes,
+                                and triggers in this database, but no data.
+                                It will first raise a dialog asking you
+                                where to save the output.
+                            </span>
+                        </p>
+                    </dd>
+                    <dt>
+                        <span class="term">
+                            <span class="guimenu">Database</span>-&gt;<span
+                                class="guimenuitem">Dump Database...</span>
+                        </span>
+                    </dt>
+                    <dd>
+                        <p>
+                            <span class="action">
+                                Generate an SQL script containing a transaction
+                                which creates all of the tables, views, indexes,
+                                and triggers in this database,
+                                and inserts the data into all of the tables.
+                                It will first raise a dialog asking you
+                                where to save the output.
+                            </span>
+                        </p>
+                    </dd>
+                    <dt>
+                    <span
+                        class="term">
+                        <span
+                            class="guimenu">Database</span>-&gt;<span
+                            class="guimenuitem">Import Table Data...</span>
+                        </span>
+                    </dt>
+                    <dd>
+                        <p>
+                            <span class="action">
+                                Import data into specified table.
+                                The import dialog with guided
+                                steps is shown.
+                            </span>
+                        </p>
+                    </dd>
+                </dl>
+                <p></p>
+            </div>
+		</div>
+		<div class="navfooter">
+			<hr>
+			<table width="100%" summary="Navigation footer">
+				<tr>
+					<td width="40%" align="left">
+						<a accesskey="p" href="ContextMenu.html">Prev</a>
+					</td>
+					<td width="20%" align="center">
+						<span class="fileref">DatabaseMenu.html</span>
+					</td>
+					<td width="40%" align="right">
+						<a accesskey="n" href="SystemMenu.html">Next</a>
+					</td>
+				</tr>
+				<tr>
+					<td width="40%" align="left" valign="top">
+						The <span class="guimenu">Context</span> Menu
+					</td>
+					<td width="20%" align="center">
+						<a accesskey="h" href="index.html">Contents</a>
+					</td>
+					<td width="40%" align="right" valign="top">
+						The <span class="guimenu">System</span> Menu
+					</td>
+				</tr>
+			</table>
+		</div>
+	</body>
+</html>

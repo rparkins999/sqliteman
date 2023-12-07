@@ -73,10 +73,11 @@ LiteManWindow::LiteManWindow(
 	initActions();
 	initMenus();
 
-	statusBar();
 	m_sqliteVersionLabel = new QLabel(this);
 	m_activeItem = 0;
 	statusBar()->addPermanentWidget(m_sqliteVersionLabel);
+	m_extensionLabel = new QLabel(this);
+	statusBar()->addWidget(m_extensionLabel);
 	readSettings();
 	queryEditor = new QueryEditorDialog(this);
 	// Check command line
@@ -561,29 +562,20 @@ void LiteManWindow::openDatabase(const QString & fileName)
 {
 	if (!checkForPending()) { return; }
 	
-	/* This messy bit of logic is necessary to ensure that db has gone out of
-	 * scope by the time removeDatabase() gets called, otherwise it thinks that
-	 * there is an outstanding reference and prints a warning message.
-	 */
+	QSqlDatabase db = QSqlDatabase::database(SESSION_NAME);
+	if (db.isValid())
 	{
-		QSqlDatabase old = QSqlDatabase::database(SESSION_NAME);
-		if (old.isValid())
-		{
-			removeRef("temp");
-			removeRef("main");
-			old.close();
-			QSqlDatabase::removeDatabase(SESSION_NAME);
-			m_isOpen = false;
-		}
-	}
-
+		removeRef("temp");
+		removeRef("main");
+		db.close();
+		m_isOpen = false;
+	} else {
 #ifdef INTERNAL_SQLDRIVER
-	QSqlDatabase db =
-		QSqlDatabase::addDatabase(new QSQLiteDriver(this), SESSION_NAME);
+		db = QSqlDatabase::addDatabase(new QSQLiteDriver(this), SESSION_NAME);
 #else
-	QSqlDatabase db =
-		QSqlDatabase::addDatabase("QSQLITE", SESSION_NAME);
+		db = QSqlDatabase::addDatabase("QSQLITE", SESSION_NAME);
 #endif
+	}
 
 	db.setDatabaseName(fileName);
 
@@ -638,10 +630,17 @@ void LiteManWindow::openDatabase(const QString & fileName)
 		handleExtensions(loadE);
 		if (loadE && Preferences::instance()->extensionList().count() != 0)
 		{
-			schemaBrowser->appendExtensions(
-					Database::loadExtension(Preferences::instance()->extensionList())
-					);
-			statusBar()->showMessage(tr("Startup extensions loaded successfully"));
+			QStringList requested(Preferences::instance()->extensionList());
+			QStringList loaded(Database::loadExtension(requested));
+			schemaBrowser->appendExtensions(loaded);
+			QString msg;
+			if (loaded == requested)
+			{
+				msg = tr("Startup extensions loaded successfully");
+			} else {
+				msg = tr("Some startup extensions were not loaded");
+			}
+			m_extensionLabel->setText(msg);
 		}
 #endif
 
@@ -698,7 +697,7 @@ void LiteManWindow::handleExtensions(bool enable)
 	QString e(enable ? tr("enabled") : tr("disabled"));
 	loadExtensionAct->setEnabled(enable);
 	if (Database::setEnableExtensions(enable))
-		statusBar()->showMessage(tr("Extensions loading is %1").arg(e));
+		m_extensionLabel->setText(tr("Extensions loading is %1").arg(e));
 }
 #endif
 
@@ -1886,7 +1885,7 @@ void LiteManWindow::refreshTable()
 	dataViewer->setTableModel(new QSqlQueryModel(), false);
 	updateContextMenu();
 	m_activeItem = 0;
-	queryEditor->treeChanged();
+	queryEditor->resetSchemaList();
 }
 
 void LiteManWindow::doMultipleDeletion()
