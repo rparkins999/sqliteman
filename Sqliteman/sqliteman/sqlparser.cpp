@@ -1325,9 +1325,9 @@ SqlParser::SqlParser(QString input)
 				m_tokens.removeFirst();
 				continue;
 			case CCexpectPKqualifier: // look for ASC or DESC or conflict clause
-				if (s.compare("ASC", Qt::CaseInsensitive) == 0) {
+				if (t.name.compare("ASC", Qt::CaseInsensitive) == 0) {
 					state = CCexpectPKConflict; // look for conflict clause
-				} else if (s.compare("DESC", Qt::CaseInsensitive) == 0) {
+				} else if (t.name.compare("DESC", Qt::CaseInsensitive) == 0) {
 					f.isColumnPkDesc = true;
 					state = CCexpectPKConflict; // look for conflict clause
 				} else if (s.compare("ON", Qt::CaseInsensitive) == 0) {
@@ -1416,7 +1416,6 @@ SqlParser::SqlParser(QString input)
 				continue;
 			case CCexpectAUTO: // look for AUTOINCREMENT or next
 				if (s.compare("AUTOINCREMENT", Qt::CaseInsensitive) == 0) {
-					//FIXME DESC or ASC is allowed after AUTOINCREMENT
 					f.isAutoIncrement = true;
 					state = TexpectColConstraint; // look for column constraint or , or )
 				} else if (t.type == tokenNOT) {
@@ -1816,9 +1815,9 @@ SqlParser::SqlParser(QString input)
 			case TCexpectPKQualifier: // look for COLLATE or ASC/DESC or next
 				if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
 					state = TCexpectPKCollateName; // look for collation name
-				} else if (s.compare("ASC", Qt::CaseInsensitive) == 0) {
+				} else if (t.name.compare("ASC", Qt::CaseInsensitive) == 0) {
 					state = TCexpectPKNext; // look for , or )
-				} else if (s.compare("DESC", Qt::CaseInsensitive) == 0) {
+				} else if (t.name.compare("DESC", Qt::CaseInsensitive) == 0) {
 					f.isTablePkDesc = true;
 					state = TCexpectPKNext; // look for , or )
 				} else if (t.type == tokenComma) {
@@ -1840,9 +1839,9 @@ SqlParser::SqlParser(QString input)
 				m_tokens.removeFirst();
 				continue;
 			case TCexpectPKAscDesc: // look for ASC/DESC or next
-				if (s.compare("ASC", Qt::CaseInsensitive) == 0) {
+				if (t.name.compare("ASC", Qt::CaseInsensitive) == 0) {
 					state = TCexpectPKNext; // look for , or )
-				} else if (s.compare("DESC", Qt::CaseInsensitive) == 0) {
+				} else if (t.name.compare("DESC", Qt::CaseInsensitive) == 0) {
 					state = TCexpectPKNext; // look for , or )
 				} else if (t.type == tokenComma) {
 					state = TCexpectPKColumn; // look for next column in list
@@ -1880,9 +1879,9 @@ SqlParser::SqlParser(QString input)
 			case TCexpectUQualifier: // look for COLLATE or ASC/DESC or next
 				if (s.compare("COLLATE", Qt::CaseInsensitive) == 0) {
 					state = TCexpectUCollateName; // look for collation name
-				} else if (s.compare("ASC", Qt::CaseInsensitive) == 0) {
+				} else if (t.name.compare("ASC", Qt::CaseInsensitive) == 0) {
 					state = TCexpectUNext; // look for , or )
-				} else if (s.compare("DESC", Qt::CaseInsensitive) == 0) {
+				} else if (t.name.compare("DESC", Qt::CaseInsensitive) == 0) {
 					state = TCexpectUNext; // look for , or )
 				} else if (t.type == tokenComma) {
 					state = TCexpectUColumn; // look for next column in list
@@ -1903,9 +1902,9 @@ SqlParser::SqlParser(QString input)
 				m_tokens.removeFirst();
 				continue;
 			case TCexpectUAscDesc: // look for ASC/DESC or next
-				if (s.compare("ASC", Qt::CaseInsensitive) == 0) {
+				if (t.name.compare("ASC", Qt::CaseInsensitive) == 0) {
 					state = TCexpectUNext; // look for , or )
-				} else if (s.compare("DESC", Qt::CaseInsensitive) == 0) {
+				} else if (t.name.compare("DESC", Qt::CaseInsensitive) == 0) {
 					state = TCexpectUNext; // look for , or )
 				} else if (t.type == tokenComma) {
 					state = TCexpectUColumn; // look for next column in list
