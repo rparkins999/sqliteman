@@ -52,6 +52,12 @@ void PopulatorColumnWidget::actionCombo_currentIndexChanged(int ix)
 		case Populator::T_AUTO:
 		case Populator::T_NUMB:
 		case Populator::T_TEXT:
+		case Populator::T_DT_NOW:
+		case Populator::T_DT_NOW_UNIX:
+		case Populator::T_DT_NOW_JULIAN:
+		case Populator::T_DT_RAND:
+		case Populator::T_DT_RAND_UNIX:
+		case Populator::T_DT_RAND_JULIAN:
 		case Populator::T_IGNORE:
 			enable = false;
 			break;
