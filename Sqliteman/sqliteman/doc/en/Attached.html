@@ -1,91 +1,225 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Attaching Databases</title><link rel="stylesheet" href="kde-default.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.67.2"><meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database"><link rel="start" href="index.html" title="The Sqliteman Handbook"><link rel="up" href="FeaturesDialogs.html" title="Chapter 7. Features and Dialogs"><link rel="prev" href="ConstraintTriggers.html" title="Constraint Triggers"><link rel="next" href="SchemaBrowser.html" title="Schema Browser"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Attaching Databases</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ConstraintTriggers.html">Prev</a> </td><th width="60%" align="center">Chapter 7. Features and Dialogs</th><td width="20%" align="right"> <a accesskey="n" href="SchemaBrowser.html">Next</a></td></tr></table><hr></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="attachDatabase"></a>Attaching Databases</h2></div></div></div><p>
-	You can attach and detach other database files to the current database connection from the <a href="SystemMenu.html">System</a> menu or by executing SQL commands in <a href="SQLeditor.html" title="SQL Editor">the SQL Editor</a>.
-    Every attached database is identified by its unique name (prefix). The names 'main' and 'temp' refer to the main database and the database used for temporary tables. These cannot be detached.
-    You should access database objects with full prefixed naming convention:</p><p><span><strong class="command">SELECT * FROM newdb.foo_table;</strong></span></p>
-    <p>
-        Data can be transferred from one database to another by using
-        <a href="CreateTable.html">
-            <span class="guimenuitem">Create Table...</span>
-        </a>
-        to create a table in one database by selecting from another database.
-    </p>
-    <p>It is possible to open the same database with two different names: <span class="application">sqliteman</span> cannot detect this because it cannot determine whether two different file names refer to the same file. If this occurs, <span class="application">sqliteman</span> may behave unpredictably.</p>
-    <p>
-        Attaching a database can fail with an error like
-    </p>
-    <p>
-        <span class="warning">
-            malformed database schema ... view ....
-            cannot reference objects in database main
-            Unable to fetch row
-        </span>
-    </p>
-    <p>
-        This is caused by creating a view on a table or a view
-        with its name qualified by its database name.
-        Using the
-        <a href="CreateView.html">Create View</a>
-        dialog in versions of
-        <span class="application">sqliteman</span>
-        before 1.8.1 would create such views.
-        </p>
-        <p>
-        To fix such a database, do the following:-
-        </p>
-        <div class="itemizedlist"><ul type="disc">
-            <li><p>
-                Save your work so far
-            </p></li>
-            <li><p>
-                Use
-                    <span class="term">
-                    <span class="guimenu">File</span>-&gt;
-                    <span class="guimenuitem">Open...</span>
-                    (<span><strong class="shortcut">
-                        <span><strong class="keycap">Ctrl</strong></span>+
-                        <span><strong class="keycap">O</strong></span>
-                    </strong></span>)
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Attaching Databases</title>
+        <link rel="stylesheet" href="kde-default.css" type="text/css">
+        <meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database">
+        <link rel="start" href="index.html" title="The Sqliteman Handbook">
+        <link rel="up" href="FeaturesDialogs.html" title="Chapter 7. Features and Dialogs">
+        <link rel="prev" href="ConstraintTriggers.html" title="Constraint Triggers">
+        <link rel="next" href="SchemaBrowser.html" title="Schema Browser">
+    </head>
+    <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+        <div class="navheader">
+            <table width="100%" summary="Navigation header">
+                <tr>
+                    <td width="20%" align="left"></td>
+                    <th width="60%" align="center">
+                        Chapter 7. Features and Dialogs
+                    </th>
+                    <td width="20%" align="right"></td>
+                </tr>
+                <tr>
+                    <td width="20%" align="left">
+                        <a accesskey="p" href="ConstraintTriggers.html">Prev</a>
+                    </td>
+                        <th width="60%" align="center">Attaching Darabases</th>
+                    <td width="20%" align="right">
+                        <a accesskey="n" href="SchemaBrowser.html">Next</a>
+                    </td>
+                </tr>
+            </table>
+            <hr>
+        </div>
+        <div class="sect1" lang="en">
+            <div class="titlepage">
+                <h2 class="title" style="clear: both">
+                    <a name="attachDatabase"></a>
+                    Attaching Databases
+                </h2>
+            </div>
+            <h3 class="important">Important</h3>
+            <div class="indent">
+                Consult
+                <a href="http://www.sqlite.org/lang_attach.html" target="_top">
+                    Sqlite documentation
+                </a>.
+            </div>
+            <p>
+                You can attach and detach other database files
+                to the current database connection from the
+                <a href="SystemMenu.html">System</a>
+                menu or by executing SQL commands in
+                <a href="SQLeditor.html" title="SQL Editor">the SQL Editor</a>.
+                Every attached database is identified by its unique name
+                (prefix). The names 'main' and 'temp' refer to the main database
+                and the database used for temporary tables.
+                These cannot be detached.
+                When creating tables or running queries
+                you should access database objects
+                with full prefixed naming convention:
+            </p><p>
+                <strong class="command">
+                    SELECT * FROM newdb.sometable;
+                </strong>
+            </p><p>
+                However, a view or an index or a trigger can only reference
+                entities in the same database, so when creating
+                a view or an index or a trigger, only the name of
+                the view or index or trigger should be prefixed.
+            </p><p>
+                <strong class="command">
+                    CREATE INDEX newdb.newindex ON sometable (somecolumn);
+                </strong>
+            </p><p>
+                Data can be transferred from one database to another by using
+                <a href="CreateTable.html">
+                    <span class="guimenuitem">Create Table...</span>
+                </a>
+                to create a table in one database
+                by selecting from another database.
+            </p><p>
+                It is possible to open the same database
+                with two different names:
+                <span class="application">sqliteman</span>
+                cannot in general detect this.
+                It is possible by checking inode numbers to determine
+                whether two filenames refer to the same file on a local
+                filesystem, but if there are remote filesystems mounted,
+                an inode number is no longer a unique identifier
+                and may not even be available.
+                If the same database is opened with two different names,
+                <span class="application">sqliteman</span>
+                may behave unpredictably.
+            </p><p>
+                Attaching a database can fail with an error like
+            </p><p>
+                <span class="warning">
+                    malformed database schema ... view ....
+                    cannot reference objects in database main
+                    Unable to fetch row
                 </span>
-                to open the offending database.
-            </p></li>
-            <li><p>
-                For each view in the database:-
-            </p></li>
-            <li><p style="text-indent: 1em">
-                Right-click on the view and select
-                <span class="term"><span class="guimenu">Describe View</span>
-            </p></li>
-            <li><p style="text-indent: 1em">
-                If the description selects from
-                a qualified table or view name like '
-                <span style="font-family: monospace;color: green">"main"."..."</span>'
-            </p></li>
-            <li><p style="text-indent: 2em">
-                Copy the view description
-            </p></li>
-            <li><p style="text-indent: 2em">
-                Paste it into the SQL editor
-            </p></li>
-            <li><p style="text-indent: 2em">
-                Remove all occurrences of '
-                <span style="font-family: monospace;color: green">"main".</span>'
-            </p></li>
-            <li><p style="text-indent: 2em">
-                Right-click on the view and select
-                <span class="term"><span class="guimenu">Drop View</span>
-            </p></li>
-            <li><p style="text-indent: 2em">
-                Click at the start of the SQL statement
-            </p></li>
-            <li><p style="text-indent: 2em">
-                Click on the green triangle just above,
-                which executes the SQL statement
-                and recreates the view
-            </p></li>
-    </p>
-    <h3 class="important">Important</h3>
-    <div class="indent">
-        Consult
-        <a href="http://www.sqlite.org/lang_attach.html" target="_top">
-            Sqlite documentation</a>.
-    </div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ConstraintTriggers.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="FeaturesDialogs.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="SchemaBrowser.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Constraint Triggers </td><td width="20%" align="center"><a accesskey="h" href="index.html">Contents</a></td><td width="40%" align="right" valign="top"> Schema Browser</td></tr></table></div></body></html>
+            </p><p>
+                This is caused by creating a view on a table or a view
+                with its name qualified by its database name.
+                Using the
+                <a href="CreateView.html">Create View</a>
+                dialog in versions of
+                <span class="application">sqliteman</span>
+                before 1.8.1 would create such views.
+            </p><p>
+                To fix such a database, do the following:-
+            </p>
+            <div class="itemizedlist"><ul type="disc">
+                <li>
+                    <p>
+                        Save your work so far
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        Use
+                        <span class="term">
+                            <span
+                                class="guimenu">File</span>-&gt;<span
+                                class="guimenuitem">Open...
+                            </span>
+                            (<span
+                                class="shortcut"><span
+                                    class="keycap">Ctrl</span>+<span
+                                    class="keycap">O</span></span>)
+                        </span>
+                        to open the offending database.
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        For each view in the database:-
+                    </p>
+                </li>
+                <li>
+                    <p style="text-indent: 1em">
+                        Right-click on the view and select
+                        <span class="term">
+                            <span class="guimenu">Describe View</span>
+                        </spen>
+                    </p>
+                </li>
+                <li>
+                    <p style="text-indent: 1em">
+                        If the description selects from
+                        a qualified table or view name like '
+                        <span style="font-family: monospace;color: green">
+                            "main"."sometable"
+                        </span>'
+                    </p>
+                </li>
+                <li>
+                    <p style="text-indent: 2em">
+                        Copy the view description
+                    </p>
+                </li>
+                <li>
+                    <p style="text-indent: 2em">
+                        Paste it into the SQL editor
+                    </p>
+                </li>
+                <li>
+                    <p style="text-indent: 2em">
+                        Remove all occurrences of '
+                        <span style="font-family: monospace;color: green">
+                            "main".
+                        </span>'
+                    </p>
+                </li>
+                <li>
+                    <p style="text-indent: 2em">
+                        Right-click on the view and select
+                        <span class="term"><span class="guimenu">
+                            Drop View
+                        </span>
+                    </p>
+                </li>
+                <li>
+                    <p style="text-indent: 2em">
+                        Click at the start of the SQL statement
+                    </p>
+                </li>
+                <li>
+                    <p style="text-indent: 2em">
+                        Click on the green triangle just above,
+                        which executes the SQL statement
+                        and recreates the view
+                    </p>
+                </li>
+            </div>
+        </div>
+        <div class="navfooter">
+            <hr>
+            <table width="100%" summary="Navigation footer">
+                <tr>
+                    <td width="40%" align="left">
+                        <a accesskey="p" href="ConstraintTriggers.html">Prev</a>
+                    </td>
+                    <td width="20%" align="center">
+                        <span class="fileref">Attached.html</span>>
+                    </td>
+                    <td width="40%" align="right">
+                        <a accesskey="n" href="SchemaBrowser.html">Next</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="40%" align="left" valign="top">
+                        Constraint Triggers
+                    </td>
+                    <td width="20%" align="center">
+                        <a accesskey="h" href="index.html">Contents</a>
+                    </td>
+                    <td width="40%" align="right" valign="top">
+                        Schema Browser
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>

@@ -55,9 +55,30 @@
                     </dt>
                     <dd>
                         <p>
-                            Choose one of available databases.
-                            "Main" is the default.
-                            All attached databases are available.
+                            If this function was invoked from the context menu
+                            of a table, this field is prefilled with the schema
+                            containing that table and is not modifiable.
+                            If this function was invoked from the Database
+                            menu, this field is prefilled with "Main",
+                            but any attached database can be chosen instead.
+                        </p>
+                    </dd>
+                    <dt>
+                        <span class="term">Table to Import Into</span>
+                    </dt>
+                    <dd>
+                        <p>
+                            If this function was invoked from the context menu
+                            of a table, this field is prefilled with that table
+                            and is not modifiable.
+                            If this function was invoked from the Database
+                            menu, this field is prefilled with the first
+                            database in the selected schema, but any table
+                            in the schema can be chosen instead.
+                        </p><p>
+                            The table should have the correct number of columns
+                            for the data to be imported, otherwise errors will
+                            occur, although the errors can be ignored.
                         </p>
                     </dd>
                     <dt>
@@ -65,24 +86,30 @@
                     </dt>
                     <dd>
                     <p>
-                        A file from filesystem.
+                        Here you can set the file from which to import data.
+                        The search button to the right will bring up a file
+                        chooser dialog.
+
                     </p>
                     </dd>
                     <dt>
-                        <span class="term">Table to Import Into</span>
+                        <span class="term">Skip Header Lines</span>
                     </dt>
                     <dd>
-                        <p>
-                            Select the table for import.
-                            Only tables from the chosen database are shown.
-                        </p>
+                    <p>
+                        If this box is checked, header lines at the beginning
+                        of the imported file will be ignored and the box
+                        at the right is enabled to allow you to set the number
+                        of lines to be ignored.
+
+                    </p>
                     </dd>
                     <dt>
                         <span class="term">CSV-like</span>
                         <p></p>
                         <div class="screenshot">
                             <div class="mediaobject">
-                                <img src="dataImport.png"
+                                <img src="dataImportCSV.png"
                                     alt="Import Table Data dialog">
                             </div>
                         </div>
@@ -109,6 +136,13 @@
                     </dd>
                     <dt>
                         <span class="term">MS Excel XML</span>
+                        <p></p>
+                        <div class="screenshot">
+                            <div class="mediaobject">
+                                <img src="dataImportXLS.png"
+                                    alt="Import Table Data dialog">
+                            </div>
+                        </div>
                     </dt>
                     <dd>
                         <p>

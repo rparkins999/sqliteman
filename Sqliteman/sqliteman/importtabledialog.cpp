@@ -185,7 +185,7 @@ void ImportTableDialog::fileButton_clicked()
 	pth = pth.isEmpty() ? QDir::currentPath() : pth;
 	QString fname = QFileDialog::getOpenFileName(this, tr("File to Import"),
 												 pth,
-												 tr("CSV Files (*.csv);;MS Excel XML (*.xml);;Text Files (*.txt);;All Files (*)"));
+												 tr("CSV Files (*.csv);;MS Excel XML (*.xls);;Text Files (*.txt);;All Files (*)"));
 	if (fname.isEmpty())
 		return;
 

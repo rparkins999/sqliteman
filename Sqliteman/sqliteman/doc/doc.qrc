@@ -17,7 +17,8 @@
         <file>en/database.png</file>
         <file>en/database_rollback.png</file>
         <file>en/dataExport.png</file>
-        <file>en/dataImport.png</file>
+        <file>en/dataImportCSV.png</file>
+        <file>en/dataImportXLS.png</file>
         <file>en/dataViewer-advanced.png</file>
         <file>en/dataViewer-editor.png</file>
         <file>en/dataViewer.png</file>
