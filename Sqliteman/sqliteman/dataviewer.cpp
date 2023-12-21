@@ -1318,7 +1318,10 @@ void DataViewer::updateVisibility()
 {
     bool visible =    ui.mainToolBar->isVisible()
                    || ui.exportToolBar->isVisible();
-    creator->actToggleDataViewerToolBar->setChecked(visible);
+    if (creator != NULL)
+    {
+        creator->actToggleDataViewerToolBar->setChecked(visible);
+    }
 }
 
 void DataViewer::handleToolBar()

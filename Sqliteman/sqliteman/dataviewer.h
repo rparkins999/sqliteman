@@ -33,7 +33,6 @@ class DataViewer : public QMainWindow
 		Q_OBJECT
 
 	private:
-		Ui::DataViewer ui;
 		bool dataResized;
 		int activeRow;
 		int savedActiveRow;
@@ -122,6 +121,7 @@ class DataViewer : public QMainWindow
 		void doPasteOver();
 
 	public:
+		Ui::DataViewer ui;
 		QString canFetchMore;
 		bool isTopLevel;
 		int columnSelected;
