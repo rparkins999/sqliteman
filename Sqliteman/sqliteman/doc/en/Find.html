@@ -1,147 +1,154 @@
-<html><head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Find Dialog</title>
-<link rel="stylesheet" href="kde-default.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.67.2">
-<meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database">
-<link rel="start" href="index.html" title="The Sqliteman Handbook">
-<link rel="up" href="FeaturesDialogs.html" title="Chapter 7. Features and Dialogs">
-<link rel="prev" href="SQLeditor.html" title="SQL Editor">
-<link rel="next" href="Export.html" title="Data Viewer">
-</head>
-<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
-<div class="navheader">
-	<table width="100%" summary="Navigation header">
-		<tr><th colspan="3" align="center">Find Dialog</th></tr>
-		<tr>
-			<td width="20%" align="left">
-				<a accesskey="p" href="SQLeditor.html">Prev</a>
-			</td>
-			<th width="60%" align="center">
-				Chapter 7. Features and Dialogs</th>
-			<td width="20%" align="right">
-				<a accesskey="n" href="DataViewer.html">Next</a>
-			</td>
-		</tr>
-	</table>
-	<hr>
-</div>
-<div class="sect1" lang="en">
-	<div class="titlepage">
-		<h2 class="title" style="clear: both">
-			<a name="findDialog"></a>Find Dialog
-		</h2>
-	</div>
-	<div class="screenshot">
-		<div class="mediaobject">
-			<img src="finddialog.png" alt="Find Dialog">
-		</div>
-	</div>
-	<p>
-		This dialog allows you to search for rows in the current table. It
-		is a modeless dialog and will remain visible until either you dismiss it
-		or you open a non-table (a query or view) in the
-		<a href="DataViewer.html">Data Viewer</a>. If your window manager can find
-		space on the screen, the Find Dialog will be displayed without
-		overlapping the sqliteman main window.  You can search for the first matching row using
-		<a href="#findfirst">Find First</a>, the next matching row after
-		the currently selected one using
-		<a href="#findnext">Find Next</a>, or all matching rows using
-		<a href="#findall">Find All</a>.
-	</p>
-	<p>
-		The search conditions are specified similarly to the
-		<a href="QueryBuilder.html">Query Builder</a>
-		but they are interpreted internally to
-		<span class="application">sqliteman</span> which makes it slower than
-		running a <a href="QueryBuilder.html">Query Builder</a> because the sqlite
-		internal optimisations are not used. Also there is no column selection
-		or ordering clause.
-		The output from
-		<a href="#findall">Find All</a> looks like the output from running a
-		<a href="QueryBuilder.html">Query Builder</a>
-		query, but it is actually the real table with
-		all the non-matching rows hidden. so you can
-		edit the rows, which you cannot do with output from the
-		<a href="QueryBuilder.html">Query Builder</a>.
-    </p>
-    <p>
-		Note however that making a
-		<a href="DataViewer.html#snapshot">Table Snapshot</a> will snapshot the
-		whole table, not just the non-hidden rows. This may change in some
-		future version of <span class="application">sqliteman</span>.
-	</p>
-	<dl>
-        <dt>
-            <span class="term"><dfn id ="More"></dfn>More</span>
-        </dt>
-        <dd>
-            This button adds another match condition to the search.
-            If you add several conditions you can choose whether the search finds rows which match all of them or match any of them.
-        </dd>
-        <dt>
-            <span class="term"><dfn id ="Less"></dfn>Less</span>
-        </dt>
-        <dd>
-            This button deletes the last match condition.
-        </dd>
-        <dt>
-            <span class="term"><dfn id ="findfirst"></dfn>Find First</span>
-        </dt>
-        <dd>
-            This button finds the first matching row in the table and selects
-            the first field as if you had clicked on it. If there is no matching
-            row, the Error Log will show "Not found".
-        </dd>
-        <dt>
-            <span class="term"><dfn id ="findnext"></dfn>Find Next</span>
-        </dt>
-        <dd>
-            This button finds the next matching row in the table after the row
-            currently selected and selects the first field as if you had
-            clicked on it. If there is no matching row, the Error Log will show
-            "Not found".
-        </dd>
-        <dt>
-            <span class="term"><dfn id ="findall"></dfn>Find All</span>
-        </dt>
-        <dd>
-            This button hides all rows in the table which do not match the
-            search conditions, so that you can easily examine and edit those which do match. If there are no matching rows, the whole table is
-            shown and the Error Log will show "No match found".
-        </dd>
-        <dt>
-            <span class="term"><dfn id ="Finished"></dfn>Finished</span>
-        </dt>
-        <dd>
-            This button dismisses the dialog. Any rows hidden after a
-            <a href="#findall">Find All</a> are made visible again.
-            Closing the dialog box has the same effect.
-        </dd>
-	</dl>
-</div>
-<div class="navfooter">
-	<hr>
-	<table width="100%" summary="Navigation footer">
-		<tr>
-			<td width="40%" align="left">
-				<a accesskey="p" href="SQLeditor.html">Prev</a>
-			</td>
-			<td width="20%" align="center">
-				<a accesskey="u" href="FeaturesDialogs.html">Up</a>
-			</td>
-			<td width="40%" align="right">
-				<a accesskey="n" href="DataViewer.html">Next</a>
-			</td>
-		</tr>
-		<tr>
-			<td width="40%" align="left" valign="top">SQL Editor</td>
-			<td width="20%" align="center">
-				<a accesskey="h" href="index.html">Contents</a>
-			</td>
-			<td width="40%" align="right" valign="top">Data Viewer</td>
-		</tr>
-	</table>
-</div>
-</body>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Find Dialog</title>
+        <link rel="stylesheet" href="kde-default.css" type="text/css">
+        <meta name="keywords" content="Sqliteman, SQL, Sqlite, development, database">
+        <link rel="start" href="index.html" title="The Sqliteman Handbook">
+        <link rel="up" href="FeaturesDialogs.html" title="Chapter 7. Features and Dialogs">
+        <link rel="prev" href="SQLeditor.html" title="SQL Editor">
+        <link rel="next" href="Export.html" title="Data Viewer">
+    </head>
+    <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+        <div class="navheader">
+            <table width="100%" summary="Navigation header">
+                <tr>
+                    <td width="20%" align="left"></td>
+                    <th width="60%" align="center">
+                        Chapter 7. Features and Dialogs</th>
+                    <td width="20%" align="right"></td>
+                </tr>
+                <tr>
+                    <td width="20%" align="left">
+                        <a accesskey="p" href="SQLeditor.html">Prev</a>
+                    </td>
+                    <th width="60%" align="center">
+                        Find Dialog
+                    <td width="20%" align="right">
+                        <a accesskey="n" href="DataViewer.html">Next</a>
+                    </td>
+                </tr>
+            </table>
+            <hr>
+        </div>
+        <div class="sect1" lang="en">
+            <div class="titlepage">
+                <h2 class="title" style="clear: both">
+                    <a name="findDialog"></a>Find Dialog
+                </h2>
+            </div>
+            <div class="screenshot">
+                <div class="mediaobject">
+                    <img src="finddialog.png" alt="Find Dialog">
+                </div>
+            </div>
+            <p>
+                This dialog allows you to search for rows in the current table. It
+                is a modeless dialog and will remain visible until either you dismiss it
+                or you open a non-table (a query or view) in the
+                <a href="DataViewer.html">Data Viewer</a>. If your window manager can find
+                space on the screen, the Find Dialog will be displayed without
+                overlapping the
+                sqliteman
+                main window.  You can search for the first matching row using
+                <a href="#findfirst">Find First</a>, the next matching row after
+                the currently selected one using
+                <a href="#findnext">Find Next</a>, or all matching rows using
+                <a href="#findall">Find All</a>.
+            </p>
+            <p>
+                The search conditions are specified similarly to the
+                <a href="QueryBuilder.html">Query Builder</a>
+                but they are interpreted internally to
+                <span class="application">sqliteman</span> which makes it slower than
+                running a <a href="QueryBuilder.html">Query Builder</a> because the sqlite
+                internal optimisations are not used. Also there is no column selection
+                or ordering clause.
+                The output from
+                <a href="#findall">Find All</a> looks like the output from running a
+                <a href="QueryBuilder.html">Query Builder</a>
+                query, but it is actually the real table with
+                all the non-matching rows hidden. Sso you can
+                edit the rows, which you cannot do with output from the
+                <a href="QueryBuilder.html">Query Builder</a>.
+            </p>
+            <p>
+                Note however that making a
+                <a href="DataViewer.html#snapshot">Table Snapshot</a> will snapshot the
+                whole table, not just the non-hidden rows. This may change in some
+                future version of <span class="application">sqliteman</span>.
+            </p>
+            <dl>
+                <dt>
+                    <span class="term"><dfn id ="More"></dfn>More</span>
+                </dt>
+                <dd>
+                    This button adds another match condition to the search.
+                    If you have more than one condition you can choose whether the search finds rows which match all of them or match any of them.
+                </dd>
+                <dt>
+                    <span class="term"><dfn id ="Less"></dfn>Less</span>
+                </dt>
+                <dd>
+                    This button deletes the last match condition.
+                </dd>
+                <dt>
+                    <span class="term"><dfn id ="findfirst"></dfn>Find First</span>
+                </dt>
+                <dd>
+                    This button finds the first matching row in the table and selects
+                    the first field as if you had clicked on it. If there is no matching
+                    row, the Error Log will show "Not found".
+                </dd>
+                <dt>
+                    <span class="term"><dfn id ="findnext"></dfn>Find Next</span>
+                </dt>
+                <dd>
+                    This button finds the next matching row in the table after the row
+                    currently selected and selects the first field as if you had
+                    clicked on it. If there is no matching row, the Error Log will show
+                    "Not found".
+                </dd>
+                <dt>
+                    <span class="term"><dfn id ="findall"></dfn>Find All</span>
+                </dt>
+                <dd>
+                    This button hides all rows in the table which do not match the
+                    search conditions, so that you can easily examine and edit those which do match. If there are no matching rows, the whole table is
+                    shown and the Error Log will show "No match found".
+                </dd>
+                <dt>
+                    <span class="term"><dfn id ="Finished"></dfn>Finished</span>
+                </dt>
+                <dd>
+                    This button dismisses the dialog. Any rows hidden after a
+                    <a href="#findall">Find All</a> are made visible again.
+                    Closing the dialog box has the same effect.
+                </dd>
+            </dl>
+        </div>
+        <div class="navfooter">
+            <hr>
+            <table width="100%" summary="Navigation footer">
+                <tr>
+                    <td width="40%" align="left">
+                        <a accesskey="p" href="SQLeditor.html">Prev</a>
+                    </td>
+                    <td width="20%" align="center">
+                        <span class="fileref">Find.html</span>
+                    </td>
+                    <td width="40%" align="right">
+                        <a accesskey="n" href="DataViewer.html">Next</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="40%" align="left" valign="top">SQL Editor</td>
+                    <td width="20%" align="center">
+                        <a accesskey="h" href="index.html">Contents</a>
+                    </td>
+                    <td width="40%" align="right" valign="top">Data Viewer</td>
+                </tr>
+            </table>
+        </div>
+    </body>
 </html>

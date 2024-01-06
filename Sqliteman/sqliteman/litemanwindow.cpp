@@ -773,7 +773,7 @@ void LiteManWindow::about()
         + tr("Parts")
         + " © 2007 Petr Vanek, "
         + tr("Parts")
-        + " © 2021-2023 Richard Parkins<br/>");
+        + " © 2021-2024 Richard Parkins<br/>");
 }
 
 void LiteManWindow::aboutQt()

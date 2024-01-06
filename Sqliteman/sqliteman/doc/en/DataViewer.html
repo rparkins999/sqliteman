@@ -157,7 +157,7 @@
                             An INTEGER PRIMARY KEY DESC field is not prefilled by
                             <span class="application">sqliteman</span>.
                         </p><p>
-                            An ordinary INTEGER PRIMARY (not AUTOINCREMENT or
+                            An ordinary INTEGER PRIMARY KEY (not AUTOINCREMENT or
                             DESC) field is prefilled with a value one higher
                             than the highest value <i> currently </i> used in
                             the table again including new rows which have not
@@ -660,8 +660,10 @@
 					script in the
 					<a href="SQLeditor.html">SQL Editor</a>
 					are listed in this tab. It is automatically
-					selected if you run a script which does not generate a
-					table.
+					selected if you select a
+					<span class="guibutton">Describe</span>
+					menu action or run a script which does not
+					generate a table.
 				</dd>
 			</dl>
 		</div>
@@ -890,7 +892,7 @@
 				<a accesskey="p" href="Find.html">Prev</a>
 			</td>
 			<td width="20%" align="center">
-				<a accesskey="u" href="FeaturesDialogs.html">Up</a>
+				<span class="fileref">DataViewer.html</span>
 			</td>
 			<td width="40%" align="right">
 				<a accesskey="n" href="Export.html">Next</a>
