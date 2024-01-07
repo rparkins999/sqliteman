@@ -49,7 +49,8 @@
             <p>
                 <span class="application">Sqliteman</span>
                 provides the following user-defined function
-                in addition to the built-in functions supported by sqlite:-
+                in addition to the built-in functions supported by
+                <span class="application">sqlite</span>:-
             </p>
             <div class="variablelist">
                 <dl>
@@ -61,13 +62,15 @@
                             This function is called with two arguments
                             which are both sql strings.
                             NAME must be either NULL or a valid sql identifier
-                            which is not the name of an existing table or view.
-                            Otherwise the
+                            which is not the name of an existing table or view
+                            or index. Otherwise the
                             <span class="term">exec()</span>
                             function will fail with an appropriate error message.
                             The
                             <span class="term">exec()</span>
-                            function can also fail if sqlite runs out of memory
+                            function can also fail if
+                            <span class="application">sqlite</span>
+                            runs out of memory
                             or encounters a similar fatal error.
                         </p>
                         <ul>
@@ -89,7 +92,7 @@
                                 the result of attempting to execute
                                 STATEMENT as an sql statement, and
                                 <span class="term">exec()</span>
-                                itself returns a null. In this case if STATEMENT
+                                itself returns NULL. In this case if STATEMENT
                                 succeeds but does not generate a table,
                                 <span class="term">exec()</span>
                                 does not create a table and returns NULL,
@@ -109,9 +112,10 @@
                             The form with a NULL first argument can be used
                             to extract a value from a table without
                             causing the script to fail if the table does not exist.
-                            </p><p>
                             <span class="term">exec()</span>
-                            is used by Sqliteman's internal tests.
+                            is used by
+                            <span class="application">sqliteman</span>'s
+                            internal tests.
                             These are included in the source distribution
                             and can be examined as examples for how to use it.
                         </p>
@@ -123,18 +127,18 @@
         also provides two additonal collators LOCALIZED and LOCALIZED_CASE.
         These sort in Locale order.
         LOCALIZED is like the LOCALIZED collator provided by
-        the Android implementation of sqlite
+        the Android implementation of
+        <span class="application">sqlite</span>
         (which is not case-sensitive),
         while the LOCALIZED_CASE collator is case-sensitive.
         Care should be taken when using these collators.
         It is always safe to use them in queries inside
         <span class="application">sqliteman</span>
-        itself. However if an object (such as a view)
-        is created in the database referencing
-        LOCALIZED or LOCALIZED_CASE,
-        it will not be possible to access that object
-        with an sqlite implementation which
-        does not support that collator.
+        itself. However if an object which references
+        LOCALIZED or LOCALIZED_CASE (such as a view) is created in the database,
+        it will not be possible to access that object with an
+        <span class="application">sqlite</span>
+        implementation which does not support that collator.
         <div class="navfooter">
             <hr>
             <table width="100%" summary="Navigation footer">
