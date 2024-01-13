@@ -6,7 +6,7 @@ If you want to write SQL code, sqliteman has syntax-aware SQL editor which allow
 
 This version was originally forked from pvanek/sqliteman, but has had many bugs fixed and much extra functionality added. This version builds for Linux. It should build on Windows too since I have added a Windows version of the build timestamp, but I do not currently have time to test that. Any volunteer to build on Windows or Mac OS would be welcome.
 
-If you want to see what sqliteman can do and what its GUI looks like without installing it, you can view its comprehensive help pages directly from GitHub using this link: <http://rparkins999.github.io/sqliteman/Sqliteman/sqliteman/doc/en/index.html>.
+If you want to see what sqliteman can do and what its GUI looks like without installing it, you can view its comprehensive help pages directly from GitHub using this link: <https://rparkins999.github.io/sqliteman/Sqliteman/sqliteman/doc/en/index.html>.
 
 # Related tools
 
