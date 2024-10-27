@@ -134,17 +134,21 @@ QVariant SqlTableModel::data(const QModelIndex & item, int role) const
 
 bool SqlTableModel::setData ( const QModelIndex & ix, const QVariant & value, int role)
 {
+    // Copying a value to the clipboard sometimes calls setdata
+    // (I don't understand why).
+    // This test avoids incorrectly marking the database as modified.
+    if ((role == Qt::EditRole) && (data(ix, role) == value)) {
+        return true; // not changing it, don't mark as changed
+    }
+    // setData returns false if role != Qt::EditRole
 	if (QSqlTableModel::setData(ix, value, role))
 	{
-		if (role == Qt::EditRole)
-		{
-			m_pending = true;
-			int row = ix.row();
-			if (m_insertCache.contains(row))
-			{
-				m_insertCache.insert(row, true);
-			}
-		}
+        m_pending = true;
+        int row = ix.row();
+        if (m_insertCache.contains(row))
+        {
+            m_insertCache.insert(row, true);
+        }
 		return true;
 	}
 	else { return false; }
