@@ -19,7 +19,7 @@ Qmake project is used only for translations.
 
 MS Windows:
 
- - Full Qt4.3 or later properly installed on path
+ - Full Qt5 or later properly installed on path
  - building procedure (in the Sqliteman root directory):
 1) cmake (see Cmake options below)
 2) make
@@ -31,8 +31,8 @@ UN*X:
 
 Requirements:
  - cmake (http://cmake.org)
- - Qt toolkit, at least version 4.2 or later required (http://trolltech.com)
-   with sqlite3 module. 4.3 is strongly suggested.
+ - Qt toolkit, at least version 5 or later required (http://trolltech.com)
+   with sqlite3 module. ersion 5 is strongly suggested.
  - sqlite library installed
  - libuuid (libuuid-devel on SUSE) installed
  - libicu (libicu-devel on SUSE) installed
