@@ -1,9 +1,10 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-*/
+/* Copyright © 2007-2009 Petr Vanek and 2015-2024 Richard Parkins
+ *
+ * For general Sqliteman copyright and licensing information please refer
+ * to the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
 
 #include <QComboBox>
 #include <QLineEdit>
@@ -252,6 +253,12 @@ bool FindDialog::isMatch(QSqlRecord * rec, int i)
 
 			case 8:	// is not null
 				return !(data.isNull());
+
+            case 9:	// is empty (inc;uding null string)
+				return dataString.isEmpty();
+
+			case 10:	// is not empty (or null string)
+				return !(dataString.isEmpty());
 		}
 	}
 	return false;

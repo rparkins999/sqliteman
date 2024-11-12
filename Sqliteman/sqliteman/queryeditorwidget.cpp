@@ -1,9 +1,11 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-*/
+/* Copyright © 2007-2009 Petr Vanek and 2015-2024 Richard Parkins
+ *
+ * For general Sqliteman copyright and licensing information please refer
+ * to the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
+
 #include <QClipboard>
 #include <QComboBox>
 #include <QLineEdit>
@@ -385,7 +387,7 @@ QString QueryEditorWidget::whereClause()
                 QString field = fields->currentText();
                 if (nocase) { field = field.toLower(); }
 				if (i > 0) { sql += logicWord; }
-				sql += Utils::q(field);
+
                 QString value;
                 if (relations->currentIndex() < 7) {
                     if (le) {
@@ -396,30 +398,36 @@ QString QueryEditorWidget::whereClause()
 				switch (relations->currentIndex())
 				{
 					case 0:	// Contains
+                        sql += Utils::q(field);
 						sql += (" LIKE " + Utils::like(value));
 						break;
 
 					case 1: 	// Doesn't contain
+                        sql += Utils::q(field);
 						sql += (" NOT LIKE "
 								+ Utils::like(value));
 						break;
 
 					case 2: 	// Starts with
+                        sql += Utils::q(field);
 						sql += (" LIKE "
 								+ Utils::startswith(value));
 						break;
 
 					case 3:		// Equals
 						// Avoid NULL when comparing with NULL
+                        sql += Utils::q(field);
 						sql += (" IS " + Utils::q(value, "'"));
 						break;
 
 					case 4:		// Not equals
 						// Avoid NULL when comparing with NULL
+                        sql += Utils::q(field);
 						sql += (" IS NOT " + Utils::q(value, "'"));
 						break;
 
 					case 5:		// Bigger than
+                        sql += Utils::q(field);
 						if (SqlParser::isNumber(value)) {
 							sql += (" > " + value);
 						} else {
@@ -428,6 +436,7 @@ QString QueryEditorWidget::whereClause()
 						break;
 
 					case 6:		// Smaller than
+                        sql += Utils::q(field);
 						if (SqlParser::isNumber(value)) {
 							sql += (" < " + value);
 						} else {
@@ -436,12 +445,30 @@ QString QueryEditorWidget::whereClause()
 						break;
 
 					case 7:		// is null
+                        sql += Utils::q(field);
 						sql += (" ISNULL");
 						break;
 
 					case 8:		// is not null
+                        sql += Utils::q(field);
 						sql += (" NOTNULL");
 						break;
+
+                    case 9:     // is empty (or null)
+                        sql += ("( ");
+                        sql += Utils::q(field);
+						sql += (" ISNULL OR ");
+                        sql += Utils::q(field);
+                        sql += (" = '' )");
+                        break;
+
+                    case 10:    // is not empty (and not null)
+                        sql += ("( ");
+                        sql += Utils::q(field);
+						sql += (" NOTNULL AND ");
+                        sql += Utils::q(field);
+                        sql += (" != '' )");
+                        break;
 				}
 			}
 		}

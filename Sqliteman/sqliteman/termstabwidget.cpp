@@ -1,9 +1,10 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-*/
+/* Copyright © 2007-2009 Petr Vanek and 2015-2024 Richard Parkins
+ *
+ * For general Sqliteman copyright and licensing information please refer
+ * to the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
 
 #include <QComboBox>
 #include <QLineEdit>
@@ -56,7 +57,8 @@ void TermsTabWidget::moreTerms()
 									  << tr("Starts with")
 									  << tr("Equals") << tr("Not equals")
 									  << tr("Bigger than") << tr("Smaller than")
-									  << tr("Is null") << tr("Is not null"));
+									  << tr("Is null") << tr("Is not null")
+									  << tr("Is empty") << tr("Is not empty"));
 	ui.termsTable->setCellWidget(i, 1, relations);
 	connect(relations, SIGNAL(currentIndexChanged(const QString &)),
 			this, SLOT(relationsIndexChanged(const QString &)));
@@ -100,6 +102,8 @@ void TermsTabWidget::relationsIndexChanged(const QString &)
 
 				case 7: // is null
 				case 8: // is not null
+                case 9: // is empty
+                case 10: //is not empty
 					ui.termsTable->removeCellWidget(i, 2);
 					break;
 			}
