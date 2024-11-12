@@ -480,6 +480,21 @@
             <span class="guibutton">Add...</span>
             button will bring up a file browser window to add an extension
             to the list.
+            The file browser window opens the last directory from which
+            you selected an extension to automatically load, on the
+            assumption that you keep your extensions together in a
+            different directory from the one(s) in which you keep databases.
+            You can of course navigate to a different directory.
+            If you have never selected an extension to automatically load
+            the file browser will open
+            <span class="application">sqliteman</span>'s current directory.
+            This will usually be the last directory from which a database was
+            loaded either explcitly, or automatically because the
+            <span class="term">Open Last Database on Start</span> box
+            was checked. If no database has been loaded,
+            <span class="application">sqliteman</span>'s current directory
+            is the current directory of the process which started
+            <span class="application">sqliteman</span>.
             Selecting an extension in the list (by clicking on it)
             and then clicking the
             <span class="guibutton">Remove</span>

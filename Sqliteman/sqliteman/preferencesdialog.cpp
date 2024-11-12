@@ -1,9 +1,10 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-*/
+/* Copyright © Richard Parkins 2024
+ *
+ * For general Sqliteman copyright and licensing information please refer
+ * to the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
 
 #include <QtCore/QDir>
 #include <QStyleFactory>
@@ -16,7 +17,6 @@ for which a new license (GPL+exception) is in place.
 #include "shortcuteditordialog.h"
 #include "utils.h"
 #include "extensionmodel.h"
-
 
 PrefsDataDisplayWidget::PrefsDataDisplayWidget(QWidget * parent)
 	: QWidget(parent)
@@ -90,20 +90,24 @@ void PrefsExtensionWidget::allowExtensionsBox_clicked(bool checked)
 
 void PrefsExtensionWidget::addExtensionButton_clicked()
 {
+    Preferences * prefs = Preferences::instance();
 	QString mask(tr("Sqlite3 extensions "));
 #ifdef Q_WS_WIN
 	mask += "(*.dll)";
 #else
 	mask += "(*.so)";
 #endif
+    QString directory = prefs->extensionDirectory();
+    if (directory.isEmpty()) { directory = QDir::currentPath(); }
 
 	QStringList files = QFileDialog::getOpenFileNames(
 						this,
 						tr("Select one or more Sqlite3 extensions to load"),
-						QDir::currentPath(),
+						directory,
 						mask);
-	if (files.count() == 0)
-		return;
+	if (files.count() == 0) { return; }
+	prefs->setextensionDirectory(
+        QFileInfo(files[0]).dir().path());
 
 	QStringList l(m_ext->extensions());
 	// avoid duplications
@@ -133,8 +137,8 @@ PreferencesDialog::PreferencesDialog(QWidget * parent)
 	: QDialog(parent)
 {
 	setupUi(this);
-    Preferences * prefs = Preferences::instance();
-	resize(prefs->preferencesWidth(), prefs->preferencesHeight());
+    m_prefs = Preferences::instance();
+	resize(m_prefs->preferencesWidth(), m_prefs->preferencesHeight());
 
 	m_prefsData = new PrefsDataDisplayWidget(this);
 	m_prefsLNF = new PrefsLNFWidget(this);
@@ -201,106 +205,104 @@ PreferencesDialog::PreferencesDialog(QWidget * parent)
 		m_prefsLNF->languageComboBox->addItem(
             s.remove("sqliteman_").remove(".qm"));
     }
-	m_prefsLNF->languageComboBox->setCurrentIndex(prefs->GUItranslator());
+	m_prefsLNF->languageComboBox->setCurrentIndex(m_prefs->GUItranslator());
 
 	// avail styles
 	m_prefsLNF->styleComboBox->addItem(tr("System Predefined"));
 	QStringList sl(QStyleFactory::keys());
 	sl.sort();
 	m_prefsLNF->styleComboBox->addItems(sl);
-	m_prefsLNF->styleComboBox->setCurrentIndex(prefs->GUIstyle());
+	m_prefsLNF->styleComboBox->setCurrentIndex(m_prefs->GUIstyle());
 
-	m_prefsLNF->fontComboBox->setCurrentFont(prefs->GUIfont());
-	m_prefsLNF->fontSpinBox->setValue(prefs->GUIfont().pointSize());
-	m_prefsLNF->recentlyUsedSpinBox->setValue(prefs->recentlyUsedCount());
-	m_prefsLNF->openLastDBCheckBox->setChecked(prefs->openLastDB());
-	m_prefsLNF->openLastSqlFileCheckBox->setChecked(prefs->openLastSqlFile());
-	m_prefsLNF->rowsToRead->setCurrentIndex(prefs->rowsToRead());
-	m_prefsLNF->newInItemCheckBox->setChecked(prefs->openNewInItemView());
-	m_prefsLNF->prefillNewCheckBox->setChecked(prefs->prefillNew());
+	m_prefsLNF->fontComboBox->setCurrentFont(m_prefs->GUIfont());
+	m_prefsLNF->fontSpinBox->setValue(m_prefs->GUIfont().pointSize());
+	m_prefsLNF->recentlyUsedSpinBox->setValue(m_prefs->recentlyUsedCount());
+	m_prefsLNF->openLastDBCheckBox->setChecked(m_prefs->openLastDB());
+	m_prefsLNF->openLastSqlFileCheckBox->setChecked(m_prefs->openLastSqlFile());
+	m_prefsLNF->rowsToRead->setCurrentIndex(m_prefs->rowsToRead());
+	m_prefsLNF->newInItemCheckBox->setChecked(m_prefs->openNewInItemView());
+	m_prefsLNF->prefillNewCheckBox->setChecked(m_prefs->prefillNew());
 
-	m_prefsData->nullCheckBox->setChecked(prefs->nullHighlight());
-	m_prefsData->nullAliasEdit->setText(prefs->nullHighlightText());
-	m_prefsData->nullBgButton->setPalette(prefs->nullHighlightColor());
+	m_prefsData->nullCheckBox->setChecked(m_prefs->nullHighlight());
+	m_prefsData->nullAliasEdit->setText(m_prefs->nullHighlightText());
+	m_prefsData->nullBgButton->setPalette(m_prefs->nullHighlightColor());
 
-	m_prefsData->blobCheckBox->setChecked(prefs->blobHighlight());
-	m_prefsData->blobAliasEdit->setText(prefs->blobHighlightText());
-	m_prefsData->blobBgButton->setPalette(prefs->blobHighlightColor());
+	m_prefsData->blobCheckBox->setChecked(m_prefs->blobHighlight());
+	m_prefsData->blobAliasEdit->setText(m_prefs->blobHighlightText());
+	m_prefsData->blobBgButton->setPalette(m_prefs->blobHighlightColor());
 
-	m_prefsData->cropColumnsCheckBox->setChecked(prefs->cropColumns());
+	m_prefsData->cropColumnsCheckBox->setChecked(m_prefs->cropColumns());
 
-	m_prefsSQL->fontComboBox->setCurrentFont(prefs->sqlFont());
-	m_prefsSQL->fontSizeSpin->setValue(prefs->sqlFontSize());
+	m_prefsSQL->fontComboBox->setCurrentFont(m_prefs->sqlFont());
+	m_prefsSQL->fontSizeSpin->setValue(m_prefs->sqlFontSize());
 	m_prefsSQL->useActiveHighlightCheckBox->setChecked(
-        prefs->activeHighlighting());
+        m_prefs->activeHighlighting());
 	m_prefsSQL->activeHighlightButton->setPalette(
-        prefs->activeHighlightColor());
-	m_prefsSQL->useTextWidthMarkCheckBox->setChecked(prefs->textWidthMark());
-	m_prefsSQL->textWidthMarkSpinBox->setValue(prefs->textWidthMarkSize());
-	m_prefsSQL->useCompletionCheck->setChecked(prefs->codeCompletion());
-	m_prefsSQL->completionLengthBox->setValue(prefs->codeCompletionLength());
-	m_prefsSQL->useShortcutsBox->setChecked(prefs->useShortcuts());
+        m_prefs->activeHighlightColor());
+	m_prefsSQL->useTextWidthMarkCheckBox->setChecked(m_prefs->textWidthMark());
+	m_prefsSQL->textWidthMarkSpinBox->setValue(m_prefs->textWidthMarkSize());
+	m_prefsSQL->useCompletionCheck->setChecked(m_prefs->codeCompletion());
+	m_prefsSQL->completionLengthBox->setValue(m_prefs->codeCompletionLength());
+	m_prefsSQL->useShortcutsBox->setChecked(m_prefs->useShortcuts());
 
-	m_syDefaultColor = prefs->syDefaultColor();
-	m_syKeywordColor = prefs->syKeywordColor();
-	m_syNumberColor = prefs->syNumberColor();
-	m_syStringColor = prefs->syStringColor();
-	m_syCommentColor = prefs->syCommentColor();
+	m_syDefaultColor = m_prefs->syDefaultColor();
+	m_syKeywordColor = m_prefs->syKeywordColor();
+	m_syNumberColor = m_prefs->syNumberColor();
+	m_syStringColor = m_prefs->syStringColor();
+	m_syCommentColor = m_prefs->syCommentColor();
 	resetEditorPreview();
 
 	m_prefsExtension->allowExtensionsBox->setChecked(
-        prefs->allowExtensionLoading());
-	m_prefsExtension->setExtensions(prefs->extensionList());
+        m_prefs->allowExtensionLoading());
+	m_prefsExtension->setExtensions(m_prefs->extensionList());
 }
 
 PreferencesDialog::~PreferencesDialog()
 {
-    Preferences * prefs = Preferences::instance();
-    prefs->setpreferencesHeight(height());
-    prefs->setpreferencesWidth(width());
+    m_prefs->setpreferencesHeight(height());
+    m_prefs->setpreferencesWidth(width());
 }
 
 bool PreferencesDialog::saveSettings()
 {
-	Preferences * prefs = Preferences::instance();
-	prefs->setGUItranslator(m_prefsLNF->languageComboBox->currentIndex());
-	prefs->setGUIstyle(m_prefsLNF->styleComboBox->currentIndex());
+	m_prefs->setGUItranslator(m_prefsLNF->languageComboBox->currentIndex());
+	m_prefs->setGUIstyle(m_prefsLNF->styleComboBox->currentIndex());
 	QFont guiFont(m_prefsLNF->fontComboBox->currentFont());
 	guiFont.setPointSize(m_prefsLNF->fontSpinBox->value());
-	prefs->setGUIfont(guiFont);
-	prefs->setRecentlyUsedCount(m_prefsLNF->recentlyUsedSpinBox->value());
-	prefs->setOpenLastDB(m_prefsLNF->openLastDBCheckBox->isChecked());
-	prefs->setOpenLastSqlFile(m_prefsLNF->openLastSqlFileCheckBox->isChecked());
-	prefs->setRowsToRead(m_prefsLNF->rowsToRead->currentIndex());
-	prefs->setOpenNewInItemView(m_prefsLNF->newInItemCheckBox->isChecked());
-	prefs->setPrefillNew(m_prefsLNF->prefillNewCheckBox->isChecked());
+	m_prefs->setGUIfont(guiFont);
+	m_prefs->setRecentlyUsedCount(m_prefsLNF->recentlyUsedSpinBox->value());
+	m_prefs->setOpenLastDB(m_prefsLNF->openLastDBCheckBox->isChecked());
+	m_prefs->setOpenLastSqlFile(m_prefsLNF->openLastSqlFileCheckBox->isChecked());
+	m_prefs->setRowsToRead(m_prefsLNF->rowsToRead->currentIndex());
+	m_prefs->setOpenNewInItemView(m_prefsLNF->newInItemCheckBox->isChecked());
+	m_prefs->setPrefillNew(m_prefsLNF->prefillNewCheckBox->isChecked());
 	// data results
-	prefs->setNullHighlight(m_prefsData->nullCheckBox->isChecked());
-	prefs->setNullHighlightText(m_prefsData->nullAliasEdit->text());
-	prefs->setNullHighlightColor(m_prefsData->nullBgButton->palette().color(QPalette::Background));
-	prefs->setBlobHighlight(m_prefsData->blobCheckBox->isChecked());
-	prefs->setBlobHighlightText(m_prefsData->blobAliasEdit->text());
-	prefs->setBlobHighlightColor(m_prefsData->blobBgButton->palette().color(QPalette::Background));
-	prefs->setCropColumns(m_prefsData->cropColumnsCheckBox->isChecked());
+	m_prefs->setNullHighlight(m_prefsData->nullCheckBox->isChecked());
+	m_prefs->setNullHighlightText(m_prefsData->nullAliasEdit->text());
+	m_prefs->setNullHighlightColor(m_prefsData->nullBgButton->palette().color(QPalette::Background));
+	m_prefs->setBlobHighlight(m_prefsData->blobCheckBox->isChecked());
+	m_prefs->setBlobHighlightText(m_prefsData->blobAliasEdit->text());
+	m_prefs->setBlobHighlightColor(m_prefsData->blobBgButton->palette().color(QPalette::Background));
+	m_prefs->setCropColumns(m_prefsData->cropColumnsCheckBox->isChecked());
 	// sql editor
-	prefs->setSqlFont(m_prefsSQL->fontComboBox->currentFont());
-	prefs->setSqlFontSize(m_prefsSQL->fontSizeSpin->value());
-	prefs->setActiveHighlighting(m_prefsSQL->useActiveHighlightCheckBox->isChecked());
-	prefs->setActiveHighlightColor(m_prefsSQL->activeHighlightButton->palette().color(QPalette::Background));
-	prefs->setTextWidthMark(m_prefsSQL->useTextWidthMarkCheckBox->isChecked());
-	prefs->setTextWidthMarkSize(m_prefsSQL->textWidthMarkSpinBox->value());
-	prefs->setCodeCompletion(m_prefsSQL->useCompletionCheck->isChecked());
-	prefs->setCodeCompletionLength(m_prefsSQL->completionLengthBox->value());
-	prefs->setUseShortcuts(m_prefsSQL->useShortcutsBox->isChecked());
+	m_prefs->setSqlFont(m_prefsSQL->fontComboBox->currentFont());
+	m_prefs->setSqlFontSize(m_prefsSQL->fontSizeSpin->value());
+	m_prefs->setActiveHighlighting(m_prefsSQL->useActiveHighlightCheckBox->isChecked());
+	m_prefs->setActiveHighlightColor(m_prefsSQL->activeHighlightButton->palette().color(QPalette::Background));
+	m_prefs->setTextWidthMark(m_prefsSQL->useTextWidthMarkCheckBox->isChecked());
+	m_prefs->setTextWidthMarkSize(m_prefsSQL->textWidthMarkSpinBox->value());
+	m_prefs->setCodeCompletion(m_prefsSQL->useCompletionCheck->isChecked());
+	m_prefs->setCodeCompletionLength(m_prefsSQL->completionLengthBox->value());
+	m_prefs->setUseShortcuts(m_prefsSQL->useShortcutsBox->isChecked());
 	// qscintilla
-	prefs->setSyDefaultColor(m_syDefaultColor);
-	prefs->setSyKeywordColor(m_syKeywordColor);
-	prefs->setSyNumberColor(m_syNumberColor);
-	prefs->setSyStringColor(m_syStringColor);
-	prefs->setSyCommentColor(m_syCommentColor);
+	m_prefs->setSyDefaultColor(m_syDefaultColor);
+	m_prefs->setSyKeywordColor(m_syKeywordColor);
+	m_prefs->setSyNumberColor(m_syNumberColor);
+	m_prefs->setSyStringColor(m_syStringColor);
+	m_prefs->setSyCommentColor(m_syCommentColor);
 	// extensions
-	prefs->setAllowExtensionLoading(m_prefsExtension->allowExtensionsBox->isChecked());
-	prefs->setExtensionList(m_prefsExtension->extensions());
+	m_prefs->setAllowExtensionLoading(m_prefsExtension->allowExtensionsBox->isChecked());
+	m_prefs->setExtensionList(m_prefsExtension->extensions());
 
 	return true;
 }
@@ -460,3 +462,6 @@ void PreferencesDialog::resetEditorPreview()
 	lexer->setColor(m_syCommentColor, QsciLexerSQL::CommentLine);
 	lexer->setColor(m_syCommentColor, QsciLexerSQL::CommentDoc);
 }
+
+Preferences * PreferencesDialog::prefs() { return m_prefs; }
+

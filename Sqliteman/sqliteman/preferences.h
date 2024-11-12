@@ -1,9 +1,10 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-*/
+/* Copyright © Richard Parkins 2024
+ *
+ * For general Sqliteman copyright and licensing information please refer
+ * to the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
 
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
@@ -68,6 +69,8 @@ class Preferences : public QObject
         void setlastDB(QString v) { m_lastDB = v; }
 		QString lastSqlFile() { return m_lastSqlFile; }
         void setlastSqlFile(QString v) { m_lastSqlFile = v; }
+        QString extensionDirectory() { return m_extensionDirectory; }
+        void setextensionDirectory(QString v) { m_extensionDirectory = v; }
         QStringList recentFiles() { return m_recentFiles; }
         void setrecentFIles(QStringList v) { m_recentFiles = v; }
 		
@@ -297,6 +300,7 @@ class Preferences : public QObject
 		int m_readRows;
 		QString m_lastDB;
         QString m_lastSqlFile;
+        QString m_extensionDirectory;
         QStringList m_recentFiles;
 		bool m_newInItemView;
         bool m_prefillNew;

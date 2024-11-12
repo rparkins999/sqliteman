@@ -1,9 +1,11 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-*/
+/* Copyright © Richard Parkins 2024
+ *
+ * For general Sqliteman copyright and licensing information please refer
+ * to the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
+
 #include <QtCore/QSettings>
 #include <QApplication>
 #include <qscilexersql.h>
@@ -50,6 +52,7 @@ Preferences::Preferences(QObject *parent)
 	m_readRows = s.value("prefs/readRowsComboBox", 0).toInt();
 	m_lastDB = s.value("lastDatabase", QString()).toString();
 	m_lastSqlFile = s.value("lastSqlFile", QString()).toString();
+    m_extensionDirectory = s.value("extensionDirectory", QString()).toString();
     m_recentFiles = s.value("recentDocs/files").toStringList();
 	m_newInItemView = s.value("prefs/openNewInItemView", false).toBool();
     m_prefillNew = s.value("prefs/prefillNew", false).toBool();
@@ -173,6 +176,7 @@ Preferences::~Preferences()
 	settings.setValue("prefs/openLastSqlFile", m_openLastSqlFile);
     settings.setValue("lastDatabase", m_lastDB);
     settings.setValue("lastSqlFile", m_lastSqlFile);
+    settings.setValue("extensionDirectory", m_extensionDirectory);
 	settings.setValue("recentDocs/files", m_recentFiles);
 	settings.setValue("prefs/openNewInItemView", m_newInItemView);
     settings.setValue("prefs/prefillNew", m_prefillNew);
