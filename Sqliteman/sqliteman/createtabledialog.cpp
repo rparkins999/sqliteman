@@ -67,8 +67,7 @@ void CreateTableDialog::createButton_clicked()
 			QMessageBox::Yes, QMessageBox::Cancel);
 		if (ret == QMessageBox::Cancel) { return; }
 	}
-	if (ui.nameEdit->text().contains(QRegExp
-		("\\s|-|\\]|\\[|[`!\"%&*()+={}:;@'~#|\\\\<,>.?/^]")))
+	if (ui.nameEdit->text().contains(QRegExp("\\]|\\.")))
 	{
 		int ret = QMessageBox::question(this, "Sqliteman",
 			tr("A table named ")
