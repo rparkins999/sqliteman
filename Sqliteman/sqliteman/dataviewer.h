@@ -34,6 +34,7 @@ class DataViewer : public QMainWindow
 
 	private:
 		bool dataResized;
+        bool showingChanges;
 		int activeRow;
 		int savedActiveRow;
 		bool wasItemView;
@@ -57,6 +58,7 @@ class DataViewer : public QMainWindow
 		void resizeEvent(QResizeEvent * event);
 
 	private slots:
+        void showChanges();
 		void findFirst();
 		void findNext();
 		void findAll();

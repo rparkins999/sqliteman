@@ -148,6 +148,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionShowChanges"/>
    <addaction name="actionFind"/>
    <addaction name="actionNew_Row"/>
    <addaction name="actionCopy_Row"/>
@@ -155,6 +156,7 @@
    <addaction name="separator"/>
    <addaction name="actionCommit"/>
    <addaction name="actionRollback"/>
+   <addaction name="separator"/>
   </widget>
   <widget class="QToolBar" name="exportToolBar">
    <property name="windowTitle">
@@ -174,6 +176,7 @@
    <addaction name="actionRipOut"/>
    <addaction name="action_Goto_Line"/>
    <addaction name="actionClose"/>
+   <addaction name="separator"/>
   </widget>
   <action name="actionFind">
    <property name="icon">
@@ -350,6 +353,18 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Alt+=</string>
+   </property>
+  </action>
+  <action name="actionShowChanges">
+   <property name="icon">
+    <iconset>
+     <normaloff>icons/findChanged.png</normaloff>icons/findChanged.png</iconset>
+   </property>
+   <property name="text">
+    <string>Show Changes</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Changes</string>
    </property>
   </action>
  </widget>

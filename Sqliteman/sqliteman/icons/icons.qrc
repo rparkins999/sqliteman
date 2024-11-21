@@ -10,18 +10,25 @@
         <file>delete_table_row.png</file>
         <file>edit.png</file>
         <file>extensions.png</file>
+        <file>delete.png</file>
         <file>document-export.png</file>
         <file>document-new.png</file>
         <file>document-open.png</file>
         <file>document-save-as.png</file>
         <file>document-save.png</file>
+        <file>duplicate_table_row.png</file>
         <file>explain.png</file>
+        <file>findChanged.png</file>
         <file>go-next.png</file>
         <file>go-next-use.png</file>
         <file>go-previous.png</file>
         <file>index.png</file>
         <file>insert_table_row.png</file>
+        <file>kate.png</file>
         <file>key.png</file>
+        <file>move-down.png</file>
+        <file>move-up.png</file>
+        <file>preferences-desktop-display.png</file>
         <file>queryplan.png</file>
         <file>runscript.png</file>
         <file>runsql.png</file>
@@ -32,12 +39,7 @@
         <file>system-search.png</file>
         <file>table.png</file>
         <file>trigger.png</file>
+        <file>unFindChanged.png</file>
         <file>view.png</file>
-        <file>preferences-desktop-display.png</file>
-        <file>kate.png</file>
-        <file>duplicate_table_row.png</file>
-        <file>move-down.png</file>
-        <file>move-up.png</file>
-        <file>delete.png</file>
     </qresource>
 </RCC>

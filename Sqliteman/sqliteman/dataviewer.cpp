@@ -114,9 +114,19 @@ void DataViewer::updateButtons()
 	{
 		ui.actionNew_Row->setEnabled(true);
 		ui.actionNew_Row->setToolTip(tr("New Row ") + "(Ctrl+Alt+N)");
+		ui.actionShowChanges->setEnabled(true);
+        if (showingChanges) {
+            ui.actionShowChanges->setIcon(Utils::getIcon("unFindChanged.png"));
+            ui.actionShowChanges->setToolTip(tr("Unshow Changes"));
+        } else {
+            ui.actionShowChanges->setIcon(Utils::getIcon("findChanged.png"));
+            ui.actionShowChanges->setToolTip(tr("Show Changes"));
+        }
 	} else {
 		ui.actionNew_Row->setEnabled(false);
 		ui.actionNew_Row->setToolTip("(disabled)");
+		ui.actionShowChanges->setEnabled(false);
+		ui.actionShowChanges->setToolTip("(disabled)");
 	}
 	if (editable && rowSelected)
 	{
@@ -371,6 +381,78 @@ void DataViewer::findClosing()
 	updateButtons();
 }
 
+void DataViewer::DataViewer::showChanges()
+{
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+	SqlTableModel * model = qobject_cast<SqlTableModel*>(ui.tableView->model());
+	if (model)
+	{
+		model->fetchAll();
+        int rows = model->rowCount();
+        if (showingChanges) {
+            for (int row = 0; row < rows; ++row)
+            {
+                if (!(model->isDeleted(row)))
+                {
+                    ui.tableView->showRow(row);
+                }
+            }
+            setStatusText("");
+            showingChanges = false;
+        } else {
+            int columns = model->columnCount();
+            int deletions = 0;
+            int changes = 0;
+            for (int row = 0; row < rows; ++row)
+            {
+                if (model->isDeleted(row))
+                {
+                    ++deletions;
+                    break;
+                }
+                int rowchanges = 0;
+                for (int column = 0; column < columns; ++column)
+                {
+                    if (model->isDirty(model->createIndex(row, column)))
+                    {
+                        rowchanges = 1;
+                        break;
+                    }
+                }
+                if (rowchanges == 0)
+                {
+                    ui.tableView->hideRow(row);
+                }
+                else
+                {
+                    changes += rowchanges;
+                }
+            }
+            if (changes > 0)
+            {
+                if (deletions > 0)
+                {
+                    setStatusText(tr("%1 deleted row(s), %2 modified row(s))")
+                    .arg(deletions).arg(changes));
+                }
+                else
+                {
+                    setStatusText(tr("%1 modified row(s)") .arg(changes));
+                }
+            }
+            else if (deletions > 0)
+            {
+                setStatusText(tr("%1 deleted row(s)") .arg(deletions));
+            } else {
+                setStatusText(tr("no changes"));
+            }
+            showingChanges = true;
+        }
+    }
+	updateButtons();
+	QApplication::restoreOverrideCursor();
+}
+
 void DataViewer::find()
 {
 	SqlTableModel *stm = qobject_cast<SqlTableModel*>(ui.tableView->model());
@@ -535,6 +617,7 @@ void DataViewer::rollback()
 	if (model) // paranoia
 	{
 		m_doneFindAll = false;
+        showingChanges = false;
 		model->revertAll();
 		model->setPendingTransaction(false);
 		int n = model->rowCount();
@@ -576,6 +659,7 @@ void DataViewer::commit()
 		}
 		return;
 	}
+    showingChanges = false;
 	model->setPendingTransaction(false);
 	reSelect();
 	resizeViewToContents(model);
@@ -894,8 +978,10 @@ DataViewer::DataViewer(LiteManWindow * parent)
 #endif
 
 	haveBuiltQuery = false;
+    showingChanges = false;
 	ui.splitter->setCollapsible(0, false);
 	ui.splitter->setCollapsible(1, false);
+    ui.actionShowChanges->setIcon(Utils::getIcon("findChanged.png"));
 	ui.actionFind->setIcon(Utils::getIcon("system-search.png"));
 	ui.actionNew_Row->setIcon(Utils::getIcon("insert_table_row.png"));
     ui.actionCopy_Row->setIcon(Utils::getIcon("duplicate_table_row.png"));
@@ -962,6 +1048,8 @@ DataViewer::DataViewer(LiteManWindow * parent)
         new DataViewerTools::KeyPressEater(this);
 	ui.tableView->installEventFilter(keyPressEater);
 
+    connect(ui.actionShowChanges, SIGNAL(triggered()),
+            this, SLOT(showChanges()));
 	connect(ui.actionFind, SIGNAL(triggered()),
 			this, SLOT(find()));
 	connect(ui.actionNew_Row, SIGNAL(triggered()),
@@ -1085,6 +1173,7 @@ bool DataViewer::setTableModel(QAbstractItemModel * model, bool showButtons)
 	if (!checkForPending()) { return false; }
 	QAbstractItemModel * old = ui.tableView->model();
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    showingChanges = false;
 	ui.tableView->setModel(model); // references old model
 	ui.tableView->scrollToTop();
 	freeResources(old); // avoid memory leak of model

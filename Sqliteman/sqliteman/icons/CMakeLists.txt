@@ -27,6 +27,7 @@ duplicate_table_row.png
 edit.png
 explain.png
 extensions.png
+findChanged.png
 go-next.png
 go-next-use.png
 go-previous.png
@@ -47,6 +48,7 @@ system.png
 system-search.png
 table.png
 trigger.png
+unFindChanged.png
 view.png
   DESTINATION ${ICON_DIR}
 )
