@@ -74,107 +74,38 @@
  *
  *****************************************************************************/
 
-// This is signaled when user picks a table or a view from the combo box.
-// Also we call it explicitly from quite a lot of places.
-// This version should work with views and virtual tables.
+/* This is signaled when user picks a table or a view from the combo box.
+ * Also we call it explicitly from some other places.
+ * This version should work with views and virtual tables.
+ *
+ * If it is the same table as before, we don't need to do anything.
+ * The special cases of re-use of a table name are dealt with
+ * elsewhere when choosing a different schema (setSchema) or
+ * dropping a table (tableGone).
+ */
 void QueryEditorWidget::tableSelected(const QString & table)
 {
-	columnModel->clear();
-	selectModel->clear();
-	ui.tabWidget->setCurrentIndex(0);
-	ui.termsTab->ui.termsTable->clear();
-	ui.termsTab->ui.termsTable->setRowCount(0); // clear() doesn't do this
-	ui.ordersTable->clear();
-	ui.ordersTable->setRowCount(0); // clear() doesn't do this
-	m_rowid.clear();
-
-    m_table = table;
-    if (!table.isEmpty()) {
-		/* This PRAGMA returns a nonempty table only if the table
-		 * or view referenced is a WITHOUT ROWID table
-		 */
-		QString stmt("PRAGMA "
-					+ Utils::q(m_schema) +
-					".index_info("
-					+ Utils::q(table)
-					+ ");");
-		QSqlQuery query = Database::doSql(stmt);
-		if (query.isActive())
-		{
-			bool without_rowid = query.first();
-			// This may not be necessary, but just to be on the safe side...
-			query.clear();
-			/* This rather silly SELECT statement returns a nonempty table
-			 * if the parameter table is in fact a table, and not a view.
-			 */
-			stmt = "SELECT type from "
-					+ Database::getMaster(m_schema)
-					+ " WHERE name = "
-					+ Utils::q(table)
-					+ " AND type = \"table\";";
-			query = Database::doSql(stmt);
-			if (query.isActive())
-			{
-				m_queryingTable = query.first();
-				QStringList columns;
-				// This may not be necessary, but just to be on the safe side...
-				query.clear();
-				/* This rather silly SELECT statement just gets the column names.
-				 * It should work for views and virtual tables as well as plain tables.
-				 */
-				stmt = "SELECT * FROM "
-						+ Utils::q(m_schema)
-						+ "."
-						+ Utils::q(table)
-						+ " LIMIT 0;";
-				query = Database::doSql(stmt);
-				if (query.isActive())
-				{
-					QSqlRecord rec = query.record();
-					int n = rec.count();
-					bool rowid = true; // no column named rowid
-					bool _rowid_ = true; // no column named _rowid_
-					bool oid = true; // no column named oid
-					for (int i = 0; i < n; ++i)
-					{
-						QString name(rec.fieldName(i));
-						columns << name;
-						if (name.compare("rowid", Qt::CaseInsensitive) == 0)
-							{ rowid = false; }
-						if (name.compare("_rowid_", Qt::CaseInsensitive) == 0)
-							{ _rowid_ = false; }
-						if (name.compare("oid", Qt::CaseInsensitive) == 0)
-							{ oid = false; }
-					}
-					if (m_queryingTable && !without_rowid)
-					{
-						/* If this is a table, but not a WITHOUT ROWID table,
-						 * and a rowid alias is available
-						 * (not the name of another column),
-						 * we include it at teh start of the column list.
-						 */
-						if (rowid)
-							{ columns.insert(0, QString("rowid")); m_rowid = "rowid"; }
-						else if (_rowid_)
-							{ columns.insert(0, QString("_rowid_")); m_rowid = "_rowid_"; }
-						else if (oid)
-							{ columns.insert(0, QString("oid")); m_rowid = "oid"; }
-					}
-				}
-
-				ui.termsTab->m_columnList = columns;
-				columnModel->setStringList(columns);
-			}
-		}
+    if (table.compare(m_table, Qt::CaseInsensitive)) {
+        m_table = table;
+        columnModel->clear();
+        selectModel->clear();
+        ui.tabWidget->setCurrentIndex(0);
+        ui.termsTab->ui.termsTable->clear();
+        ui.termsTab->ui.termsTable->setRowCount(0); // clear() doesn't do this
+        ui.ordersTable->clear();
+        ui.ordersTable->setRowCount(0); // clear() doesn't do this
+        m_columnList = GetColumnList::getColumnList(m_schema, table);
+        ui.termsTab->m_columnList = m_columnList.columns;
+        columnModel->setStringList(m_columnList.columns);
+        ui.termsTab->update();
+        resizeWanted = true;
     }
-	ui.termsTab->update();
-	resizeWanted = true;
 }
 
 // Common bit of code to look up a table in the table list
 // and enable or disable user changes.
 // Returns the name it is given unless it is not in the list.
-QString QueryEditorWidget::findTable(QString name, bool allowChange)
+void QueryEditorWidget::findTable(QString name)
 {
     int n = ui.tablesList->count();
     int i = ui.tablesList->findText(name, Qt::MatchExactly);
@@ -182,25 +113,27 @@ QString QueryEditorWidget::findTable(QString name, bool allowChange)
         if (n > 0) {
             i = 0;
             name = ui.tablesList->itemText(0); // default to first entry
-            allowChange = true; // but allow user to change it
         } else { name.clear(); } // empty list => empty name
+        // We're changing the table anyway because it was invalid:
+        // we allow the user to change it if there is more than one
+        m_canChangeTable = (n > 1);
+    } else if (n <= 1) {
+        m_canChangeTable = false; // can't change if only one entry
+        // We don't set it to true if n >= 2 because if we got here
+        // our caller passed us a valid table and we should
+        // leave the previous value of tableMayChange.
     }
-    /* The ordering here avoids setCurrentIndex() generating a signal.
-	 * If tableSelected() needs to be called, our caller will do it.
-	 */
-    if (allowChange && (n > 1)) { // can't change if only one entry
-        ui.tablesList->setCurrentIndex(i);
+    ui.tablesList->setEnabled(false); // disable before disconnecting
+    disconnect(ui.tablesList, SIGNAL(currentIndexChanged(const QString &)),
+            this, SLOT(tableSelected(const QString &)));
+    ui.tablesList->setCurrentIndex(i); // i will be -1 if n is 0
+    if (m_canChangeTable) {
         connect(ui.tablesList, SIGNAL(currentIndexChanged(const QString &)),
                 this, SLOT(tableSelected(const QString &)),
                 Qt::UniqueConnection);
         ui.tablesList->setEnabled(true); // enable after connecting
-    } else {
-        ui.tablesList->setEnabled(false); // disable before disconnecting
-        disconnect(ui.tablesList, SIGNAL(currentIndexChanged(const QString &)),
-                this, SLOT(tableSelected(const QString &)));
-        ui.tablesList->setCurrentIndex(i); // i will be -1 if n is 0
     }
-    return name;
+    tableSelected(name);
 }
 
 // This is called externally if a new table was created
@@ -245,7 +178,7 @@ void QueryEditorWidget::addAllSelect()
     QStringList::const_iterator i;
     for (i = list.constBegin(); i != list.constEnd(); ++i) {
         QString s(*i);
-		if (s.compare(m_rowid))
+		if (s.compare(m_columnList.rowid))
 		{
 			selectModel->append(s);
 			columnModel->removeAll(s);
@@ -635,8 +568,11 @@ void QueryEditorWidget::tableGone(QString oldName, QString newName)
 					// oldName was altered to newName
 					ui.tablesList->setItemText(i, newName);
 				}
-				// If there is still more than one table or view ...
-				if (m_canChangeTable && (ui.tablesList->count() > 1)) {
+				// If there isn't still more than one table or view ...
+				if (ui.tablesList->count() <= 1) {
+                    m_canChangeTable = false;
+                }
+				if (m_canChangeTable) {
 					// reconnect the user action on picking one
 					connect(ui.tablesList,
 							SIGNAL(currentIndexChanged(const QString &)),
@@ -652,14 +588,14 @@ void QueryEditorWidget::tableGone(QString oldName, QString newName)
 			return;
 		}
 	}
-	tableSelected(findTable(newName, true));
-	resizeWanted = true;
+	findTable(newName); // calls tableSelected
 }
 
 /* This is called by our parent to set the QueryEditorWidget up
  * for a specified schema and table or view to query.
- * Also called internally if a schema may have been attached detached,
- * to update the schemaList.
+ * Also called internally if a schema may have been detached,
+ * to update the schemaList and the tablesList if the previous
+ * current schema was detached.
  * If we are querying the same table or view as in the last time
  * we were called, we keep the same fields, terms, and orderings.
  * Otherwise we reset.
@@ -672,62 +608,57 @@ void QueryEditorWidget::setSchema(QString schema, QString table,
     ui.schemaList->setEnabled(false); // disable before disconnecting
     disconnect(ui.schemaList, SIGNAL(currentIndexChanged(const QString &)),
                this, SLOT(schemaSelected(const QString &)));
+    // We need to recreate the schema list because a schema
+    // may have been detached sicne we were last called.
 	ui.schemaList->clear();
 	ui.schemaList->addItems(Database::getDatabases().keys());
 	ui.schemaList->adjustSize();
 	// MatchFixedString implies CaseInsensitive
 	int i = ui.schemaList->findText(m_schema, Qt::MatchFixedString);
-	if (i < 0) {
-		/* Our previously selected schema is no longer in the list:
-		 * it must have been detached.
-		 */
-		if (schema.compare(m_schema, Qt::CaseInsensitive) == 0) {
-			/* We can't have been called from the UI because it can't
-			 * select an unattached schema, so we must have been
-			 * called from resetSchemaList(). Our previous schema
-			 * is no longer attached, so we must let the user select
-			 * a new one.
-			 */
-			m_canChangeSchema = true;
-		}
-	}
-	if (schema.isEmpty()) {
-		i = -1;
-	} else {
-		// MatchFixedString implies CaseInsensitive
-		i = ui.schemaList->findText(schema, Qt::MatchFixedString);
-	}
 	int n = ui.schemaList->count();
-	if (i < 0) {
-		// "schema" is not (now) a database (it may have been detached).
-        if (n > 0) {
+    // See if the schema has changed
+    if (schema.compare(m_schema, Qt::CaseInsensitive)) {
+        m_schema = schema;
+        resetTableList(); // previous table list is no longer valid
+        m_table.clear(); // previous table is no longer valid
+        // check the newly requested schema
+        i = ui.schemaList->findText(schema, Qt::MatchFixedString);
+    }
+    if (i < 0) { // not (now) a database (may have been detached).
+        if (n > 0) { // At least one schema in list
+            // Default to first schema, but allow user to change it
+            // if there is more than one
             i = 0;
-            schema = ui.schemaList->itemText(0); // default to first entry
-            m_canChangeSchema = true; // but allow user to change it
-            m_canChangeTable = true;
+            m_schema = ui.schemaList->itemText(0);
+            m_canChangeSchema = n > 1;
         } else { // no schemas (started with no file?)
             schema.clear();
-            table.clear();
         }
+        table.clear(); // requested table is not valid
+        m_table.clear(); // previous table is no longer valid
+        resetTableList(); // previous table list is no longer valid
+    } else if (n < 2) {
+        m_canChangeSchema = false;
+        // We don't set it to true if n >= 2 because if we got here
+        // our caller passed us a valid database and we should
+        // honour the passed value of schemaMayChange.
     }
 	ui.schemaList->setCurrentIndex(i); // i will be -1 if n is 0
-    if (m_canChangeSchema && (n > 1)) { // can't change if only one entry
+    if (m_canChangeSchema) {
         connect(ui.schemaList, SIGNAL(currentIndexChanged(const QString &)),
                 this, SLOT(schemaSelected(const QString &)),
                 Qt::UniqueConnection);
         ui.schemaList->setEnabled(true); // enable after connecting
     }
-    if (schema.compare(m_schema, Qt::CaseInsensitive)) {
-		m_schema = schema;
-		// If the schema has changed,
-		// a table with the same name isn't the same table.
-		m_table = QString();
-		tableGone(QString(), QString());
-	} else if (m_table.compare(table, Qt::CaseInsensitive)) {
-		tableSelected(table);
-		resizeWanted = true;
-	}
+    findTable(table); // calls tableSelected
 }
+
+void QueryEditorWidget::setSchema(QString schema,
+                bool schemaMayChange, bool tableMayChange)
+{
+    setSchema(schema, m_table, schemaMayChange, tableMayChange);
+}
+
 
 void QueryEditorWidget::copySql(bool elide)
 {
@@ -736,7 +667,7 @@ void QueryEditorWidget::copySql(bool elide)
 
 void QueryEditorWidget::copySql()
 {
-	copySql(!m_queryingTable);
+	copySql(!m_columnList.queryingTable);
 }
 
 /* Called when we need to reset the query.
@@ -747,7 +678,7 @@ void QueryEditorWidget::copySql()
  * (or may have been removed or altered by an EXEC).
  *
  * Currently it is also called when the dialog is shown because
- * some changes might have occurred while the dialog not visible,
+ * some changes might have occurred while the dialog was not visible,
  * but I hope to make it modeless in the future,
  * so it will need to react to the events listed above.
  */

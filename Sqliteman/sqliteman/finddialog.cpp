@@ -16,8 +16,8 @@
 #include "database.h"
 #include "dataviewer.h"
 #include "finddialog.h"
+#include "getcolumnlist.h"
 #include "preferences.h"
-#include "sqlparser.h"
 #include "utils.h"
 
 bool FindDialog::notSame(QStringList l1, QStringList l2)
@@ -113,21 +113,14 @@ void FindDialog::doConnections(DataViewer * dataviewer)
 void FindDialog::setup(QString schema, QString table)
 {
 	setWindowTitle(QString("Find in table ") + schema + "." + table);
-	QStringList columns;
-	SqlParser * parser = Database::parseTable(table, schema);
-    QList<FieldInfo> fields = parser->m_fields;
-    QList<FieldInfo>::const_iterator i;
-	for (i = fields.constBegin(); i != fields.constEnd(); ++i) {
-        columns << i->name;
-    }
-	delete parser;
+    struct ColumnList columns = GetColumnList::getColumnList(schema, table);
 	if (   (schema != m_schema)
 		|| (table != m_table)
-		|| (notSame(ui.termsTab->m_columnList, columns)))
+		|| (notSame(ui.termsTab->m_columnList, columns.columns)))
 	{
 		m_schema = schema;
 		m_table = table;
-		ui.termsTab->m_columnList = columns;
+		ui.termsTab->m_columnList = columns.columns;
 		ui.termsTab->ui.termsTable->clear();
 		ui.termsTab->ui.termsTable->setRowCount(0);
 		ui.termsTab->ui.caseCheckBox->setChecked(false);

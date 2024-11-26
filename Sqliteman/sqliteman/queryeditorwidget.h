@@ -12,6 +12,7 @@ class QTreeWidgetItem;
 class QueryStringModel;
 
 #include "database.h"
+#include "getcolumnlist.h"
 #include "termstabwidget.h"
 #include "ui_queryeditorwidget.h"
 
@@ -45,14 +46,14 @@ class QueryEditorWidget : public QWidget
 		bool m_canChangeTable;
 		QueryStringModel * columnModel;
 		QueryStringModel * selectModel;
-		QString m_rowid;
 		bool resizeWanted; // tables, not window
+		struct ColumnList m_columnList; // result from getColumnList(...)
 
     private slots:
 		void tableSelected(const QString & table);
 
 	private:
-		QString findTable(QString name, bool allowChange);
+		void findTable(QString name);
 
 	public:
 		// True if we're querying a table rather than a view.
@@ -85,7 +86,13 @@ class QueryEditorWidget : public QWidget
 		QString statement(bool elide);
 		QString deleteStatement();
 		void tableGone(QString oldName, QString newName);
+
+        // normal call (clicked on TableTree item)
 		void setSchema(QString schema, QString table,
+					   bool schemaMayChange, bool tableMayChange);
+        // Overloaded call to keep previous query
+        // (clicked on Database oo Tables or Views)
+		void setSchema(QString schema,
 					   bool schemaMayChange, bool tableMayChange);
 
 	private:

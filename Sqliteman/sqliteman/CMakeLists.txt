@@ -28,6 +28,7 @@ SET( SQLITEMAN_SRC
     dialogcommon.cpp
     extensionmodel.cpp
     finddialog.cpp
+    getcolumnlist.cpp
     helpbrowser.cpp
     importtabledialog.cpp
     importtablelogdialog.cpp
@@ -106,6 +107,7 @@ SET( SQLITEMAN_MOC
     dialogcommon.h
     extensionmodel.h
     finddialog.h
+    getcolumnlist.h
     helpbrowser.h
     importtabledialog.h
     importtablelogdialog.h

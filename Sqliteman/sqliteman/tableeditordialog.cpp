@@ -230,8 +230,15 @@ void TableEditorDialog::setItem(QTreeWidgetItem * item, bool makeView)
         m_tableOrView = "TABLE";
         databaseMayChange = true;
     }
-    ui.queryEditor->setSchema(
-        m_databaseName, tableName, databaseMayChange, tableMayChange);
+    if (item) {
+        ui.queryEditor->setSchema(
+            m_databaseName, tableName, databaseMayChange, tableMayChange);
+    } else {
+        // If we didn't get here by clicking on a table or a view,
+        // use the overloaded call to keep the previous query.
+        ui.queryEditor->setSchema(
+            m_databaseName, databaseMayChange, tableMayChange);
+    }
 }
 
 QString TableEditorDialog::createdName()
