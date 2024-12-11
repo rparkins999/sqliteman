@@ -178,12 +178,28 @@
                                 WHEN 0 THEN 'PRAGMA legacy_alter_table = 0'
                             <br>
                                 ELSE 'PRAGMA legacy_alter_table = 1' END )));
+                            <br>
+                            <br>
                             </span>
                         </p>
                     </dd>
                 </dl>
             </div>
         </div>
+        Currently there is a problem with
+        <span class="term">exec()</span>
+        which seems to be a lossage in the
+        <span class="application">sqlite</span> library.
+        A user-defined function which calls
+        <span class="application">sqlite3_exec</span>, which
+        <span class="term">exec()</span> does, will do
+        whatever it should do, but when it returns the returned value
+        gets thrown away and the
+        <span class="application">sqlite</span> library fails to
+        execute the sql code which called the user-defined function
+        and instead just finishes without an error.
+        <br>
+        <br>
         <span class="application">Sqliteman</span>
         also provides two additonal collators LOCALIZED and LOCALIZED_CASE.
         These sort in Locale order.

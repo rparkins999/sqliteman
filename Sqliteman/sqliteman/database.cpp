@@ -675,11 +675,12 @@ extern "C" void do_exec(sqlite3_context* context,
 	}
 	else if (state.name == NULL)
 	{
-		sqlite3_result_text(context, state.result, -1, SQLITE_TRANSIENT);
-	}
-	else if (errmsg)
-	{
-		sqlite3_result_text(context, errmsg, -1, SQLITE_TRANSIENT);
+        if (errmsg)
+        {
+            sqlite3_result_text(context, errmsg, -1, SQLITE_TRANSIENT);
+        } else {
+            sqlite3_result_text(context, state.result, -1, SQLITE_TRANSIENT);
+        }
 	}
 	else
 	{
