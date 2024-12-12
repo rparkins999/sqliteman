@@ -44,7 +44,7 @@
 	<p>All data are displayed here. Displayed data can be:</p>
 	<div class="itemizedlist">
 		<ul type="disc">
-			<li><p>Results of queries launched by
+			<li><p>Results of queries launched by the
 				<a href="QueryBuilder.html" title="Query Builder">
 					the graphical query builder
 				</a>.
@@ -52,31 +52,57 @@
 			<li><p>Results of statements launched in
 			<a href="SQLeditor.html" title="SQL Editor">the SQL Editor</a>.
 			</p></li>
-			<li><p>Content of tables and views listed in
+			<li><p>Content of tables and views listed in the
 			<a href="SchemaBrowser.html" title="Schema Browser">
 			the Schema Browser</a>.
-			Click on a table name to fetch its data.
+			Click on a table or view name to fetch its data.
 			</p></li>
 		</ul>
 	</div>
-	<p><span class="bluebackground">
-        Edited rows are displayed with a blue-green background.
-    </span><br><br>
-	Changes in Data Viewer are cached locally and have to be explicitly
-	promoted into the database. So you
+	<p>
+        Data editing is available only for a table
+        displayed by clicking on its name in
+        <a href="SchemaBrowser.html" title="Schema Browser">
+            the Schema Browser</a>.
+		Editable tables do not show any generated
+		columns since these cannot be edited. To see generated columns,
+		use
+		<a href="QueryBuilder.html" title="Query Builder">
+			the graphical query builder</a>
+        with no Terms or Order By specifications
+        and select all fields by clicking on >> in the Fields tab.
+		There is no way to edit the data returned by
+        <a href="QueryBuilder.html" title="Query Builder">
+            the graphical query builder
+        </a>
+		or by executing a statement in the
+        <a href="SQLeditor.html">the SQL Editor</a>
+        yet, but for simple queries the
+		<a href="Find.html">Find Dialog</a>
+		may help you.
+	</p>
+	<p>
+	Changes made in the Data Viewer are cached locally and have to be
+	explicitly promoted into the database. So you
 		<span class="emphasis">have to</em></span>
 		click the
 		<span class="guibutton"><a href="DataViewer.html#commit">Commit</a>
 		</span>
-		button to promote them into the database file or the
+		button to promote changes into the database file or the
 		<span class="guibutton"><a href="DataViewer.html#rollback">Rollback</a>
 		</span>
 		button to discard them.
 	</p>
+	<p><span class="bluebackground">
+        Edited rows which have not yet been promoted into the database
+        are displayed with a blue-green background.
+    </span></p>
     <h3 class="important">Important</h3>
     <div class="indent">
         Transactions in the Data Viewer are separate from transactions
-        in the SQL Editor. You cannot commit your Data Viewer changes by a
+        in the
+        <a href="SQLeditor.html" title="SQL Editor">the SQL Editor</a>
+        You cannot commit your Data Viewer changes by a
         <span><strong class="command">COMMIT</strong></span>
         in the SQL Editor. However if you have a pending transaction
         (unclosed
@@ -93,11 +119,6 @@
         </a>
         for further details.
     </div>
-	<p>Data changes are available only for tables (invoked in Schema Browser).
-		There is no way to edit the data returned by an SQL statement yet,
-		but for simple queries the <a href="Find.html">Find Dialog</a>
-		may help you.
-	</p>
 	<p></p>
 	<div class="variablelist">
 		<dl>
@@ -113,7 +134,8 @@
 				<p>
 					<span class="action">
 						<p>
-							This button is enabled only when viewing a table.
+							This button is enabled only when viewing an
+							editable table.
 							It displays the rows in the current table which
 							have been edited since the table was last read from
 							or written to the database, and also counts of
@@ -141,9 +163,9 @@
 				<p>
 					<span class="action">
 						<p>
-							This button is enabled only when viewing a table. It
-							opens a dialog enabling you to search in the table.
-							for details see
+							This button is enabled only when viewing an editable
+							table. It opens a dialog enabling you to search
+							in the table. For details see
 							the <a href="Find.html">Find Dialog</a>.
 						</p>
 					 </span>
@@ -161,9 +183,9 @@
                 <p>
                     <span class="action">
                         <p>
-                            This button is enabled only when viewing a table. It
-                            creates a new row and displays it at the end of the
-                            table. If preference
+                            This button is enabled only when viewing an
+                            editable table. It creates a new row and displays
+                            it at the end of the table. If preference
                             <a href="prefs.html#prefillrows"> Prefill new rows
                             </a> is not set, all fields are set to NULL.
                             If this preference is set, default values are
@@ -238,11 +260,12 @@
 				<p>
                     <span class="action">
                         <p>
-                            This button is enabled only when viewing a table
-                            and a current row is selected. It creates a copy of
-                            the current row and displays it at the end of the
-                            table (this can be useful when creating rows which
-                            differ only in a few fields).
+                            This button is enabled only when viewing an
+                            editable table and a current row is selected.
+                            It creates a copy of the current row and displays
+                            it at the end of the table (this can be useful
+                            when creating rows which differ only
+                            in a few fields).
                         </p><p>
                             If the whole table has not been read yet,
                             copying a row causes the remainder of the table to
@@ -264,7 +287,23 @@
                     The Qt SQL library gets confused if the database
                     contains multiple rows with the same data fields:
                     if there is no primary key make sure to modify the copy
-                    before committing.
+                    before committing. If you get stuck with a table
+                    containing multiple rows with the same data fields,
+                    the Qt SQL library will not allow you to remove
+                    individual duplicates and the
+                    <a href="DataViewer.removerow">Remove Row</a>
+                    button will remove all of them.
+                    The workaround is to use the
+                    <a href="QueryBuilder.html">Query Builder</a>
+                    to build a query with rowids and use
+                    <br>
+                    <code class="computeroutput">
+                        <b>DELETE FROM</b> table <b>WHERE</b> rowid = value;
+                    </code>
+                    <br>
+                    in the
+                    <a href="SQLeditor.html" title="SQL Editor">SQL Editor</a>
+                    to delete all except one of the duplicate rows.
                 </div>
             </dd>
 			<dt>
@@ -278,9 +317,9 @@
 			<dd>
 				<p>
 					<span class="action">
-						This button is enabled only when viewing a table and a
-						current row is selected. It deletes the selected row
-						from the table.
+						This button is enabled only when viewing an
+						editable table and a current row is selected.
+						It deletes the selected row from the table.
 						<a href="DataViewer.html#commit">Commit</a>
 						action is required to make this permanent.
 					</span>
@@ -299,14 +338,14 @@
 					<span class="action">
 						This button replaces the
 						<a href="DataViewer.html#removerow">Remove Row</a>
-						button when you have just executed a query created by
-						the
+						button when you have just executed a query
+						created by Sthe
 						<a href="QueryBuilder.html">Query Builder</a>.
 						It deletes all the records found by the query from the
 						table against which the query was run. It will ask you
-						if you really want to do this first as this can delete a
-						lot of records. This is an immediate action and does not
-						require
+						if you really want to do this first as this can delete
+						a lot of records. This is an immediate action and does
+						not require
 						<a href="DataViewer.html#commit">Commit</a>
 						action to update the database. Note this button is not
 						available after executing a query from the
@@ -454,7 +493,7 @@
 				</div>
 				<dd>
 					<p>
-						Display data as  a table. This is the most common view
+						Display data as a table. This is the most common view
 						on SQL results.
 					</p>
 					<p>
