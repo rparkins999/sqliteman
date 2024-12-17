@@ -1170,8 +1170,9 @@ bool DataViewer::checkForPending()
 
 bool DataViewer::setTableModel(QAbstractItemModel * model, bool showButtons)
 {
-	if (!checkForPending()) { return false; }
 	QAbstractItemModel * old = ui.tableView->model();
+    if (old == model) { return true; } // Nothing to do, avoid SIGSEGV
+	if (!checkForPending()) { return false; }
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     showingChanges = false;
 	ui.tableView->setModel(model); // references old model
