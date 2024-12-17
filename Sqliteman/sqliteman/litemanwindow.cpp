@@ -96,6 +96,14 @@ bool LiteManWindow::checkForPending() {
 	return dataViewer->checkForPending();
 }
 
+void LiteManWindow::setStatusText(QString s) {
+    dataViewer->setStatusText(s);
+}
+
+void LiteManWindow::clearActiveItem() {
+    m_activeItem = 0;
+}
+
 void LiteManWindow::buildPragmasTree() {
 	schemaBrowser->buildPragmasTree();
 }

@@ -257,12 +257,43 @@ QString SqlEditor::prepareExec(toSQLParse::tokenizer &tokens, int line, int pos)
 void SqlEditor::actionRun_SQL_triggered()
 {
     QString sql(query(false));
-    if (!sql.isNull()) {
-        if (creator->doExecSql(sql, false)) {
-			if (Utils::detaches(sql)) { creator->detaches(); }
+	if (sql.isNull() || sql.trimmed().isEmpty())
+	{
+		QMessageBox::warning(this, tr("No SQL statement"), tr("You are trying to run an empty SQL query. Hint: select your query in the editor"));
+    } else if ((!creator) || !(creator->checkForPending())) {
+        return;
+	} else {
+        setStatusMessage();
+        QTime time;
+        time.start();
+        SqlQueryModel * model = new SqlQueryModel(creator);
+        model->setQuery(sql, QSqlDatabase::database(SESSION_NAME));
+        setStatusMessage(
+            tr("Duration: %1 seconds").arg(time.elapsed() / 1000.0));
+        if(model->lastError().isValid()) {
+            QString s1(model->lastError().driverText());
+            QString s2(model->lastError().databaseText());
+            if (s1.size() > 0) {
+                if (s2.size() > 0) {
+                    s1.append(" ").append(s2);
+                }
+            } else { s1 = s2; }
+            creator->setStatusText(
+                tr("Query Error: <span style=\" color:#ff0000;\">")
+                + s1
+                + "<br/></span>"
+                + tr("using sql statement:")
+                + "<br/><tt>"
+                + sql);
+        } else {
+            creator->clearActiveItem();
+            if (Utils::detaches(sql)) { creator->detaches(); }
             if (Utils::updateObjectTree(sql)) { emit buildTree(); }
             if (Utils::updateTables(sql)) { emit refreshTable(); }
             appendHistory(sql);
+            if (model->rowCount() > 0) {
+                creator->setTableModel(model);
+            } else { delete model; }
             creator->buildPragmasTree();
         }
     }
@@ -359,8 +390,12 @@ void SqlEditor::actionRun_as_Script_triggered()
             if (Utils::updateObjectTree(sql)) { rebuildTree = true; }
             if (Utils::updateTables(sql)) { updateTable = true; }
             emit showSqlScriptResult("-- " + tr("No error"));
-            if (mdl->rowCount() > 0) { model = mdl; }
-            else delete mdl;
+            if (mdl->rowCount() > 0) {
+                model = mdl;
+                creator->setTableModel(model);
+            } else {
+                delete mdl;
+            }
         }
         emit showSqlScriptResult("--");
 	} while (tokens.line() < ui.sqlTextEdit->lines());
