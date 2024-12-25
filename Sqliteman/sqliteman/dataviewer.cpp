@@ -21,6 +21,7 @@ for which a new license (GPL+exception) is in place.
 #include <QSqlQuery>
 #include <QSqlRecord>
 #include <QSqlError>
+#include <QTimer>
 
 #include "blobpreviewwidget.h"
 #include "database.h"
@@ -290,23 +291,51 @@ void DataViewer::removeFinder()
 	}
 }
 
-void DataViewer::resizeViewToContents(QAbstractItemModel * model)
+/* This bit of mechanism is needed to avoid the GUI locking up when the user
+ * resizes our window. As the user drags the window boundary, we get
+ * a stream of resizeEvents. We need to resize our column widths, but if
+ * we're holding a big table, this can take a long time and freeze the GUI,
+ * which prevents the user from dragging.
+ * So we arrange to resize our column widths when the user stops dragging:
+ * scheduleResize() gets called from resizeEvent() and also from rollback(),
+ * commit(), tableView_dataResized(), and setTableModel((), in all of which
+ * we change the data, which requires our column widths to be resized.
+ */
+void DataViewer::scheduleResize()
 {
-	if (model->columnCount() <= 0)
-		return;
-
-	Utils::setColumnWidths(ui.tableView);
-	ui.tableView->resizeRowsToContents();
-	dataResized = false;
+    /* If the timer is already running, this (re-)starts the timeer for
+     * 200 milliseconds. When the user stops dragging the window boundary,
+     * we stop restarting the timer and it times out and signals
+     * reallyResize().
+     */
+    if (!resizing) {
+        resizeTimer->start(200);
+    }
 }
 
+// Overridde QMainWindow::resizeEvent().
 void DataViewer::resizeEvent(QResizeEvent * event)
 {
-	if (!dataResized && ui.tableView->model())
-		resizeViewToContents(ui.tableView->model());
+    // Arrange to resize columns when the user stops dragging.
+    scheduleResize();
+    // Deal with other effects of the QResizeEvent.
+    QMainWindow::resizeEvent(event);
 }
 
 // private slots
+
+void DataViewer::reallyResize() // user stopped dragging
+{
+    QAbstractItemModel * model = ui.tableView->model();
+    if (model && model->columnCount() > 0) {
+        resizing = true;
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        ui.tableView->resizeColumnsToContents();
+        QApplication::restoreOverrideCursor();
+        resizing = false;
+    }
+    update();
+}
 
 void DataViewer::findFirst()
 {
@@ -626,7 +655,7 @@ void DataViewer::rollback()
 			ui.tableView->showRow(i);
 		}
 		reSelect();
-		resizeViewToContents(model);
+        scheduleResize();
 		updateButtons();
 	}
 }
@@ -662,7 +691,7 @@ void DataViewer::commit()
     showingChanges = false;
 	model->setPendingTransaction(false);
 	reSelect();
-	resizeViewToContents(model);
+    scheduleResize();
 	updateButtons();
 	emit tableUpdated();
 }
@@ -791,7 +820,7 @@ void DataViewer::tableView_currentChanged(const QModelIndex & current,
 
 void DataViewer::tableView_dataResized(int column, int oldWidth, int newWidth) 
 {
-	dataResized = true;
+	scheduleResize();
 }
 
 void DataViewer::tableView_dataChanged()
@@ -961,11 +990,12 @@ void DataViewer::doPasteOver()
 // public methods
 
 DataViewer::DataViewer(LiteManWindow * parent)
-	: QMainWindow(parent),
-	  dataResized(true)
+	: QMainWindow(parent)
 {
     creator = parent;
 	ui.setupUi(this);
+    resizeTimer = new QTimer(this);
+    resizeTimer->setSingleShot(true);
 	m_finder = 0;
 	canFetchMore = tr("(More rows can be fetched. "
 		"Scroll the resultset for more rows and/or read the documentation.)");
@@ -1048,6 +1078,8 @@ DataViewer::DataViewer(LiteManWindow * parent)
         new DataViewerTools::KeyPressEater(this);
 	ui.tableView->installEventFilter(keyPressEater);
 
+    connect(resizeTimer, SIGNAL(timeout()),
+            this, SLOT(reallyResize()));
     connect(ui.actionShowChanges, SIGNAL(triggered()),
             this, SLOT(showChanges()));
 	connect(ui.actionFind, SIGNAL(triggered()),
@@ -1211,7 +1243,9 @@ bool DataViewer::setTableModel(QAbstractItemModel * model, bool showButtons)
 	if (model->columnCount() > 0)
 	{
 		ui.tabWidget->setCurrentIndex(0);
-		resizeViewToContents(model);
+        resizing = true;
+        ui.tableView->resizeColumnsToContents();
+        resizing = false;
 	}
 	updateButtons();
 	

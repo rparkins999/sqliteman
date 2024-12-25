@@ -23,6 +23,7 @@ class QSqlQueryModel;
 class QResizeEvent;
 class QTableView;
 class QTextEdit;
+class QTimer;
 class QToolBar;
 
 /*! \brief A Complex widget handling the database outputs and status messages.
@@ -32,8 +33,8 @@ class DataViewer : public QMainWindow
 {
 		Q_OBJECT
 
-	private:
-		bool dataResized;
+    private:
+        bool resizing = false;
         bool showingChanges;
 		int activeRow;
 		int savedActiveRow;
@@ -43,6 +44,7 @@ class DataViewer : public QMainWindow
 		FindDialog * m_finder;
 		bool m_doneFindAll;
 
+        QTimer * resizeTimer;
         QAction * actCopyWhole;
         QAction * actPasteOver;
         QAction * actOpenEditor;
@@ -54,10 +56,11 @@ class DataViewer : public QMainWindow
 		void unFindAll();
 		void findNext(int column);
 		void removeFinder();
-		void resizeViewToContents(QAbstractItemModel * model);
+        void scheduleResize();
 		void resizeEvent(QResizeEvent * event);
 
 	private slots:
+        void reallyResize();
         void showChanges();
 		void findFirst();
 		void findNext();

@@ -23,8 +23,7 @@ class SqlTableView : public QTableView
 		QModelIndexList selectedIndexes() const {
 			return QTableView::selectedIndexes();
 		}
-		int sizeHintForColumn(int column) const;
-		int sizeHintForRow(int row) const;
+		void resizeColumnsToContents();
 
 };
 #endif
