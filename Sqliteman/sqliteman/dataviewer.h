@@ -101,7 +101,6 @@ class DataViewer : public QMainWindow
 		void tableView_selectionChanged(
 			const QItemSelection &, const QItemSelection &);
 		void tableView_currentChanged(const QModelIndex &, const QModelIndex &);
-		void tableView_dataResized(int column, int oldWidth, int newWidth);
 		void tableView_dataChanged();
 		void handleBlobPreview(bool);
 

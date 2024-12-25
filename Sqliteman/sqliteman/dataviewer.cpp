@@ -297,9 +297,7 @@ void DataViewer::removeFinder()
  * we're holding a big table, this can take a long time and freeze the GUI,
  * which prevents the user from dragging.
  * So we arrange to resize our column widths when the user stops dragging:
- * scheduleResize() gets called from resizeEvent() and also from rollback(),
- * commit(), tableView_dataResized(), and setTableModel((), in all of which
- * we change the data, which requires our column widths to be resized.
+ * scheduleResize() gets called from resizeEvent() and setTableModel(().
  */
 void DataViewer::scheduleResize()
 {
@@ -655,7 +653,6 @@ void DataViewer::rollback()
 			ui.tableView->showRow(i);
 		}
 		reSelect();
-        scheduleResize();
 		updateButtons();
 	}
 }
@@ -691,7 +688,6 @@ void DataViewer::commit()
     showingChanges = false;
 	model->setPendingTransaction(false);
 	reSelect();
-    scheduleResize();
 	updateButtons();
 	emit tableUpdated();
 }
@@ -816,11 +812,6 @@ void DataViewer::tableView_currentChanged(const QModelIndex & current,
 										  const QModelIndex & previous)
 {
 	// only used for debug output
-}
-
-void DataViewer::tableView_dataResized(int column, int oldWidth, int newWidth) 
-{
-	scheduleResize();
 }
 
 void DataViewer::tableView_dataChanged()
@@ -1109,12 +1100,6 @@ DataViewer::DataViewer(LiteManWindow * parent)
 			this, SLOT(handleBlobPreview(bool)));
 	connect(ui.tabWidget, SIGNAL(currentChanged(int)),
 			this, SLOT(tabWidget_currentChanged(int)));
-	connect(ui.tableView->horizontalHeader(),
-            SIGNAL(sectionResized(int, int, int)),
-			this, SLOT(tableView_dataResized(int, int, int)));
-	connect(ui.tableView->verticalHeader(),
-            SIGNAL(sectionResized(int, int, int)),
-			this, SLOT(tableView_dataResized(int, int, int)));
 	connect(ui.tableView->verticalHeader(), SIGNAL(sectionDoubleClicked(int)),
 			this, SLOT(rowDoubleClicked(int)));
 	connect(ui.tableView->verticalHeader(), SIGNAL(sectionClicked(int)),
