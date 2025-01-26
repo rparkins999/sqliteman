@@ -24,3 +24,8 @@ define pd
 end
 set unwindonsignal on
 set check type off
+# source directory for Qt
+dir /usr/src/debug/libqt5-qtbase-5.15.8+kde185-150500.4.8.1.x86_64/src/corelib
+dir /usr/src/debug/libqt5-qtbase-5.15.8+kde185-150500.4.8.1.x86_64/src/widgets
+dir /usr/src/debug/libqt5-qtbase-5.15.8+kde185-150500.4.8.1.x86_64/src/gui
+dir /usr/src/debug/libqt5-qtbase-5.15.8+kde185-150500.4.8.1.x86_64/src/sql

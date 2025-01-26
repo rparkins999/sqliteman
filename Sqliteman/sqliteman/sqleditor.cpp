@@ -392,7 +392,6 @@ void SqlEditor::actionRun_as_Script_triggered()
             emit showSqlScriptResult("-- " + tr("No error"));
             if (mdl->rowCount() > 0) {
                 model = mdl;
-                creator->setTableModel(model);
             } else {
                 delete mdl;
             }

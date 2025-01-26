@@ -1,9 +1,11 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-*/
+/* Copyright © 2007-2009 Petr Vanek and 2015-2025 Richard Parkins
+ *
+ * For general Sqliteman copyright and licensing information please refer
+ * to the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
+
 #ifndef SQLMODELS_H
 #define SQLMODELS_H
 
@@ -13,6 +15,7 @@ for which a new license (GPL+exception) is in place.
 #include <QPalette>
 #include <QSqlRecord>
 
+#include "preferences.h"
 #include "sqlparser.h"
 
 class QPushButton;
@@ -40,6 +43,7 @@ class SqlTableModel : public QSqlTableModel
         QList<FieldInfo> m_fields;
         QSqlRecord m_copyThis;
 		QPalette m_palette;
+        Preferences * m_prefs;
 
 		// ****ing broken QSqlTableModel....
 		// This map contains an entry for each inserted row:
@@ -54,7 +58,6 @@ class SqlTableModel : public QSqlTableModel
 							Qt::Orientation orientation,
 							int role = Qt::DisplayRole) const;
 
-		// override the one in QSqlTableModel
 		bool insertRowIntoTable(const QSqlRecord &values);
 
         // used to calculate a default value
@@ -66,7 +69,7 @@ class SqlTableModel : public QSqlTableModel
 
 
 	private slots:
-		/*! \brief Called when is new row created in the view
+		/*! \brief Called when a new row is created in the view
         (not in the model).
         */
 		void doPrimeInsert(int, QSqlRecord &);
@@ -129,6 +132,7 @@ class SqlQueryModel : public QSqlQueryModel
 	Q_OBJECT
 
 	public:
+        Preferences * m_prefs;
 		SqlQueryModel( QObject * parent = 0);
 		~SqlQueryModel() {};
 		void setQuery ( const QSqlQuery & query );
@@ -152,7 +156,7 @@ signals:
 	private:
 		int m_useCount;
 		QSqlRecord info;
-		bool m_cropColumns;
+		QPalette m_palette;
 
 		QVariant data(const QModelIndex & item,
                       int role = Qt::DisplayRole) const;

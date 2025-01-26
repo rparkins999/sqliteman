@@ -1,14 +1,15 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
+/* Copyright © 2007-2009 Petr Vanek and 2015-2025 Richard Parkins
+ *
+ * For general Sqliteman copyright and licensing information please refer
+ * to the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ *
+ * If table name contains non-alphanumeric characters, no rows are displayed,
+ * although they are actually still there as proved by renaming it back again.
+ * This is a QT bug.
+ */
 
-If table name contains non-alphanumeric characters, no rows are displayed,
-although they are actually still there as proved by renaming it back again.
-This is a QT bug.
-
-*/
 #include <time.h>
 
 #include <QApplication>
@@ -21,25 +22,10 @@ This is a QT bug.
 #include <QtCore/QVariant>
 
 #include "database.h"
-#include "preferences.h"
 #include "sqlmodels.h"
 #include "utils.h"
 
-namespace {
-    int rowsToRead() {
-        Preferences * prefs = Preferences::instance();
-        switch (prefs->rowsToRead())
-        {
-            case 0: return 256;
-            case 1: return 512;
-            case 2: return 1024;
-            case 3: return 2048;
-            case 4: return 4096;
-            default: return 0;
-        }
-    }
-}
-
+// Overrides QSqlTableModel::data
 QVariant SqlTableModel::data(const QModelIndex & item, int role) const
 {
 	QVariant rawdata = QSqlTableModel::data(item, Qt::DisplayRole);
@@ -49,13 +35,10 @@ QVariant SqlTableModel::data(const QModelIndex & item, int role) const
 	{
 		bool ok;
 		curr.toDouble(&ok);
-		if (ok)
-			return QVariant(Qt::AlignRight | Qt::AlignTop);
+		if (ok) { return QVariant(Qt::AlignRight | Qt::AlignTop); }
 		return QVariant(Qt::AlignTop);
 	}
 
-	Preferences * prefs = Preferences::instance();
-	bool useNull = prefs->nullHighlight();
 	if (role == Qt::BackgroundColorRole)
     {
 		// QSqlTableModel::isDirty() always returns true for an inserted
@@ -80,45 +63,40 @@ QVariant SqlTableModel::data(const QModelIndex & item, int role) const
 				}
 	        }
 		}
-		if (curr.isNull() && useNull)
+		if (curr.isNull() && m_prefs->nullHighlight())
 		{
-			return prefs->nullHighlightColor();
+			return QVariant(m_prefs->nullHighlightColor());
 		}
-		else
-		{
-			QColor c = m_palette.color(QPalette::Base);
-			return c;
-		}
+		if (   (rawdata.type() == QVariant::ByteArray)
+                 && (m_prefs->blobHighlight()))
+        {
+            return QVariant(m_prefs->blobHighlightColor());
+        }
+        // anything else
+		return m_palette.color(QPalette::Base);
     }
 
-	QString nullText = prefs->nullHighlightText();
-	bool useBlob = prefs->blobHighlight();
-	QColor blobColor = prefs->blobHighlightColor();
-	QString blobText = prefs->blobHighlightText();
-	bool cropColumns = prefs->cropColumns();
 
 	// nulls
 	if (curr.isNull())
 	{
 		if (role == Qt::ToolTipRole)
 			return QVariant(tr("NULL value"));
-		if (useNull && (role == Qt::DisplayRole))
-				return QVariant(nullText);
+		if ((role == Qt::DisplayRole) && m_prefs->nullHighlight())
+			return QVariant(m_prefs->nullHighlightText());
 	}
 
 	// blobs
 	if (rawdata.type() == QVariant::ByteArray)
 	{
 		if (role == Qt::ToolTipRole) { return QVariant(tr("BLOB value")); }
-		if (useBlob)
+		if ((role == Qt::DisplayRole) && (m_prefs->blobHighlight()))
 		{
-			if (role == Qt::BackgroundColorRole) { return QVariant(blobColor); }
-			if (role == Qt::DisplayRole) { return QVariant(blobText); }
+			return QVariant(m_prefs->blobHighlightText());
 		}
 		else if (role == Qt::DisplayRole)
 		{
-			curr = Database::hex(rawdata.toByteArray());
-			if (!cropColumns) { return QVariant(curr); }
+			return QVariant(Database::hex(rawdata.toByteArray()));
 		}
 	}
 
@@ -126,12 +104,10 @@ QVariant SqlTableModel::data(const QModelIndex & item, int role) const
 	if (role == Qt::ToolTipRole)
 		return QVariant("<qt>" + curr + "</qt>");
 
-	if (role == Qt::DisplayRole && cropColumns)
-		return QVariant(curr.length() > 23 ? curr.left(20)+"..." : curr);
-
 	return QSqlTableModel::data(item, role);
 }
 
+// Overrides QSqlTableModel::setData
 bool SqlTableModel::setData ( const QModelIndex & ix, const QVariant & value, int role)
 {
     // Copying a value to the clipboard sometimes calls setdata
@@ -154,6 +130,7 @@ bool SqlTableModel::setData ( const QModelIndex & ix, const QVariant & value, in
 	else { return false; }
 }
 
+// Overrides QSqlTableModel::headerData
 QVariant SqlTableModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
 	if (orientation == Qt::Horizontal)
@@ -197,6 +174,7 @@ QVariant SqlTableModel::headerData(int section, Qt::Orientation orientation, int
 	return QSqlTableModel::headerData(section, orientation, role);
 }
 
+// Overrides QSqlTableModel::insertRowIntoTable
 bool SqlTableModel::insertRowIntoTable(const QSqlRecord &values)
 {
 	bool generated = false;
@@ -223,6 +201,7 @@ QVariant SqlTableModel::evaluate(QString expression) {
     else { return QVariant(QVariant::String); } // NULL
 }
 
+// Throw away changes
 void SqlTableModel::reset(QString tableName, bool isNew)
 {
 	if (isNew) { m_header.clear(); }
@@ -281,8 +260,7 @@ void SqlTableModel::refreshFields() {
 // Called when creating a new record, handles copying data if wanted.
 void SqlTableModel::doPrimeInsert(int row, QSqlRecord & record)
 {
-    Preferences * prefs = Preferences::instance();
-    bool prefill = prefs->prefillNew();
+    bool prefill = m_prefs->prefillNew();
     QList<FieldInfo>::iterator i;
     int j = 0; // field number
     bool noPKyet = true;
@@ -415,6 +393,8 @@ void SqlTableModel::doPrimeInsert(int row, QSqlRecord & record)
 	}
 }
 
+// Overrides QSqlTableModel::deleteRowFromTable
+// because we need to update the DataViewer if a row was really deleted.
 bool SqlTableModel::deleteRowFromTable(int row)
 {
 	bool result = QSqlTableModel::deleteRowFromTable(row);
@@ -425,14 +405,22 @@ bool SqlTableModel::deleteRowFromTable(int row)
 SqlTableModel::SqlTableModel(QObject * parent, QSqlDatabase db)
 	: QSqlTableModel(parent, db),
 	m_pending(false),
-	m_schema(""),
-	m_useCount(1)
+	m_schema("")
 {
+    /* We used to cache the preference values which this class uses,
+     * but that used the old value if the user changed a preference
+     * after this class has been instantiated. Our singleton preferences
+     * class caches all preferences when sqliteman is started, but updates
+     * its cache if the user changes a preference, so reading from it
+     * gets an up to date value relatively cheaply.
+     */
+    m_prefs = Preferences::instance();
 	m_deleteCache.clear();
 	m_insertCache.clear();
     m_copyThis = QSqlRecord();
 	connect(this, SIGNAL(primeInsert(int, QSqlRecord &)),
 			this, SLOT(doPrimeInsert(int, QSqlRecord &)));
+	m_useCount = 1;
 }
 
 /*
@@ -479,6 +467,7 @@ bool SqlTableModel::insertRows ( int row, int count, const QModelIndex & parent)
 	else { return false; }
 }
 
+// Overrides QSqlTableModel::removeRows
 bool SqlTableModel::removeRows ( int row, int count, const QModelIndex & parent)
 {
 	// this is a workaround to allow mark heading as deletion
@@ -508,6 +497,7 @@ bool SqlTableModel::isNewRow(int row)
 	return m_insertCache.contains(row) && !m_insertCache.value(row);
 }
 
+// Overrides QSqlTableModel::setTable
 void SqlTableModel::setTable(const QString &tableName)
 {
 	reset(tableName, true);
@@ -519,8 +509,9 @@ void SqlTableModel::setTable(const QString &tableName)
 	{
 		QSqlTableModel::setTable(m_schema + "." + tableName);
 	}
-	// For some strange reason QSqlTableModel:i->defaultKeyValue:tableName gives us back
-	// schema.table, so we stash the undecorated table name in the object name
+	// For some strange reason QSqlTableModel:i->defaultKeyValue:tableName
+	// gives us back schema.table, so we stash the undecorated table name
+	// in the object name
 	setObjectName(tableName);
     refreshFields();
     QList<FieldInfo>::iterator i;
@@ -563,29 +554,42 @@ void SqlTableModel::fetchAll()
     QApplication::restoreOverrideCursor();
 }
 
+// Overrides QSqlTableModel::select()
 bool SqlTableModel::select()
 {
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 	bool result = QSqlTableModel::select();
-    int readRowsCount = rowsToRead();
-    bool fetched = false;
-	while (   result &&
-			  canFetchMore(QModelIndex())
-		   && (   (readRowsCount == 0)
-			   || (rowCount() < readRowsCount)))
-	{
-		QSqlTableModel::fetchMore();
-        fetched = true;
-	}
-	if (fetched)
-	{
-		refreshFields();
-		emit moreFetched();
-	}
+    int readRowsCount;
+    if (result) {
+        switch (m_prefs->rowsToRead())
+        {
+            case 0: readRowsCount = 256;
+            case 1: readRowsCount = 512;
+            case 2: readRowsCount = 1024;
+            case 3: readRowsCount = 2048;
+            case 4: readRowsCount = 4096;
+            default: readRowsCount = INT_MAX;
+        }
+
+        bool fetched = false;
+        while (   canFetchMore(QModelIndex())
+               && (rowCount() < readRowsCount))
+        {
+            QSqlTableModel::fetchMore();
+            fetched = true;
+        }
+        if (fetched)
+        {
+            refreshFields();
+            emit moreFetched();
+        }
+    }
     QApplication::restoreOverrideCursor();
 	return result;
 }
 
+// Overrides QSqlTableModel::submitAll() because we need to update the display
+// to show no rows have been changed from the database copy now.
 bool SqlTableModel::submitAll()
 {
 	if (QSqlTableModel::submitAll())
@@ -600,6 +604,8 @@ bool SqlTableModel::submitAll()
 	}
 }
 
+// Overrides QSqlTableModel::revertAll() because we need to update the display
+// to show no rows have been changed from the database copy now.
 void SqlTableModel::revertAll()
 {
 	QSqlTableModel::revertAll();
@@ -611,8 +617,18 @@ void SqlTableModel::revertAll()
 SqlQueryModel::SqlQueryModel( QObject * parent)
 	: QSqlQueryModel(parent),
 	m_useCount(1)
-{ }
+{
+    /* We used to cache the preference values which this class uses,
+     * but that used the old value if the user changed a preference
+     * after this class has been instantiated. Our singleton preferences
+     * class caches all preferences when sqliteman is started, but updates
+     * its cache if the user changes a preference, so reading from it
+     * gets an up to date value relatively cheaply.
+     */
+    m_prefs = Preferences::instance();
+}
 
+// Overrides QSqlQueryModel::data
 QVariant SqlQueryModel::data(const QModelIndex & item, int role) const
 {
 	QVariant rawdata = QSqlQueryModel::data(item, Qt::DisplayRole);
@@ -628,49 +644,37 @@ QVariant SqlQueryModel::data(const QModelIndex & item, int role) const
 		return QVariant(Qt::AlignTop);
 	}
 
-	Preferences * prefs = Preferences::instance();
-	bool useNull = prefs->nullHighlight();
-	QColor nullColor = prefs->nullHighlightColor();
-	QString nullText = prefs->nullHighlightText();
-	bool useBlob = prefs->blobHighlight();
-	QColor blobColor = prefs->blobHighlightColor();
-	QString blobText = prefs->blobHighlightText();
-	bool cropColumns = prefs->cropColumns();
-
-	if (useNull && curr.isNull())
+	if (m_prefs->nullHighlight() && curr.isNull())
 	{
 		if (role == Qt::BackgroundColorRole)
-			return QVariant(nullColor);
+			return QVariant(m_prefs->nullHighlightColor());
 		if (role == Qt::ToolTipRole)
 			return QVariant(tr("NULL value"));
 		if (role == Qt::DisplayRole)
-			return QVariant(nullText);
+			return QVariant(m_prefs->nullHighlightText());
 	}
 
-	if (useBlob && (rawdata.type() == QVariant::ByteArray))
+	if (m_prefs->blobHighlight() && (rawdata.type() == QVariant::ByteArray))
 	{
 		if (role == Qt::BackgroundColorRole)
-			return QVariant(blobColor);
+			return QVariant(m_prefs->blobHighlightColor());
 		if (role == Qt::ToolTipRole)
 			return QVariant(tr("BLOB value"));
 		if (   (role == Qt::DisplayRole)
 			|| (role == Qt::EditRole))
 		{
-			return QVariant(blobText);
+			return QVariant(m_prefs->blobHighlightText());
 		}
 	}
 
 	if (role == Qt::BackgroundColorRole)
 	{
-		return QColor(255, 255, 255);
+		return m_palette.color(QPalette::Base);
 	}
 
 	// advanced tooltips
 	if (role == Qt::ToolTipRole)
 		return QVariant("<qt>" + curr + "</qt>");
-
-	if (role == Qt::DisplayRole && cropColumns)
-		return QVariant(curr.length() > 20 ? curr.left(20)+"..." : curr);
 
 	return QSqlQueryModel::data(item, role);
 }
@@ -692,6 +696,7 @@ void SqlQueryModel::initialRead() {
     }
 }
 
+//Overrides QSqlQueryModel::setQuery
 void SqlQueryModel::setQuery ( const QSqlQuery & query )
 {
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
@@ -700,6 +705,7 @@ void SqlQueryModel::setQuery ( const QSqlQuery & query )
     QApplication::restoreOverrideCursor();
 }
 
+//Overrides QSqlQueryModel::setQuery
 void SqlQueryModel::setQuery ( const QString & query, const QSqlDatabase & db)
 {
 	QSqlQueryModel::setQuery(query, db);

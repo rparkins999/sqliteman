@@ -1,9 +1,11 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-*/
+/* Copyright © 2007-2009 Petr Vanek and 2015-2025 Richard Parkins
+ *
+ * For general Sqliteman copyright and licensing information please refer
+ * to the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
+
 #include <QApplication>
 #include <QFocusEvent>
 #include <QtCore/QModelIndex>
@@ -13,7 +15,7 @@ for which a new license (GPL+exception) is in place.
 #include <QtCore/QSize>
 #include <QtCore/QSizeF>
 #include <QStyle>
-#include <QStyleOptionViewItemV4>
+#include <QStyleOptionViewItem>
 #include <QTextOption>
 #include <QToolButton>
 #include <QtCore/QVector>
@@ -21,16 +23,33 @@ for which a new license (GPL+exception) is in place.
 #include "sqldelegate.h"
 #include "utils.h"
 #include "multieditdialog.h"
-#include "preferences.h"
 #include "database.h"
 #include <cmath>
 
-
-SqlDelegate::SqlDelegate(QObject * parent)
-	: QItemDelegate(parent)
+// Apply style option to textLayout.
+// Common code for sizeHint(), drawDisplay(),
+// and SqlTableView::resizeColumnsToContents() (where it is called only once
+// to avoid repeated calls to sizeHint() which would call it every time).
+// Returns textMargin.
+int SqlDelegate::styleTextLayout(
+    QTextLayout * textLayout, const QStyleOptionViewItem &option) const
 {
+    const QWidget *widget = option.widget;
+    const QStyle *style = widget ? widget->style() : QApplication::style();
+    QTextOption textOption;
+    const int textMargin =
+        style->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, widget) + 1;
+    // remove width padding
+    textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
+    textOption.setTextDirection(option.direction);
+    textOption.setAlignment(
+        QStyle::visualAlignment(option.direction, option.displayAlignment));
+    textLayout->setTextOption(textOption);
+    textLayout->setFont(option.font);
+    return textMargin;
 }
 
+// Overrides QItemDelegate::createEditor
 QWidget *SqlDelegate::createEditor(QWidget *parent,
 								   const QStyleOptionViewItem &/* option */,
 								   const QModelIndex &/* index */) const
@@ -47,6 +66,7 @@ QWidget *SqlDelegate::createEditor(QWidget *parent,
 	return editor;
 }
 
+// Overrides QItemDelegate::setEditorData
 void SqlDelegate::setEditorData(QWidget *editor,
 								const QModelIndex &index) const
 {
@@ -55,6 +75,7 @@ void SqlDelegate::setEditorData(QWidget *editor,
 								Qt::EditRole));
 }
 
+// Overrides QItemDelegate::setModelData
 void SqlDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
 							   const QModelIndex &index) const
 {
@@ -65,6 +86,7 @@ void SqlDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
 // 		qDebug("ed->sqlData() == index.model()->data(index, Qt::EditRole)");
 }
 
+// Overrides QItemDelegate::updateEditorGeometry
 void SqlDelegate::updateEditorGeometry(QWidget *editor,
 									   const QStyleOptionViewItem &option,
 									   const QModelIndex &/* index */) const
@@ -72,79 +94,58 @@ void SqlDelegate::updateEditorGeometry(QWidget *editor,
 	editor->setGeometry(option.rect);
 }
 
-QSizeF SqlDelegate::doTextLayout(int lineWidth) const
-{
-    qreal height = 0;
-    qreal widthUsed = 0;
-    textLayout.beginLayout();
-    while (true) {
-        QTextLine line = textLayout.createLine();
-        if (!line.isValid())
-            break;
-        line.setLineWidth(lineWidth);
-        line.setPosition(QPointF(0, height));
-        height += line.height();
-        widthUsed = qMax(widthUsed, line.naturalTextWidth());
-    }
-    textLayout.endLayout();
-    return QSizeF(widthUsed, height);
-}
-
-// Use same algorithm as drawDisplay()
+// Overrides QItemDelegate::sizeHint
+// This must use the same algorithm as drawDisplay()
+// except that we don't do elision.
 QSize SqlDelegate::sizeHint(const QStyleOptionViewItem &option,
                               const QModelIndex &index) const
 {
     QVariant value = index.data(Qt::DisplayRole);
-    if (value.type() != QVariant::String) {
+    if (!value.canConvert<QString>()) {
         return QItemDelegate::sizeHint(option, index);
     }
-    QString text = value.toString();
-    const QStyleOptionViewItemV4 opt = option;
-    const QWidget *widget;
-    QStyle *style;
-    if (const QStyleOptionViewItemV3 *v3 =
-        qstyleoption_cast<const QStyleOptionViewItemV3 *>(&option))
-    {
-        widget = v3->widget;
-        style = widget->style();
-    } else {
-        widget = 0;
-        style = QApplication::style();
-    }
-    const int textMargin =
-        style->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, widget) + 1;
-    QRect textRect = rect(option, index, Qt::DisplayRole)
-                        .adjusted(textMargin, 0, -textMargin, 0); 
-    QTextOption textOption;
-    textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
-    textOption.setTextDirection(option.direction);
-    textOption.setAlignment(
-        QStyle::visualAlignment(option.direction, option.displayAlignment));
-    textLayout.setTextOption(textOption);
-    textLayout.setFont(option.font);
-    QString text1 = replaceNewLine(text);
-    textLayout.setText(text1);
-
+    QTextLayout textLayout;
+    styleTextLayout(&textLayout, option);
     qreal height = 0;
+    qreal width = 0;
+    textLayout.setText(replaceNewLine(value.toString()));
     textLayout.beginLayout();
-    while (true) {
-        QTextLine line = textLayout.createLine();
-        if (!line.isValid())
-            break;
-        line.setLineWidth(textRect.width());
+    QTextLine line = textLayout.createLine();
+    while (line.isValid()) {
+        line.setLineWidth(option.rect.width());
         height += line.height();
+        width = qMax(width, line.naturalTextWidth());
+        // only look at one line if we're limiting text length display
+        if (m_prefs->cropColumns()) { break; }
+        line = textLayout.createLine();
     }
+    textLayout.endLayout();
     if (height == 0) { // Should never happen, but bail if it does.
         return QItemDelegate::sizeHint(option, index);
     }
-    return QSize(textRect.width(), (int)(ceil(height)));
+    return QSize((int)(ceil(width)), (int)(ceil(height)));
 }
 
+SqlDelegate::SqlDelegate(QObject * parent)
+	: QItemDelegate(parent)
+{
+    /* We used to cache the preference values which this class uses,
+     * but that used the old value if the user changed a preference
+     * after this class has been instantiated, which happens when a
+     * DataViewer is created, usually when sqliteman is started.
+     * Our singleton preferences class caches all preferences when
+     * sqliteman is started, but updates its cache if the user changes
+     * a preference, so reading from it gets an up to date value
+     * relatively cheaply.
+     */
+    m_prefs = Preferences::instance();
+}
+
+// Overrides QItemDelegate::drawDisplay
 void SqlDelegate::drawDisplay(QPainter *painter,
                               const QStyleOptionViewItem &option,
                               const QRect &rect, const QString &text) const
 {
-    QTextOption textOption;
     QPalette::ColorGroup cg = option.state & QStyle::State_Enabled
                               ? QPalette::Normal : QPalette::Disabled;
     if (cg == QPalette::Normal && !(option.state & QStyle::State_Active))
@@ -165,76 +166,51 @@ void SqlDelegate::drawDisplay(QPainter *painter,
         painter->drawRect(rect.adjusted(0, 0, -1, -1));
         painter->restore();
     }
-
-    const QStyleOptionViewItemV4 opt = option;
-
-    const QWidget *widget;
-    QStyle *style;
-    if (const QStyleOptionViewItemV3 *v3 =
-        qstyleoption_cast<const QStyleOptionViewItemV3 *>(&option))
-    {
-        widget = v3->widget;
-        style = widget->style();
-    } else {
-        widget = 0;
-        style = QApplication::style();
-    }
-
-    const int textMargin =
-        style->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, widget) + 1;
-    QRect textRect = rect.adjusted(textMargin, 0, -textMargin, 0); // remove width padding
-    textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
-    textOption.setTextDirection(option.direction);
-    textOption.setAlignment(
-        QStyle::visualAlignment(option.direction, option.displayAlignment));
-    textLayout.setTextOption(textOption);
-    textLayout.setFont(option.font);
+    QTextLayout textLayout;
+    int textMargin = styleTextLayout(&textLayout, option);
+    // remove width padding
+    QRect textRect = option.rect.adjusted(textMargin, 0, -textMargin, 0);
     QString text1 = replaceNewLine(text);
     textLayout.setText(text1);
-
     qreal height = 0;
     int lineCount = 0;
     bool elide = false;
     textLayout.beginLayout();
-    while (true) {
-        QTextLine line = textLayout.createLine();
-        if (!line.isValid())
-            break;
+    QTextLine line = textLayout.createLine();
+    while (line.isValid()) {
         line.setLineWidth(textRect.width());
         line.setPosition(QPointF(0, height));
         height += line.height();
+        ++lineCount;
         if (height > textRect.height()) {
-            elide = true;
+            elide = true; // text too big, need to elide
             break;
         }
-        ++lineCount;
+        line = textLayout.createLine();
     }
-    if (lineCount == 0) {
-        return; // Should never happen, but bail if it does.
-    }
-    if (elide) {
+    if (elide) { // redo with elision
         QTextLine lastLine = textLayout.lineAt(lineCount - 1);
         int start = lastLine.textStart();
         QString elided = option.fontMetrics.elidedText(
             text1.mid(start), option.textElideMode, textRect.width());
         textLayout.endLayout();
         textLayout.setText(text1.left(start).append(elided));
-        textLayout.beginLayout();
         height = 0;
-        while (true) {
-            QTextLine line = textLayout.createLine();
-            if (!line.isValid())
-                break;
+        textLayout.beginLayout();
+        QTextLine line = textLayout.createLine();
+        while (line.isValid()) {
             line.setLineWidth(textRect.width());
             line.setPosition(QPointF(0, height));
             height += line.height();
+            line = textLayout.createLine();
         }
     }
 
     const QSize layoutSize(textRect.width(), textRect.height());
     const QRect layoutRect = QStyle::alignedRect(
         option.direction, option.displayAlignment, layoutSize, textRect);
-    textLayout.draw(painter, layoutRect.topLeft(), QVector<QTextLayout::FormatRange>(), layoutRect);
+    textLayout.draw(painter, layoutRect.topLeft(),
+        QVector<QTextLayout::FormatRange>(), layoutRect);
 }
 
 void SqlDelegate::editor_closeEditor()
@@ -281,11 +257,6 @@ void SqlDelegateUi::focusInEvent(QFocusEvent *e)
 
 void SqlDelegateUi::setSqlData(const QVariant & data)
 {
-	Preferences * prefs = Preferences::instance();
-	bool useBlob = prefs->blobHighlight();
-	QString blobText = prefs->blobHighlightText();
-	bool cropColumns = prefs->cropColumns();
-
 	m_sqlData = data;
 	// blob
 	if (data.type() == QVariant::ByteArray)
@@ -293,15 +264,14 @@ void SqlDelegateUi::setSqlData(const QVariant & data)
 		lineEdit->setDisabled(true);
 		lineEdit->setToolTip(tr(
 			"Blobs can be edited with the multiline editor only (Ctrl+Shift+E)"));
-		Preferences * prefs = Preferences::instance();
-		if (useBlob)
+		if (m_prefs->blobHighlight())
 		{
-			lineEdit->setText(prefs->blobHighlightText());
+			lineEdit->setText(m_prefs->blobHighlightText());
 		}
 		else
 		{
 			QString hex = Database::hex(data.toByteArray());
-			if (cropColumns)
+			if (m_prefs->cropColumns())
 			{
 				hex = hex.length() > 20 ? hex.left(20)+"..." : hex;
 			}

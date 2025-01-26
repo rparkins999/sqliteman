@@ -1,9 +1,10 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-*/
+/* Copyright © 2007-2009 Petr Vanek and 2015-2025 Richard Parkins
+ *
+ * For general Sqliteman copyright and licensing information please refer
+ * to the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
 
 #ifndef SQLDELEGATE_H
 #define SQLDELEGATE_H
@@ -11,25 +12,31 @@ for which a new license (GPL+exception) is in place.
 #include <QItemDelegate>
 #include <QTextLayout>
 #include "ui_sqldelegateui.h"
+#include "preferences.h"
 
 class QAbstractItemModel;
 class QModelIndex;
 class QStyleOptionViewItem;
-class QTextLayout;
 
 
-/*! \brief A special delegate for editation of database result cells.
-See SqlDelegateUi for its widget. See Qt4 docs for delegate informations.
+/*! \brief A special delegate for editing of database result cells.
+See SqlDelegateUi for its widget. See Qt docs for delegate informations.
 \author Petr Vanek <petr@scribus.info>
 */
 class SqlDelegate : public QItemDelegate
 {
 	Q_OBJECT
 
+    private:
+        Preferences * m_prefs;
+
 	public:
-		SqlDelegate(QObject *parent = 0);
-		QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
-							  const QModelIndex &index) const;
+        int styleTextLayout(
+            QTextLayout * textLayout,
+            const QStyleOptionViewItem &option) const;
+		QWidget *createEditor(
+            QWidget *parent, const QStyleOptionViewItem &option,
+			const QModelIndex &index) const;
 
 		void setEditorData(QWidget *editor, const QModelIndex &index) const;
 		void setModelData(QWidget *editor, QAbstractItemModel *model,
@@ -45,9 +52,9 @@ class SqlDelegate : public QItemDelegate
                     text[i] = QChar::LineSeparator;
             return text;
         }
-        QSizeF doTextLayout(int lineWidth) const;
         QSize sizeHint(const QStyleOptionViewItem &option,
                        const QModelIndex &index) const;
+		SqlDelegate(QObject *parent = 0);
 
     signals:
         void dataChanged();
@@ -57,9 +64,6 @@ class SqlDelegate : public QItemDelegate
         void drawDisplay(QPainter *painter, const QStyleOptionViewItem &option,
                          const QRect &rect, const QString &text) const;
 
-    private:
-        mutable QTextLayout textLayout;
-
 	private slots:
 		void editor_closeEditor();
         void editor_textChanged();
@@ -67,7 +71,7 @@ class SqlDelegate : public QItemDelegate
 };
 
 
-/*! \brief A custom widget used for direct data editation in the DataViewer result table.
+/*! \brief A custom widget used for direct data editing in the DataViewer result table.
 It contains line edit and some buttons for specific tasks.
 LineEdit is used for direct editation as in the default item delegate.
 This widget is disabled when there is stored a multiline text (\\n)
@@ -95,6 +99,7 @@ class SqlDelegateUi : public QWidget, public Ui::SqlDelegateUi
 
 	private:
 		QVariant m_sqlData;
+        Preferences * m_prefs;
 
 		/*! Set focus to the proper place implementation.
 		Jørgen Lind (Trolltech): "We set focus on the widget after we have created it

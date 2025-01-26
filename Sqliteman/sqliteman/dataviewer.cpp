@@ -329,6 +329,7 @@ void DataViewer::reallyResize() // user stopped dragging
         resizing = true;
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
         ui.tableView->resizeColumnsToContents();
+        ui.tableView->resizeRowsToContents();
         QApplication::restoreOverrideCursor();
         resizing = false;
     }
@@ -1095,7 +1096,8 @@ DataViewer::DataViewer(LiteManWindow * parent)
 			this, SLOT(gotoLine()));
 	connect(keyPressEater, SIGNAL(copyRequest()),
 			this, SLOT(copyHandler()));
-// 	connect(parent, SIGNAL(prefsChanged()), ui.tableView, SLOT(repaint()));
+ 	connect(parent, SIGNAL(prefsChanged()),
+            ui.tableView, SLOT(repaint()));
 	connect(ui.actionBLOB_Preview, SIGNAL(toggled(bool)),
 			this, SLOT(handleBlobPreview(bool)));
 	connect(ui.tabWidget, SIGNAL(currentChanged(int)),
@@ -1230,6 +1232,7 @@ bool DataViewer::setTableModel(QAbstractItemModel * model, bool showButtons)
 		ui.tabWidget->setCurrentIndex(0);
         resizing = true;
         ui.tableView->resizeColumnsToContents();
+        ui.tableView->resizeRowsToContents();
         resizing = false;
 	}
 	updateButtons();
