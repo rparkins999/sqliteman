@@ -391,6 +391,7 @@ void pd::dump(bool b) { qDebug(b ? "true" : "false"); }
 void pd::dump(long double d) { qDebug("%Lg", d); }
 void pd::dump(const char * s) { qDebug("%s", s); }
 
+void pd::dump(QChar c) { dump(QString(c)); }
 void pd::dump(QColor c) { dump(prepareColor(c)); }
 void pd::dump(QComboBox & box) { // treat like a list
 	int n = box.count();
@@ -692,6 +693,7 @@ void pd::dump(QStringList &l) {
         endList();
     }
 }
+void pd::dump(QStringRef sr) { dump(sr.toString()); }
 void pd::dump(QTableWidgetItem & item) {
     char * text = prepareString(item.text()).toUtf8().data();
     char * tip =  prepareString(item.toolTip()).toUtf8().data();
@@ -709,6 +711,7 @@ void pd::dump(QTreeWidgetItem & item) {
 void pd::dump(QTreeWidgetItem * item) {
     dump(prepareTreeWidgetItem(item));
 }
+void pd::dump(QUrl url) { dump(url.toString()); }
 
 // For a list-like QVariant we can call dump() recursively because
 // we can get the type at runtime.

@@ -87,6 +87,7 @@ public:
     static void dump(const unsigned char * s) { dump((const char *)s); }
 
     // Qt types that I use in alphabetical order
+    static void dump(QChar c);
     static void dump(QColor c);
     static void dump(QComboBox & box);
     static void dump(QComboBox * box);
@@ -129,12 +130,14 @@ public:
     static void dump(QSqlRecord * r);
     static void dump(QString s);
     static void dump(QStringList &l);
+    static void dump(QStringRef sr);
     static void dump(QTableWidgetItem & item);
     static void dump(QTableWidgetItem * item);
     static void dump(QTextEdit & te);
     static void dump(QTextEdit * te);
     static void dump(QTreeWidgetItem & item);
     static void dump(QTreeWidgetItem * item);
+    static void dump(QUrl url);
     static void dump(QVariant v);
     static void dump(QVector<bool> &v);
     static void dump(QVector<int> &v);
