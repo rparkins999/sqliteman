@@ -780,8 +780,8 @@ void LiteManWindow::about()
         + getOSName()
         + tr("Parts")
         + " © 2007 Petr Vanek, "
-        + tr("Parts")
-        + " © 2021-2024 Richard Parkins<br/>");
+        + tr("parts")
+        + " © 2021-2025 Richard Parkins<br/>");
 }
 
 void LiteManWindow::aboutQt()

@@ -39,8 +39,10 @@ int SqlDelegate::styleTextLayout(
     QTextOption textOption;
     const int textMargin =
         style->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, widget) + 1;
-    // remove width padding
-    textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
+    textOption.setWrapMode(
+        (option.features & QStyleOptionViewItem::WrapText)
+        ? QTextOption::WrapAtWordBoundaryOrAnywhere
+        : QTextOption::NoWrap);
     textOption.setTextDirection(option.direction);
     textOption.setAlignment(
         QStyle::visualAlignment(option.direction, option.displayAlignment));
@@ -110,16 +112,14 @@ QSize SqlDelegate::sizeHint(const QStyleOptionViewItem &option,
     qreal width = 0;
     textLayout.setText(replaceNewLine(value.toString()));
     textLayout.beginLayout();
-    QTextLine line = textLayout.createLine();
-    while (line.isValid()) {
+    do {
+        QTextLine line = textLayout.createLine();
+        if (!line.isValid()) { break; }
         line.setLineWidth(option.rect.width());
+        line.setPosition(QPointF(0, height));
         height += line.height();
         width = qMax(width, line.naturalTextWidth());
-        // only look at one line if we're limiting text length display
-        if (m_prefs->cropColumns()) { break; }
-        line = textLayout.createLine();
-    }
-    textLayout.endLayout();
+    } while (!m_prefs->cropColumns());
     if (height == 0) { // Should never happen, but bail if it does.
         return QItemDelegate::sizeHint(option, index);
     }
@@ -176,18 +176,18 @@ void SqlDelegate::drawDisplay(QPainter *painter,
     int lineCount = 0;
     bool elide = false;
     textLayout.beginLayout();
-    QTextLine line = textLayout.createLine();
-    while (line.isValid()) {
-        line.setLineWidth(textRect.width());
-        line.setPosition(QPointF(0, height));
-        height += line.height();
-        ++lineCount;
+    do {
         if (height > textRect.height()) {
             elide = true; // text too big, need to elide
             break;
         }
-        line = textLayout.createLine();
-    }
+        QTextLine line = textLayout.createLine();
+        if (!line.isValid()) { break; }
+        line.setLineWidth(textRect.width());
+        line.setPosition(QPointF(0, height));
+        height += line.height();
+        ++lineCount;
+    } while (!m_prefs->cropColumns());
     if (elide) { // redo with elision
         QTextLine lastLine = textLayout.lineAt(lineCount - 1);
         int start = lastLine.textStart();
@@ -197,13 +197,13 @@ void SqlDelegate::drawDisplay(QPainter *painter,
         textLayout.setText(text1.left(start).append(elided));
         height = 0;
         textLayout.beginLayout();
-        QTextLine line = textLayout.createLine();
-        while (line.isValid()) {
+        do {
+            QTextLine line = textLayout.createLine();
+            if (!line.isValid()) { break; }
             line.setLineWidth(textRect.width());
             line.setPosition(QPointF(0, height));
             height += line.height();
-            line = textLayout.createLine();
-        }
+        } while (true);
     }
 
     const QSize layoutSize(textRect.width(), textRect.height());

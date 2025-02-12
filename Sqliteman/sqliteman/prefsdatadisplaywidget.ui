@@ -1,69 +1,70 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>PrefsDataDisplayWidget</class>
- <widget class="QWidget" name="PrefsDataDisplayWidget" >
-  <property name="geometry" >
+ <widget class="QWidget" name="PrefsDataDisplayWidget">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>437</width>
+    <height>318</height>
    </rect>
   </property>
-  <layout class="QGridLayout" >
-   <property name="margin" >
+  <layout class="QGridLayout">
+   <property name="margin" stdset="0">
     <number>9</number>
    </property>
-   <property name="spacing" >
+   <property name="spacing">
     <number>6</number>
    </property>
-   <item row="1" column="0" >
-    <widget class="QGroupBox" name="groupBox" >
-     <property name="title" >
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
       <string>NULL handling</string>
      </property>
-     <layout class="QGridLayout" >
-      <property name="margin" >
+     <layout class="QGridLayout">
+      <property name="margin" stdset="0">
        <number>9</number>
       </property>
-      <property name="spacing" >
+      <property name="spacing">
        <number>6</number>
       </property>
-      <item row="0" column="0" colspan="3" >
-       <widget class="QCheckBox" name="nullCheckBox" >
-        <property name="toolTip" >
+      <item row="0" column="0" colspan="3">
+       <widget class="QCheckBox" name="nullCheckBox">
+        <property name="toolTip">
          <string>Highlight the NULL values in the data result table</string>
         </property>
-        <property name="text" >
+        <property name="text">
          <string>&amp;Use NULL highlighting</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="2" >
-       <widget class="QPushButton" name="nullBgButton" >
-        <property name="toolTip" >
+      <item row="1" column="2">
+       <widget class="QPushButton" name="nullBgButton">
+        <property name="toolTip">
          <string>Background color of the NULL value cell</string>
         </property>
-        <property name="text" >
+        <property name="text">
          <string>B&amp;ackground</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="0" >
-       <widget class="QLabel" name="label" >
-        <property name="text" >
+      <item row="1" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
          <string>&amp;NULL alias:</string>
         </property>
-        <property name="buddy" >
+        <property name="buddy">
          <cstring>nullAliasEdit</cstring>
         </property>
        </widget>
       </item>
-      <item row="1" column="1" >
-       <widget class="QLineEdit" name="nullAliasEdit" >
-        <property name="toolTip" >
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="nullAliasEdit">
+        <property name="toolTip">
          <string>Text to be used as a NULL mark</string>
         </property>
-        <property name="text" >
+        <property name="text">
          <string>{null}</string>
         </property>
        </widget>
@@ -71,54 +72,54 @@
      </layout>
     </widget>
    </item>
-   <item row="2" column="0" >
-    <widget class="QGroupBox" name="groupBox_2" >
-     <property name="title" >
+   <item row="2" column="0">
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
       <string>BLOB handling</string>
      </property>
-     <layout class="QGridLayout" >
-      <property name="margin" >
+     <layout class="QGridLayout">
+      <property name="margin" stdset="0">
        <number>9</number>
       </property>
-      <property name="spacing" >
+      <property name="spacing">
        <number>6</number>
       </property>
-      <item row="0" column="0" colspan="3" >
-       <widget class="QCheckBox" name="blobCheckBox" >
-        <property name="toolTip" >
+      <item row="0" column="0" colspan="3">
+       <widget class="QCheckBox" name="blobCheckBox">
+        <property name="toolTip">
          <string>Highlight the BLOB values in the data result table</string>
         </property>
-        <property name="text" >
+        <property name="text">
          <string>&amp;Use BLOB highlighting</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="2" >
-       <widget class="QPushButton" name="blobBgButton" >
-        <property name="toolTip" >
+      <item row="1" column="2">
+       <widget class="QPushButton" name="blobBgButton">
+        <property name="toolTip">
          <string>Background color of the BLOB value cell</string>
         </property>
-        <property name="text" >
+        <property name="text">
          <string>Ba&amp;ckground</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="0" >
-       <widget class="QLabel" name="label_2" >
-        <property name="text" >
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
          <string>&amp;BLOB alias:</string>
         </property>
-        <property name="buddy" >
+        <property name="buddy">
          <cstring>blobAliasEdit</cstring>
         </property>
        </widget>
       </item>
-      <item row="1" column="1" >
-       <widget class="QLineEdit" name="blobAliasEdit" >
-        <property name="toolTip" >
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="blobAliasEdit">
+        <property name="toolTip">
          <string>Text to be used as a BLOB mark</string>
         </property>
-        <property name="text" >
+        <property name="text">
          <string>{blob}</string>
         </property>
        </widget>
@@ -126,19 +127,26 @@
      </layout>
     </widget>
    </item>
-   <item row="3" column="0" >
-    <widget class="QCheckBox" name="cropColumnsCheckBox" >
-     <property name="text" >
+   <item row="3" column="0">
+    <widget class="QCheckBox" name="cropColumnsCheckBox">
+     <property name="toolTip">
+      <string>If this box is checked, when showing the Full View of a table
+or the result of a query, the Data Viewer will truncate field values
+instead of trying to break the text over multiple lines.
+If the box is not checked, a field value may still be truncated
+if it would take too many lines to display all of it. </string>
+     </property>
+     <property name="text">
       <string>Limit Text Length Display</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="0" >
+   <item row="4" column="0">
     <spacer>
-     <property name="orientation" >
+     <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
-     <property name="sizeHint" >
+     <property name="sizeHint" stdset="0">
       <size>
        <width>419</width>
        <height>22</height>
@@ -146,15 +154,14 @@
      </property>
     </spacer>
    </item>
-   <item row="0" column="0" >
-    <widget class="QLabel" name="titleLabel" >
-     <property name="font" >
+   <item row="0" column="0">
+    <widget class="QLabel" name="titleLabel">
+     <property name="font">
       <font>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
-     <property name="text" >
+     <property name="text">
       <string>Data Display</string>
      </property>
     </widget>

@@ -216,12 +216,16 @@ void SqlTableView::resizeRowsToContents()
     vertHeader->setSectionResizeMode(QHeaderView::Fixed);
     vertHeader->setMinimumSectionSize(-1);
     int rows = vertHeader->count();
-	int columns = horizHeader->count();
+    int columns = horizHeader->count();
     int vhh = vertHeader->defaultSectionSize();
     // Don't give any row more than half the available height
-    int maxHeight = (viewport()->height()) - vhh / 2;
+    int maxHeight = (viewport()->height() - vhh) / 2;
     QStyleOptionViewItem option = viewOptions();
-    if (!m_prefs->cropColumns()) {
+    if (m_prefs->cropColumns()) {
+        setWordWrap(false);
+        option.features &= ~QStyleOptionViewItem::WrapText;
+    } else {
+        setWordWrap(true);
         option.features |= QStyleOptionViewItem::WrapText;
     }
     (qobject_cast<SqlDelegate*>(itemDelegate()))
@@ -242,14 +246,13 @@ void SqlTableView::resizeRowsToContents()
                     SqlDelegate::replaceNewLine(value.toString()));
                 m_textLayout.beginLayout();
                 height = 0;
-                QTextLine line = m_textLayout.createLine();
-                if (m_prefs->cropColumns()) {
-                    if (line.isValid()) { height += line.height(); }
-                } else while (line.isValid()) {
-                    height += line.height();
+                do {
+                    QTextLine line = m_textLayout.createLine();
+                    if (!line.isValid()) { break; }
                     line.setLineWidth(width);
-                    line = m_textLayout.createLine();
-                }
+                    line.setPosition(QPointF(0, height));
+                    height += line.height();
+                } while (!m_prefs->cropColumns());
             } else {
                 option.rect.setWidth(width);
                 height = itemDelegate()->sizeHint(option, index).height();

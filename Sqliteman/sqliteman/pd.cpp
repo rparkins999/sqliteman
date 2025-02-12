@@ -335,6 +335,7 @@ QString pd::prepareVariant(QVariant v) {
         case QVariant::Size: return prepareSize(v.value<QSize>());
         case QVariant::SizeF: return prepareSizeF(v.value<QSizeF>());
         case QVariant::SizePolicy: return "<SizePolicy>";
+        case QVariant::String: return(v.toString());
         case QVariant::TextFormat: return "<TextFormat>";
         case QVariant::TextLength: return "<TextLength>";
         case QVariant::Url: return prepareUrl(v.toUrl());
@@ -345,7 +346,7 @@ QString pd::prepareVariant(QVariant v) {
         default: {
             QString typeName = v.typeName();
             if (typeName.isNull() || typeName.isEmpty()) {
-                return "<QVariant with no type<";
+                return "<QVariant with no type>";
             } else {
                 return QString("<QVariant of type %1>").arg(typeName);
             }
