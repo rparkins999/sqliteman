@@ -261,6 +261,15 @@
                                 they should support what
                                 <span class="application">sqlite</span>,
                                 does, not what they think that it ought to do.
+                                You can delete all but one of a set of
+                                multiple rows with the same content by
+                                using the query builder to find just those
+                                rows. The query builder retains its last query,
+                                so you can go back to it, click the Copy SQL
+                                button, paste the query into the SQL editor,
+                                add a LIMIT clause with one less than the
+                                number of duplicates, change the SELECT to
+                                DELETE, and run the modified query.
                             </td>
                         </tr>
                         <tr class="question">
