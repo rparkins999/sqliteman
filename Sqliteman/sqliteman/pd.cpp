@@ -519,6 +519,26 @@ void pd::dump(QList<QString> &l) {
         endList();
     }
 }
+void pd::dump(QList<QStringList> &l) {
+    if (l.isEmpty()) { qDebug ("Empty QList<QStringList>"); }
+    else {
+        startList("QList");
+        QList<QStringList>::const_iterator i;
+        for (i = l.constBegin(); i != l.constEnd(); ++i) {
+            if ((*i).isEmpty()) { qDebug ("Empty QStringList"); }
+            else {
+                // start a nested list
+                startList("QStringList");
+                QStringList::const_iterator j;
+                for (j = (*i).constBegin(); j != (*i).constEnd(); ++j) {
+                    addItem(*j);
+                }
+                endList(); // end the nested list
+            }
+        }
+        endList();
+    }
+}
 void pd::dump(QList<QTreeWidgetItem *> &l) {
     if (l.isEmpty()) { qDebug ("Empty QList<QTreeWidgetItem *>"); }
     else {

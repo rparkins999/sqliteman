@@ -566,6 +566,10 @@ void SqlEditor::actionSave_As_triggered()
 void SqlEditor::saveFile()
 {
 	QFile f(m_fileName);
+	if (m_fileWatcher) {
+        // Avoid triggering externalFileChange
+		m_fileWatcher->removePaths(m_fileWatcher->files());
+    }
 	if (!f.open(QIODevice::WriteOnly | QIODevice::Text))
 	{
 		QMessageBox::warning(this, tr("Save SQL Script"),
@@ -578,6 +582,8 @@ void SqlEditor::saveFile()
 		f.close();
    	   	ui.sqlTextEdit->setModified(false);
    	}
+   	// reenable warning on external File Change
+   	setFileWatcher(m_fileName);
 }
 
 bool SqlEditor::changedConfirm()

@@ -105,6 +105,7 @@ public:
     static void dump(QList<QModelIndex> &l);
     static void dump(QList<QObject *> &l);
     static void dump(QList<QString> &l);
+    static void dump(QList<QStringList> &l);
     static void dump(QList<QTreeWidgetItem *> &l);
     static void dump(QList<QVariant> &l);
     static void dump(QList<QWidget *> &l);
