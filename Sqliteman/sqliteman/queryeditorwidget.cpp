@@ -659,6 +659,21 @@ void QueryEditorWidget::setSchema(QString schema,
     setSchema(schema, m_table, schemaMayChange, tableMayChange);
 }
 
+void QueryEditorWidget::clear()
+{
+    ui.schemaList->setEnabled(false); // disable before disconnecting
+    disconnect(ui.schemaList, SIGNAL(currentIndexChanged(const QString &)),
+               this, SLOT(schemaSelected(const QString &)));
+    ui.schemaList->clear();
+    m_schema.clear();
+    ui.tablesList->setEnabled(false);
+    disconnect(ui.tablesList,
+                SIGNAL(currentIndexChanged(const QString &)),
+                this, SLOT(tableSelected(const QString &)));
+    ui.tablesList->clear();
+    m_table.clear();
+}
+
 
 void QueryEditorWidget::copySql(bool elide)
 {

@@ -110,3 +110,8 @@ void QueryEditorDialog::resetSchemaList()
 {
 	ui.queryEditor->resetSchemaList();
 }
+
+void QueryEditorDialog::clear()
+{
+	ui.queryEditor->clear();
+}

@@ -1,9 +1,10 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-*/
+/* Copyright © 2007-2009 Petr Vanek and 2015-2025 Richard Parkins
+ *
+ * For general Sqliteman copyright and licensing information please refer to
+ * the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
 
 #ifndef LITEMANWINDOW_H
 #define LITEMANWINDOW_H
@@ -89,11 +90,12 @@ class LiteManWindow : public QMainWindow
 		void updateRecent(QString fn);
 		void removeRecent(QString fn);
 		void rebuildRecentFileMenu();
+        void invalidateTable();
 
 		/*! \brief The real "open db" method.
 		\param fileName a string prepared by newDB(), open(), and openRecent()
 		*/
-		void openDatabase(const QString & fileName);
+		void openDatabase(QString fileName);
 		void removeRef(const QString & dbname);
 
 #ifdef ENABLE_EXTENSIONS
@@ -191,6 +193,10 @@ class LiteManWindow : public QMainWindow
 		QLabel * m_extensionLabel;
 		bool tableTreeTouched;
 		bool m_isOpen;
+
+        /* If this is not NULL, it is the name of the schema containing
+         * a curtently active SqlTableModel */
+        QString m_activeSchema;
 
 		DataViewer * dataViewer;
 		QSplitter * splitter;

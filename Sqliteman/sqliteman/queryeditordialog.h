@@ -44,6 +44,7 @@ class QueryEditorDialog : public QDialog
 		void tableDropped(QString oldName);
 		void schemaGone(QString schema);
 		void resetSchemaList();
+        void clear();
 };
 
 #endif //QUERYEDITORDIALOG_H

@@ -1,10 +1,11 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-	FIXME creating empty constraint name is legal
-*/
+/* Copyright © 2007-2009 Petr Vanek and 2015-2025 Richard Parkins
+ *
+ * For general Sqliteman copyright and licensing information please refer to
+ * the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
+
 #include <QTreeWidget>
 #include <QTableView>
 #include <QSplitter>
@@ -66,6 +67,7 @@ LiteManWindow::LiteManWindow(
 	m_lastSqlFile(scriptToOpen)
 {
     m_currentItem = NULL;
+    m_activeSchema.clear();
 	m_isOpen = false;
 	tableTreeTouched = false;
 	recentDocs.clear();
@@ -154,7 +156,7 @@ void LiteManWindow::closeEvent(QCloseEvent * e)
 	
 	writeSettings();
 
-	dataViewer->setTableModel(new QSqlQueryModel(), false);
+	invalidateTable();
 	if (QSqlDatabase::contains(SESSION_NAME))
 	{
 		QSqlDatabase::database(SESSION_NAME).rollback();
@@ -477,6 +479,12 @@ void LiteManWindow::rebuildRecentFileMenu()
 	recentAct->setDisabled(recentDocs.count() == 0);
 }
 
+void LiteManWindow::invalidateTable()
+{
+    dataViewer->setTableModel(new QSqlQueryModel(), false);
+    m_activeSchema.clear();
+}
+
 void LiteManWindow::readSettings()
 {
     Preferences * prefs = Preferences::instance();
@@ -566,17 +574,21 @@ void LiteManWindow::open(const QString & file)
 	}
 }
 
-void LiteManWindow::openDatabase(const QString & fileName)
+void LiteManWindow::openDatabase(QString fileName)
 {
 	if (!checkForPending()) { return; }
-	
+    dataViewer->removeErrorMessage();
 	QSqlDatabase db = QSqlDatabase::database(SESSION_NAME);
+    QString old;
+
 	if (db.isValid())
 	{
-		removeRef("temp");
-		removeRef("main");
+        old = db.databaseName();
+        if (fileName == old) {
+            return; // Reopening same file, do nothing
+        }
+		// Clean tree and model here because we're closing old db
 		db.close();
-		m_isOpen = false;
 	} else {
 #ifdef INTERNAL_SQLDRIVER
 		db = QSqlDatabase::addDatabase(new QSQLiteDriver(this), SESSION_NAME);
@@ -585,96 +597,123 @@ void LiteManWindow::openDatabase(const QString & fileName)
 #endif
 	}
 
-	db.setDatabaseName(fileName);
+    while (true) {
+        db.setDatabaseName(fileName);
 
-	if (!db.open())
-	{
-		dataViewer->setStatusText(tr("Cannot open or create ")
-								  + QFileInfo(fileName).fileName()
-								  + ":<br/><span style=\" color:#ff0000;\">"
-								  + db.lastError().text());
-		return;
-	}
-	/* Qt database open() (exactly the sqlite API sqlite3_open16())
-	   method does not check if it is really a database. So the dummy
-	   select statement should perform a real "is it a database" check
-	   for us. */
-	QSqlQuery q("select 1 from sqlite_master where 1=2", db);
-	if (q.lastError().isValid())
-	{
-		dataViewer->setStatusText(tr("Cannot access ")
-								  + QFileInfo(fileName).fileName()
-								  + ":<br/><span style=\" color:#ff0000;\">"
-								  + q.lastError().text()
-								  + "<br/></span>"
-								  + tr("It is probably not a database."));
-		db.close();
-		return;
-	}
-	else
-	{
-		m_isOpen = true;
-		dataViewer->removeErrorMessage();
+        if (db.open())
+        {
+            /* Qt database open() (exactly the sqlite API sqlite3_open16())
+            method does not check if it is really a database. So the dummy
+            select statement should perform a real "is it a database" check
+            for us. */
+            QSqlQuery q("select 1 from sqlite_master where 1=2", db);
+            if (q.lastError().isValid())
+            {
+                dataViewer->setStatusText(tr("Cannot access ")
+                                        + QFileInfo(fileName).fileName()
+                                        + ":<br/>"
+                                        + "<span style=\" color:#ff0000;\">"
+                                        + q.lastError().text()
+                                        + "<br/></span>"
+                                        + tr("It is probably not a database."));
+                // This removes all attached databases
+                db.close();
+                if (m_activeSchema != "main") {
+                    invalidateTable();
+                }
+            } else {
+                m_isOpen = true;
+                /* If we are reopening the original database after a failure
+                 * to open something that wasn't a database, we need to
+                 * rebuild the schema browser because any attached databases
+                 * will have gone away. */
+                schemaBrowser->tableTree->clear();
+                schemaBrowser->tableTree->buildTree();
+                schemaBrowser->buildPragmasTree();
+                m_activeItem = 0;
+                m_currentItem = 0;
+                if (fileName != old) {
+                    // We opened a different database
+                    dataViewer->setBuiltQuery(false);
+                    invalidateTable();
+                    queryEditor->clear();
+                    QFileInfo fi(fileName);
+                    QDir::setCurrent(fi.absolutePath());
+                    m_lastDB = QDir::toNativeSeparators(
+                        QDir::currentPath() + "/" + fi.fileName());
+                    updateRecent(fileName);
+                    // Rebuild tree
+                    // Update the title
+                    setWindowTitle(fi.fileName() + " - " + m_appName);
+                    queryEditor->resetSchemaList();
+                }
+                // Enable UI
+                schemaBrowser->setEnabled(true);
+                databaseMenu->setEnabled(true);
+                adminMenu->setEnabled(true);
+                sqlEditor->setEnabled(true);
+                dataViewer->setEnabled(true);
+                break; // We succeeded in opening a database
+            }
+        } else {
+            dataViewer->setStatusText(tr("Cannot open or create ")
+                                    + QFileInfo(fileName).fileName()
+                                    + ":<br/><span style=\" color:#ff0000;\">"
+                                    + db.lastError().text());
+        }
+        // Nonexistent file or not a database
+        if (fileName != old) {
+            fileName = old; // Try to reinstate old database
+        } else { // That failed too - give up
+            dataViewer->setBuiltQuery(false);
+            invalidateTable();
+            schemaBrowser->tableTree->clear();
+            queryEditor->clear();
+            m_activeItem = 0;
+            m_isOpen = false;
+            // Disable UI
+            schemaBrowser->setEnabled(false);
+            databaseMenu->setEnabled(false);
+            adminMenu->setEnabled(false);
+            sqlEditor->setEnabled(false);
+            dataViewer->setEnabled(false);
+            updateContextMenu();
+            return;
+        }
+    }
 
-		// check for sqlite library version
-		QString ver;
-		if (q.exec("select sqlite_version(*);"))
-		{
-			if(!q.lastError().isValid())
-			{
-				q.next();
-				ver = q.value(0).toString();
-			}
-			else
-				ver = tr("cannot get version");
-		}
-		else
-			ver = tr("cannot get version");
-		m_sqliteVersionLabel->setText("Sqlite: " + ver);
+    // check for sqlite library version
+    QString ver;
+    QSqlQuery q("select sqlite_version(*);", db);
+    if(!q.lastError().isValid())
+    {
+        q.next();
+        ver = q.value(0).toString();
+    } else {
+        ver = tr("cannot get version");
+    }
+    m_sqliteVersionLabel->setText("Sqlite: " + ver);
 
 #ifdef ENABLE_EXTENSIONS
-		// load startup extensions
-		bool loadE = Preferences::instance()->allowExtensionLoading();
-		handleExtensions(loadE);
-		if (loadE && Preferences::instance()->extensionList().count() != 0)
-		{
-			QStringList requested(Preferences::instance()->extensionList());
-			QStringList loaded(Database::loadExtension(requested));
-			schemaBrowser->appendExtensions(loaded);
-			QString msg;
-			if (loaded == requested)
-			{
-				msg = tr("Startup extensions loaded successfully");
-			} else {
-				msg = tr("Some startup extensions were not loaded");
-			}
-			m_extensionLabel->setText(msg);
-		}
+    // load startup extensions
+    bool loadE = Preferences::instance()->allowExtensionLoading();
+    handleExtensions(loadE);
+    if (loadE && Preferences::instance()->extensionList().count() != 0)
+    {
+        QStringList requested(Preferences::instance()->extensionList());
+        QStringList loaded(Database::loadExtension(requested));
+        schemaBrowser->appendExtensions(loaded);
+        QString msg;
+        if (loaded == requested)
+        {
+            msg = tr("Startup extensions loaded successfully");
+        } else {
+            msg = tr("Some startup extensions were not loaded");
+        }
+        m_extensionLabel->setText(msg);
+    }
 #endif
 
-		QFileInfo fi(fileName);
-		QDir::setCurrent(fi.absolutePath());
-		m_lastDB = QDir::toNativeSeparators(QDir::currentPath() + "/" + fi.fileName());
-	
-		updateRecent(fileName);
-	
-		// Build tree & clean model
-		schemaBrowser->tableTree->buildTree();
-		schemaBrowser->buildPragmasTree();
-		dataViewer->setBuiltQuery(false);
-		dataViewer->setTableModel(new QSqlQueryModel(), false);
-		m_activeItem = 0;
-	
-		// Update the title
-		setWindowTitle(fi.fileName() + " - " + m_appName);
-	}
-
-	// Enable UI
-	schemaBrowser->setEnabled(m_isOpen);
-	databaseMenu->setEnabled(m_isOpen);
-	adminMenu->setEnabled(m_isOpen);
-	sqlEditor->setEnabled(m_isOpen);
-	dataViewer->setEnabled(m_isOpen);
 	if (m_isOpen) {
 		int n = Database::makeUserFunctions();
 		if (n)
@@ -686,6 +725,7 @@ void LiteManWindow::openDatabase(const QString & fileName)
 				+ "<br/></span>");
 		}
 	}
+    updateContextMenu();
 }
 
 void LiteManWindow::removeRef(const QString & dbname)
@@ -694,7 +734,7 @@ void LiteManWindow::removeRef(const QString & dbname)
 	if (m && dbname.compare(m->schema()))
 	{
 		dataViewer->setBuiltQuery(false);
-		dataViewer->setTableModel(new QSqlQueryModel(), false);
+		invalidateTable();
 		m_activeItem = 0;
 	}
 }
@@ -1041,7 +1081,7 @@ void LiteManWindow::dropTable()
 			{
 				dataViewer->setNotPending();
 				dataViewer->setBuiltQuery(false);
-				dataViewer->setTableModel(new QSqlQueryModel(), false);
+				invalidateTable();
 				m_activeItem = 0;
 			}
 		}
@@ -1306,7 +1346,7 @@ void LiteManWindow::dropView()
 			checkForCatalogue();
 			if (isActive)
 			{
-				dataViewer->setTableModel(new QSqlQueryModel(), false);
+				invalidateTable();
 				m_activeItem = 0;
 			}
 		}
@@ -1399,7 +1439,8 @@ void LiteManWindow::treeItemActivated(QTreeWidgetItem * item, int column)
 		dataViewer->freeResources(dataViewer->tableData());
         SqlTableModel * model = new SqlTableModel(
             0, QSqlDatabase::database(SESSION_NAME));
-        model->setSchema(item->text(1));
+        m_activeSchema = item->text(1);
+        model->setSchema(m_activeSchema);
         model->setTable(item->text(0));
         model->select();
         model->setEditStrategy(SqlTableModel::OnManualSubmit);
@@ -1673,7 +1714,6 @@ void LiteManWindow::attachDatabase()
 	}
 }
 
-//FIXME detaching a database should close any open table in it
 void LiteManWindow::detachDatabase()
 {
 	dataViewer->removeErrorMessage();
@@ -1707,6 +1747,7 @@ void LiteManWindow::detachDatabase()
         m_currentItem = NULL;
 		queryEditor->schemaGone(dbname);
 		dataViewer->setBuiltQuery(false);
+        if (dbname == m_activeSchema) { invalidateTable(); }
 	}
 }
 
@@ -1890,9 +1931,11 @@ void LiteManWindow::refreshTable()
 	/* SQL code in the SQL editor may have modified or even removed
      * the current table.
 	 */
-	dataViewer->setTableModel(new QSqlQueryModel(), false);
+	dataViewer->setBuiltQuery(false);
+	invalidateTable();
 	updateContextMenu();
 	m_activeItem = 0;
+	schemaBrowser->tableTree->buildTree();
 	queryEditor->resetSchemaList();
 }
 
@@ -1912,7 +1955,7 @@ void LiteManWindow::doMultipleDeletion()
 		if (com == QMessageBox::Yes)
 		{
 			doExecSql(sql, false);
-			dataViewer->setTableModel(new QSqlQueryModel(), false);
+			invalidateTable();
 		}
 	}
 }

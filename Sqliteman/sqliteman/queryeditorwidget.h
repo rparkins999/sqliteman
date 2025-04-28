@@ -94,6 +94,10 @@ class QueryEditorWidget : public QWidget
         // (clicked on Database oo Tables or Views)
 		void setSchema(QString schema,
 					   bool schemaMayChange, bool tableMayChange);
+        // Called when a database has been closed.
+        // QSqlDatabase::close() doesn't delete the database name,
+        // so calling getDatabases() reopens it and we get obsolete data.
+        void clear();
 
 	private:
 		void copySql(bool elide);
