@@ -53,6 +53,7 @@ void SqlItemView::setModel(QAbstractItemModel * model)
 	QSqlQueryModel * t = qobject_cast<QSqlQueryModel *>(model);
 	if (!t)  { return; }
 	QSqlTableModel * table = qobject_cast<QSqlTableModel *>(model);
+	m_writeable = table != 0;
 	QSqlRecord rec(t->record());
 
 	if (scrollWidget->widget())
@@ -99,14 +100,14 @@ void SqlItemView::setModel(QAbstractItemModel * model)
 		actInsertNull->setShortcutContext(Qt::WidgetWithChildrenShortcut);
 	    connect(actInsertNull, SIGNAL(triggered()), this,
 				SLOT(insertNull()));
-	    actOpenMultiEditor = new QAction(Utils::getIcon("edit.png"),
-										 tr("Open Multiline Editor..."),
-										 this);
-		actOpenMultiEditor->setShortcut(QKeySequence("Ctrl+Alt+E"));
-		actOpenMultiEditor->setShortcutContext(Qt::WidgetWithChildrenShortcut);
-	    connect(actOpenMultiEditor, SIGNAL(triggered()),
-				this, SLOT(openMultiEditor()));
 	}
+    actOpenMultiEditor = new QAction(Utils::getIcon("edit.png"),
+                                        tr("Open Multiline Editor..."),
+                                        this);
+    actOpenMultiEditor->setShortcut(QKeySequence("Ctrl+Alt+E"));
+    actOpenMultiEditor->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    connect(actOpenMultiEditor, SIGNAL(triggered()),
+            this, SLOT(openMultiEditor()));
 
 	for (int i = 0; i < rec.count(); ++i)
 	{
@@ -132,8 +133,8 @@ void SqlItemView::setModel(QAbstractItemModel * model)
 			w->addAction(actPasteOver);
 			w->addAction(actSelectAll);
 			w->addAction(actInsertNull);
-			w->addAction(actOpenMultiEditor);
 		}
+        w->addAction(actOpenMultiEditor);
 		w->setContextMenuPolicy(Qt::ActionsContextMenu);
 	}
 	scrollWidget->setWidget(layoutWidget);
@@ -180,7 +181,6 @@ void SqlItemView::setCurrentIndex(int row, int column)
 	if ((row >= 0) && (column >= 0))
 	{
 		m_row = row;
-		m_writeable = qobject_cast<SqlTableModel *>(m_model) != 0;
 		for (m_column = 0; m_column < m_count; ++m_column)
 		{
 			QWidget * w = m_gridLayout->itemAtPosition(m_column, 1)->widget();
@@ -341,8 +341,9 @@ void SqlItemView::insertNull()
 void SqlItemView::openMultiEditor()
 {
 	MultiEditDialog dia(this);
-	dia.setData(m_model->data(m_model->index(m_row, m_column), Qt::EditRole));
-	if (dia.exec())
+	dia.setData(m_model->data(m_model->index(m_row, m_column), Qt::EditRole),
+                m_writeable);
+	if (dia.exec() && m_writeable)
 	{
 		QModelIndex index = m_model->index(m_row, m_column);
 		m_model->setData(index, dia.data());

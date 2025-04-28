@@ -301,7 +301,7 @@ void DataViewer::removeFinder()
  */
 void DataViewer::scheduleResize()
 {
-    /* If the timer is already running, this (re-)starts the timeer for
+    /* If the timer is already running, this (re-)starts the timer for
      * 200 milliseconds. When the user stops dragging the window boundary,
      * we stop restarting the timer and it times out and signals
      * reallyResize().
@@ -790,7 +790,6 @@ void DataViewer::tableView_selectionChanged(const QItemSelection & current,
     actPasteOver->setEnabled(enable);
     actInsertNull->setEnabled(enable);
     actOpenEditor->setEnabled(enable);
-    actOpenMultiEditor->setEnabled(enable);
 
 	updateButtons();
 	QModelIndex index = ui.tableView->currentIndex();
@@ -923,27 +922,6 @@ void DataViewer::actOpenEditor_triggered()
 	}
 }
 
-void DataViewer::actOpenMultiEditor_triggered()
-{
-	QAbstractItemModel * model = ui.tableView->model();
-	QModelIndex index(ui.tableView->currentIndex());
-	if (model && index.isValid())
-	{
-		QVariant data = model->data(index, Qt::EditRole);
-		if (data.isValid())
-		{
-			MultiEditDialog dia(this);
-			dia.setData(data);
-			if (dia.exec())
-			{
-				data = dia.data();
-				ui.tableView->model()->setData(index, data, Qt::EditRole);
-				tableView_dataChanged();
-			}
-		}
-	}
-}
-
 void DataViewer::actInsertNull_triggered()
 {
 	QAbstractItemModel * model = ui.tableView->model();
@@ -1044,18 +1022,10 @@ DataViewer::DataViewer(LiteManWindow * parent)
 	actOpenEditor->setShortcut(QKeySequence("Ctrl+ "));
     connect(actOpenEditor, SIGNAL(triggered()), this,
 			SLOT(actOpenEditor_triggered()));
-    actOpenMultiEditor = new QAction(Utils::getIcon("edit.png"),
-									 tr("Open Multiline Editor..."),
-									 ui.tableView);
-	actOpenMultiEditor->setShortcut(QKeySequence("Ctrl+Alt+E"));
-	actOpenMultiEditor->setShortcutContext(Qt::WidgetWithChildrenShortcut);
-    connect(actOpenMultiEditor, SIGNAL(triggered()),
-			this, SLOT(actOpenMultiEditor_triggered()));
     ui.tableView->addAction(actCopyWhole);
     ui.tableView->addAction(actPasteOver);
     ui.tableView->addAction(actInsertNull);
     ui.tableView->addAction(actOpenEditor);
-    ui.tableView->addAction(actOpenMultiEditor);
 
 	// custom delegate
 	SqlDelegate * delegate = new SqlDelegate(this);

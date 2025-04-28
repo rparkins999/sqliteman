@@ -24,11 +24,12 @@ class MultiEditDialog : public QDialog, public Ui::MultiEditDialog
 		MultiEditDialog(QWidget * parent = 0);
         ~MultiEditDialog();
 		
-		void setData(const QVariant & data);
+		void setData(const QVariant & data, bool editable);
 		QVariant data();
 
 	private:
 		QVariant m_data;
+        bool m_editable;
 		bool m_edited;
 
 		void checkButtonStatus();

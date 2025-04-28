@@ -91,6 +91,7 @@ class SqlDelegateUi : public QWidget, public Ui::SqlDelegateUi
 		
 		void setSqlData(const QVariant & data);
 		QVariant sqlData();
+        bool m_editable;
 
 	signals:
 		void closeEditor();

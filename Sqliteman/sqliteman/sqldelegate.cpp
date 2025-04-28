@@ -14,6 +14,7 @@
 #include <QtCore/QRect>
 #include <QtCore/QSize>
 #include <QtCore/QSizeF>
+#include <QSqlTableModel>
 #include <QStyle>
 #include <QStyleOptionViewItem>
 #include <QTextOption>
@@ -72,9 +73,11 @@ QWidget *SqlDelegate::createEditor(QWidget *parent,
 void SqlDelegate::setEditorData(QWidget *editor,
 								const QModelIndex &index) const
 {
-	static_cast<SqlDelegateUi*>(editor)->setSqlData(
-								index.model()->data(index,
-								Qt::EditRole));
+    const QSqlTableModel * table =
+        qobject_cast<const QSqlTableModel *>(index.model());
+    SqlDelegateUi* ed = static_cast<SqlDelegateUi*>(editor);
+    ed->m_editable = table != NULL;
+	ed->setSqlData(index.model()->data(index, Qt::EditRole));
 }
 
 // Overrides QItemDelegate::setModelData
@@ -307,7 +310,7 @@ void SqlDelegateUi::editButton_clicked(bool state)
 {
 	MultiEditDialog dia(this);
 	qApp->setOverrideCursor(Qt::WaitCursor);
-	dia.setData(m_sqlData);
+	dia.setData(m_sqlData, m_editable);
 	qApp->restoreOverrideCursor();
 	if (dia.exec())
 	{

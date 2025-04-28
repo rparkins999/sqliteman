@@ -118,7 +118,6 @@ class DataViewer : public QMainWindow
 		void gotoLine();
 
         void actOpenEditor_triggered();
-        void actOpenMultiEditor_triggered();
         void actInsertNull_triggered();
 
 		void doCopyWhole();
