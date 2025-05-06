@@ -1,8 +1,9 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
+/* Copyright © 2007-2009 Petr Vanek and 2015-2025 Richard Parkins
+ *
+ * For general Sqliteman copyright and licensing information please refer to
+ * the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
 	FIXME loses some constraints
 	multiple primary key are not allowed
 	multiple not null are allowed
@@ -40,15 +41,12 @@ void AlterTableDialog::addField(FieldInfo field, bool isNew)
 	TableEditorDialog::addField(field);
 	QTableWidgetItem * it = new QTableWidgetItem();
 	it->setIcon(Utils::getIcon("move-up.png"));
-	it->setToolTip("move up");
 	ui.columnTable->setItem(i, 4, it);
 	it = new QTableWidgetItem();
 	it->setIcon(Utils::getIcon("move-down.png"));
-	it->setToolTip("move down");
 	ui.columnTable->setItem(i, 5, it);
 	it =new QTableWidgetItem();
 	it->setIcon(Utils::getIcon("delete.png"));
-	it->setToolTip("remove");
 	ui.columnTable->setItem(i, 6, it);
 	m_isIndexed.append(false);
 	m_oldColumn.append(isNew ? -1 : i);
@@ -169,8 +167,9 @@ AlterTableDialog::AlterTableDialog(LiteManWindow * parent,
     }
     ui.databaseCombo->setEnabled(databaseMayChange);
 	ui.nameEdit->setText(m_tableName);
-    ui.nameEdit->setToolTip(QString("Original name: ") + m_tableName);
+    ui.nameEdit->setToolTip(tr("(editable)"));
 	QPushButton * resetButton = new QPushButton("Reset", this);
+    resetButton->setToolTip(tr("Reset all changes"));
 	ui.tabWidget->setCornerWidget(resetButton, Qt::TopRightCorner);
 	connect(resetButton, SIGNAL(clicked(bool)), this, SLOT(resetClicked()));
     disconnect(ui.removeButton, 0, 0, 0);
@@ -185,14 +184,19 @@ AlterTableDialog::AlterTableDialog(LiteManWindow * parent,
 	ui.columnTable->setHorizontalHeaderItem(5, new QTableWidgetItem());
 	ui.columnTable->insertColumn(6);
 	ui.columnTable->setHorizontalHeaderItem(6, new QTableWidgetItem());
+    ui.withoutRowid->setToolTip(
+        tr("Check this box to make the table without rowid"));
 	connect(ui.columnTable, SIGNAL(cellClicked(int, int)),
 			this, SLOT(cellClicked(int,int)));
 	ui.adviceLabel->hide();
 	m_alterButton =
 		ui.buttonBox->addButton("Alte&r", QDialogButtonBox::ApplyRole);
 	m_alterButton->setDisabled(true);
+    m_alterButton->setToolTip(tr("Enabled when valid changes made"));
 	connect(m_alterButton, SIGNAL(clicked(bool)),
 			this, SLOT(alterButton_clicked()));
+    ui.buttonBox->button(QDialogButtonBox::Close)->setToolTip(
+        tr("Close this dialog without making any (more) changes"));
     Preferences * prefs = Preferences::instance();
 	resize(prefs->altertableWidth(), prefs->altertableHeight());
 	resetClicked();
@@ -214,14 +218,34 @@ void AlterTableDialog::updateButtons()
     int n = ui.columnTable->rowCount();
     for (int i = 0; i < n; ++i) {
         // move up is enabled except for first row
-        ui.columnTable->item(i, 4)->setFlags(
-            (i == 0) ? Qt::NoItemFlags : Qt::ItemIsEnabled);
+        if (i == 0) {
+            ui.columnTable->item(i, 4)->setFlags(Qt::NoItemFlags);
+            ui.columnTable->item(i, 4)->setToolTip(
+                tr("can't move first column up"));
+        } else {
+            ui.columnTable->item(i, 4)->setFlags(Qt::ItemIsEnabled);
+            ui.columnTable->item(i, 4)->setToolTip(tr("move this column up"));
+        }
         // move down is enabled except for last row
+        if (i == n - 1) {
+            ui.columnTable->item(i, 5)->setFlags(Qt::NoItemFlags);
+            ui.columnTable->item(i, 5)->setToolTip(
+                tr("can't move last column down"));
+        } else {
+            ui.columnTable->item(i, 5)->setFlags(Qt::ItemIsEnabled);
+            ui.columnTable->item(i, 5)->setToolTip(tr("move this column down"));
+        }
         ui.columnTable->item(i, 5)->setFlags(
             (i == n - 1) ? Qt::NoItemFlags : Qt::ItemIsEnabled);
         // remove is enabled if there is more than one row
-        ui.columnTable->item(i, 6)->setFlags(
-            (n <= 1) ? Qt::NoItemFlags : Qt::ItemIsEnabled);
+        if (n == 1) {
+            ui.columnTable->item(i, 6)->setFlags(Qt::NoItemFlags);
+            ui.columnTable->item(i, 6)->setToolTip(
+                tr("can't delete the only column"));
+        } else {
+            ui.columnTable->item(i, 6)->setFlags(Qt::ItemIsEnabled);
+            ui.columnTable->item(i, 6)->setToolTip(tr("delete this column"));
+        }
     }
 }
 
@@ -361,7 +385,7 @@ QString AlterTableDialog::renameTemp(QString oldTableName) {
 
 bool AlterTableDialog::renameTable(QString oldTableName, QString newTableName)
 {
-    if (oldTableName == newTableName) {
+    if (newTableName.compare(oldTableName, Qt::CaseSensitive) == 0) {
         return true; // nothing to do
     }
     QString tmpName = oldTableName;
@@ -438,6 +462,7 @@ bool AlterTableDialog::checkColumn(int i, QString cname,
 	} else { m_altered = true; }
 	return false;
 }
+
 void AlterTableDialog::swap(int i, int j)
 {
 	// Much of this unpleasantness is caused by the lack of a
@@ -741,18 +766,6 @@ void AlterTableDialog::alterButton_clicked()
 			QMessageBox::Yes, QMessageBox::Cancel);
 		if (ret == QMessageBox::Cancel) { return; }
 	}
-	if (newTableName.contains(QRegExp
-		("\\s|-|\\]|\\[|[`!\"%&*()+={}:;@'~#|\\\\<,>.?/^]")))
-	{
-		int ret = QMessageBox::question(this, "Sqliteman",
-			tr("A table named ")
-			+ newTableName
-			+ tr(" will not display correctly.\n"
-				 "Are you sure you want to rename it?\n\n"
-				 "Yes to rename, Cancel to try another name."),
-			QMessageBox::Yes, QMessageBox::Cancel);
-		if (ret == QMessageBox::Cancel) { return; }
-	}
 	ui.resultEdit->setHtml("");
 
     m_oldPragmaAlterTable = Database::pragma("legacy_alter_table").toInt();
@@ -850,14 +863,30 @@ void AlterTableDialog::checkChanges()
 {
 	m_dubious = false; // true if some column has an empty name
 	QString newName(ui.nameEdit->text());
+    bool nameChanged = newName.compare(m_tableName, Qt::CaseInsensitive) != 0;
+    if (nameChanged) {
+        ui.nameEdit->setToolTip(
+        QString(tr("Original name: ")) + m_tableName + tr(" (editable)"));
+    } else {
+        ui.nameEdit->setToolTip(tr("(editable)"));
+    }
 	m_altered = m_hadRowid == ui.withoutRowid->isChecked();
 	m_altered |= m_dropped;
-	bool ok = checkOk(); // side-effect on m_dubious and m_altered
     // Alter button is enabled if the current table definition is valid
     // and something has changed,
     // even if newName differs from m_tableName in case only.
-	m_alterButton->setEnabled(   ok
-							  && (   m_altered
-								  || (newName != m_tableName)));
+    // checkOk() has side-effects on m_dubious and m_altered
+	if (checkOk()) {
+        if (m_altered || nameChanged) {
+            m_alterButton->setEnabled(true);
+            m_alterButton->setToolTip(tr("Apply changes to table"));
+        } else {
+            m_alterButton->setEnabled(false);
+            m_alterButton->setToolTip(tr("No changes to apply"));
+        }
+    } else {
+        m_alterButton->setEnabled(false);
+        m_alterButton->setToolTip(tr("Changes would make invalid table"));
+    }
     ui.resultEdit->clear();
 }

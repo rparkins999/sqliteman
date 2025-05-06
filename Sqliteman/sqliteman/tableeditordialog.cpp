@@ -1,9 +1,10 @@
-/*
-For general Sqliteman copyright and licensing information please refer
-to the COPYING file provided with the program. Following this notice may exist
-a copyright and/or license notice that predates the release of Sqliteman
-for which a new license (GPL+exception) is in place.
-*/
+/* Copyright © 2007-2009 Petr Vanek and 2015-2025 Richard Parkins
+ *
+ * For general Sqliteman copyright and licensing information please refer to
+ * the COPYING file provided with the program. Following this notice may exist
+ * a copyright and/or license notice that predates the release of Sqliteman
+ * for which a new license (GPL+exception) is in place.
+ */
 
 #include <QtCore/qmath.h>
 #include <QCheckBox>
@@ -66,6 +67,7 @@ TableEditorDialog::TableEditorDialog(LiteManWindow * parent)
 	connect(ui.removeButton, SIGNAL(clicked()), this, SLOT(removeField()));
 	connect(ui.withoutRowid, SIGNAL(toggled(bool)),
 			this, SLOT(checkChanges()));
+    ui.addButton->setToolTip(tr("Add another row to the table"));
     setResultEdit(ui.resultEdit);
 }
 
@@ -102,8 +104,11 @@ void TableEditorDialog::addField(FieldInfo field)
 	ui.columnTable->setRowCount(rc + 1);
 	MyLineEdit * name = new MyLineEdit(this);
 	name->setText(field.name);
-    if (!isNew) {
-        name->setToolTip(QString("Original name ") + field.name);
+    if (isNew) {
+        name->setToolTip(tr("(editable)"));
+    } else {
+        name->setToolTip(
+            tr("Original name \"") + field.name + tr("\" (editable)"));
     }
 	name->setFrame(false);
     fixNull(name);
@@ -160,7 +165,7 @@ void TableEditorDialog::addField(FieldInfo field)
     }
     extraBox->setCurrentIndex(index);
 	extraBox->setEditable(false);
-    extraBox->setToolTip("Extra features for column");
+    extraBox->setToolTip(tr("Extra features for column"));
 	ui.columnTable->setCellWidget(rc, 2, extraBox);
 	connect(extraBox, SIGNAL(currentIndexChanged(const QString &)),
 			this, SLOT(checkChanges()));
