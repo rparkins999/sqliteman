@@ -48,6 +48,7 @@ set check type off
 #include "pd.h"
 #include <cmath>
 #include <sqlite3.h>
+#include <QDebug>
 
 // These variables, private to this file, are used to support
 // prettyprinting collections.
@@ -700,7 +701,10 @@ void pd::dump(QSqlRecord * r) {
 // We could save a call by special-casing the result of one of our
 // own prepare(...) calls (which handle null or empty strings), but we're
 // interactive here so it isn't worth having the extra code to save time.
-void pd::dump(QString s) { qDebug(prepareString(s).toUtf8().data()); }
+void pd::dump(QString s) {
+    qDebug().noquote() << prepareString(s).toUtf8().data();
+
+}
 // gdb thinks QStringList is not the same as QList<Qstring>
 void pd::dump(QStringList &l) {
     if (l.isEmpty()) { qDebug ("Empty QStringList"); }

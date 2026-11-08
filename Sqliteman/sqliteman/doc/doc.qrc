@@ -85,6 +85,8 @@
         <file>en/preferences-editor.png</file>
         <file>en/preferences-lnf.png</file>
         <file>en/preferences-shortcuts.png</file>
+        <file>en/queryAddOrder.png</file>
+        <file>en/queryAddTerm.png</file>
         <file>en/queryplan.png</file>
         <file>en/queryFields.png</file>
         <file>en/queryOrder.png</file>

@@ -1099,10 +1099,13 @@ void LiteManWindow::emptyTable()
 
 	bool isActive = m_activeItem == m_currentItem;
 
+    /* Treat "return" as No to protect against emptying a big table by mistake;
+     * the user must explicitly click on the Yes button to confirm.
+     */
 	int ret = QMessageBox::question(this, m_appName,
 					tr("Are you sure you want to remove all records from the"
 					   " table  \"%1\"?").arg(m_currentItem->text(0)),
-					QMessageBox::Yes, QMessageBox::No);
+					QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
 
 	if (ret == QMessageBox::Yes)
 	{
