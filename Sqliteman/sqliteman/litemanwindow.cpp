@@ -1046,10 +1046,13 @@ void LiteManWindow::dropTable()
 	bool isActive = m_activeItem == m_currentItem;
 	QString table = m_currentItem->text(0);
 
+    /* Treat "return" as No to protect against dropping a big table by mistake;
+     * the user must explicitly click on the Yes button to confirm.
+     */
 	int ret = QMessageBox::question(this, m_appName,
 					tr("Are you sure that you wish to drop the table \"%1\"?")
 					.arg(table),
-					QMessageBox::Yes, QMessageBox::No);
+					QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
 
 	if (ret == QMessageBox::Yes)
 	{
